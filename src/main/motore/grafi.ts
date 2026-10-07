@@ -1,7 +1,10 @@
 // Da una Richiesta al grafo di ComfyUI (formato API). Ogni modalità usa gli stessi pezzi:
-//   modello GGUF → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
-// e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi).
+//   modello GGUF → (Turbo) → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
+// e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
 import type { Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
+
+/** il profilo di memoria: con poca VRAM il VAE lavora a tessere (niente picchi che finiscono nella RAM condivisa) */
+export type Memoria = 'bassa' | 'normale' | 'alta'
 
 type Rif = [string, number]
 type Nodo = { class_type: string; inputs: Record<string, unknown> }
@@ -15,6 +18,8 @@ export interface GrafoPronto {
   /** megapixel su cui lavora il campionatore (per stimare i tempi) */
   megapixel: number
   passi: number
+  /** dove va l'anteprima dal vivo, in pixel della foto di partenza (zona, espandi, modifica) */
+  area?: Riquadro
 }
 
 /** foto già passate al motore: percorso su disco → nome per LoadImage, più le dimensioni */
@@ -24,6 +29,7 @@ export interface Ingressi {
 }
 
 class Grafo {
+  constructor(readonly memoria: Memoria = 'normale') {}
   nodi: Record<string, Nodo> = {}
   fasi: Record<string, string> = {}
   private n = 0
@@ -48,14 +54,19 @@ export function dimensioniPer(mp: number, larghezza: number, altezza: number): {
   return { w: m32(larghezza * s), h: m32(altezza * s) }
 }
 
+/** il Turbo è acceso e il suo LoRA c'è? */
+const conTurbo = (q: Richiesta, imp: Impostazioni): boolean => !!q.turbo && !!imp.loraTurbo
+
 function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Rif; vae: Rif } {
   const carico = 'Carico il modello'
   const unet = imp.modello.toLowerCase().endsWith('.gguf')
     ? g.add('UnetLoaderGGUF', { unet_name: imp.modello }, carico)
     : g.add('UNETLoader', { unet_name: imp.modello, weight_dtype: 'default' }, carico)
   let model = r(unet)
+  const turbo = conTurbo(q, imp)
+  if (turbo) model = r(g.add('LoraLoaderModelOnly', { model, lora_name: imp.loraTurbo, strength_model: 1 }, 'Accendo il Turbo'))
   for (const l of q.lora) {
-    if (!l.file || !l.forza) continue
+    if (!l.file || !l.forza || (turbo && l.file === imp.loraTurbo)) continue
     model = r(g.add('LoraLoaderModelOnly', { model, lora_name: l.file, strength_model: l.forza }, 'Applico i LoRA'))
   }
   model = r(g.add('QwenImage21Cache', { model, device: imp.cacheKV, dtype: imp.cacheTipo }))
@@ -85,19 +96,43 @@ function campiona(g: Grafo, q: Richiesta, model: Rif, enc: string, latente: Rif,
   )
 }
 
+/** VAE a tessere? Con 6 GB già da ~0,6 MP, con 8-12 GB solo oltre i 2 MP, con tanta VRAM mai */
+function aTessere(g: Grafo, mp: number): boolean {
+  return g.memoria === 'bassa' ? mp > 0.6 : g.memoria === 'normale' ? mp > 2.2 : false
+}
+const TESSERE = { tile_size: 512, overlap: 64, temporal_size: 64, temporal_overlap: 8 }
+
 /** decodifica e (se non trasparente) toglie il canale alfa: il VAE di Qwen 2.1 esce sempre RGBA */
-function sviluppa(g: Grafo, q: Richiesta, lat: Rif, vae: Rif): Rif {
-  const dec = g.add('VAEDecode', { samples: lat, vae }, 'Sviluppo l\'immagine')
+function sviluppa(g: Grafo, q: Richiesta, lat: Rif, vae: Rif, mp: number): Rif {
+  const fase = 'Sviluppo l\'immagine'
+  const dec = aTessere(g, mp) ? g.add('VAEDecodeTiled', { samples: lat, vae, ...TESSERE }, fase) : g.add('VAEDecode', { samples: lat, vae }, fase)
   if (q.trasparente) return r(dec)
   return r(g.add('SplitImageWithAlpha', { image: r(dec) }), 0)
+}
+
+/** dalla foto al latente (a tessere se la memoria è poca) */
+function codifica(g: Grafo, pixels: Rif, vae: Rif, mp: number): Rif {
+  const fase = 'Preparo la foto'
+  return r(aTessere(g, mp) ? g.add('VAEEncodeTiled', { pixels, vae, ...TESSERE }, fase) : g.add('VAEEncode', { pixels, vae }, fase))
+}
+
+/** in che parte del riquadro sta la zona, a parole (il modello non vede la maschera: così sa di cosa si parla) */
+export function doveNelRiquadro(zona: Riquadro, box: { x: number; y: number; w: number; h: number }): string | null {
+  if ((zona.w * zona.h) / (box.w * box.h) > 0.55) return null
+  const fx = (zona.x + zona.w / 2 - box.x) / box.w
+  const fy = (zona.y + zona.h / 2 - box.y) / box.h
+  const o = fx < 0.36 ? 'left' : fx > 0.64 ? 'right' : ''
+  const v = fy < 0.36 ? 'top' : fy > 0.64 ? 'bottom' : ''
+  return o || v ? `the ${[v, o].filter(Boolean).join(' ')} part` : 'the center'
 }
 
 function salva(g: Grafo, img: Rif, prefisso: string): string {
   return g.add('SaveImage', { images: img, filename_prefix: `daprod/${prefisso}` }, 'Salvo')
 }
 
-/** con la denoise < 1 il KSampler fa comunque tutti i passi: se ne fanno quanti ne servono a quella forza */
-const passiPer = (passi: number, forza: number): number => (forza >= 0.999 ? passi : Math.max(8, Math.round(passi * forza)))
+/** con la denoise < 1 il KSampler fa comunque tutti i passi: se ne fanno quanti ne servono a quella forza
+ *  (col Turbo bastano 4: il KSampler li prende dalla fine della scaletta da 8) */
+const passiPer = (passi: number, forza: number, minimo = 8): number => (forza >= 0.999 ? passi : Math.max(Math.min(minimo, passi), Math.round(passi * forza)))
 
 /** riquadro di lavoro attorno alla zona: contesto, proporzioni, grandezza per il modello */
 export function riquadroLavoro(
@@ -144,9 +179,10 @@ export function riquadroLavoro(
   return { x, y, w, h, tw: m32(w * s), th: m32(h * s) }
 }
 
-export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefisso: string): GrafoPronto {
-  const g = new Grafo()
+export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefisso: string, memoria: Memoria = 'normale'): GrafoPronto {
+  const g = new Grafo(memoria)
   const neg = q.negativo || ''
+  const minimo = conTurbo(q, imp) ? 4 : 8
 
   if (q.modalita === 'descrivi') {
     const clip = r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
@@ -190,9 +226,14 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
     const enc = g.add('TextEncodeQwenImage21', { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }, leggo)
     const lat = r(g.add('EmptyLatentImage', { width: q.larghezza, height: q.altezza, batch_size: 1 }))
-    const ks = campiona(g, q, model, enc, lat, q.passi)
-    const uscita = salva(g, sviluppa(g, q, ks, vae), prefisso)
-    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: (q.larghezza * q.altezza) / 1048576, passi: q.passi }
+    // il Turbo è stato allenato con la scaletta del rumore che dipende dalla grandezza (come nel suo workflow)
+    const m = conTurbo(q, imp)
+      ? r(g.add('ModelSamplingFlux', { model, max_shift: 0.6935, base_shift: 0.5, width: q.larghezza, height: q.altezza }))
+      : model
+    const ks = campiona(g, q, m, enc, lat, q.passi)
+    const mp = (q.larghezza * q.altezza) / 1048576
+    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
   }
 
   if (q.modalita === 'modifica') {
@@ -204,9 +245,11 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     })
     const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
     const ks = campiona(g, q, model, enc, r(enc, 2), q.passi)
-    const uscita = salva(g, sviluppa(g, q, ks, vae), prefisso)
     const d = dimensioniPer(q.megapixel, ing.immagini[0].larghezza, ing.immagini[0].altezza)
-    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: (d.w * d.h) / 1048576, passi: q.passi }
+    const mp = (d.w * d.h) / 1048576
+    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
+    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi, area }
   }
 
   if (q.modalita === 'varia' || q.modalita === 'rifinisci') {
@@ -230,12 +273,13 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     img = r(g.add('ImageScale', { image: img, upscale_method: 'lanczos', width: W, height: H, crop: 'disabled' }))
     const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
     const enc = g.add('TextEncodeQwenImage21', { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }, leggo)
-    const lat = r(g.add('VAEEncode', { pixels: img, vae }, 'Preparo la foto'))
+    const mp = (W * H) / 1048576
+    const lat = codifica(g, img, vae, mp)
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
-    const passi = passiPer(q.passi, forza)
+    const passi = passiPer(q.passi, forza, minimo)
     const ks = campiona(g, q, model, enc, lat, passi, forza)
-    const uscita = salva(g, sviluppa(g, q, ks, vae), prefisso)
-    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: (W * H) / 1048576, passi }
+    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
 
   // ---- zona ed espandi: si lavora su un riquadro, si ridisegna solo dentro la maschera,
@@ -270,10 +314,24 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const mGrande = r(g.add('ImageToMask', { image: mGrandeImg, channel: 'red' }))
   const scala = box.tw / box.w
   const allarga = Math.round((q.allarga ?? (q.modalita === 'espandi' ? 24 : 8)) * scala)
-  const mLatente = allarga > 0 ? r(g.add('GrowMask', { mask: mGrande, expand: allarga, tapered_corners: true })) : mGrande
+  // la zona "dura" (allargata): quella che si riempie, si ridisegna di sicuro e su cui si accordano i colori
+  const mDura = allarga > 0 ? r(g.add('GrowMask', { mask: mGrande, expand: allarga, tapered_corners: true })) : mGrande
+  // nel latente la maschera è morbida: con la DifferentialDiffusion il bordo si ridisegna solo negli ultimi
+  // passi e si fonde con quello che c'è attorno, invece di fare uno scalino
+  const morbido = Math.max(0, Math.min(31, Math.round((q.modalita === 'espandi' ? 16 : (q.sfuma ?? 10) * 0.6) * scala)))
+  let mLatente = mDura
+  if (morbido >= 2) {
+    const a = r(g.add('MaskToImage', { mask: mDura }))
+    const b = r(g.add('ImageBlur', { image: a, blur_radius: morbido, sigma: Math.min(10, Math.max(1, morbido / 2)) }))
+    mLatente = r(g.add('ImageToMask', { image: b, channel: 'red' }))
+  }
+
+  // "rimuovi": la zona si riempie prima coi colori attorno, così il modello non vede più l'oggetto da togliere
+  const riempi = q.modalita === 'zona' && !!q.riempi
+  const sorgente = riempi ? r(g.add('DaProdRiempiZona', { image: grande, mask: mDura }, 'Riempio la zona')) : grande
 
   // cosa vede il modello: la foto pulita, o con la zona contornata di rosso
-  let vista = grande
+  let vista = sorgente
   let prompt = q.prompt
   // resolution 0: image_1 resta esattamente box.tw×box.th come il latente (se no la modifica si sposta)
   let risoluzione = 0
@@ -292,9 +350,14 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const fuori = r(g.add('GrowMask', { mask: mGrande, expand: Math.max(4, Math.round(6 * scala)), tapered_corners: true }))
     const anello = r(g.add('MaskComposite', { destination: fuori, source: mGrande, x: 0, y: 0, operation: 'subtract' }))
     const rosso = r(g.add('EmptyImage', { width: box.tw, height: box.th, batch_size: 1, color: 0xff0000 }))
-    vista = r(g.add('ImageCompositeMasked', { destination: grande, source: rosso, x: 0, y: 0, resize_source: false, mask: anello }))
+    vista = r(g.add('ImageCompositeMasked', { destination: sorgente, source: rosso, x: 0, y: 0, resize_source: false, mask: anello }))
     prompt = `In <image1>, change only the area outlined in red: ${q.prompt.trim()} Remove the red outline; keep everything outside it unchanged.`
+  } else if (zona) {
+    // il modello non vede la maschera: gli si dice almeno dove guardare ("cambia il suo colore" di cosa?)
+    const dove = doveNelRiquadro(zona, box)
+    if (dove) prompt = `In ${dove} of the image: ${q.prompt.trim()}`
   }
+  if (riempi) prompt += ' The smudged, blurry patch is only a placeholder: redraw it sharp and natural, matching the perspective, lighting and texture of the surroundings.'
   // i riferimenti li porto io a ~1 MP
   const inputs: Record<string, unknown> = { clip, prompt, negative_prompt: neg, resolution: risoluzione, vae, 'images.image_1': vista }
   ing.immagini.slice(1, 16).forEach((ri, i) => {
@@ -302,13 +365,15 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     inputs[`images.image_${i + 2}`] = r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: Math.min(1, q.megapixel), resolution_steps: 32 }))
   })
   const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
-  const lat0 = r(g.add('VAEEncode', { pixels: grande, vae }, 'Preparo la foto'))
+  const mp = (box.tw * box.th) / 1048576
+  const lat0 = codifica(g, sorgente, vae, mp)
   const lat = r(g.add('SetLatentNoiseMask', { samples: lat0, mask: mLatente }))
   const dd = r(g.add('DifferentialDiffusion', { model, strength: 1 }))
   const forza = q.forza ?? 1
-  const passi = passiPer(q.passi, forza)
+  const passi = passiPer(q.passi, forza, minimo)
   const ks = campiona(g, q, dd, enc, lat, passi, forza)
-  const fatto = sviluppa(g, { ...q, trasparente: false }, ks, vae)
+  // il doppio passaggio nel VAE sposta un filo i colori: si misurano appena fuori dalla zona e si rimettono a posto
+  const fatto = r(g.add('DaProdAccordaColori', { image: sviluppa(g, { ...q, trasparente: false }, ks, vae, mp), reference: grande, mask: mDura, strength: 1 }))
   const indietro = r(g.add('ImageScale', { image: fatto, upscale_method: 'lanczos', width: box.w, height: box.h, crop: 'disabled' }, 'Incollo'))
   // bordo morbido alla grandezza originale
   const sfuma = Math.max(0, Math.min(31, Math.round(q.sfuma ?? (q.modalita === 'espandi' ? 24 : 10))))
@@ -323,5 +388,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   }
   const finale = r(g.add('ImageCompositeMasked', { destination: foto, source: indietro, x: box.x, y: box.y, resize_source: false, mask: mFin }))
   const uscita = salva(g, finale, prefisso)
-  return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: (box.tw * box.th) / 1048576, passi }
+  // l'anteprima si posa sulla foto di partenza: per Espandi la tela comincia prima dei bordi
+  const b0 = q.modalita === 'espandi' ? q.bordi || { sinistra: 0, sopra: 0, destra: 0, sotto: 0 } : { sinistra: 0, sopra: 0 }
+  const area = { x: box.x - b0.sinistra, y: box.y - b0.sopra, w: box.w, h: box.h }
+  return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi, area }
 }

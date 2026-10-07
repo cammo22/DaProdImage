@@ -5,10 +5,12 @@ import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
+import { scaricaTurbo, useTurbo } from '../componenti/Turbo'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 
 export function Impostazioni(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
+  const turbo = useTurbo()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
@@ -59,6 +61,7 @@ export function Impostazioni(): JSX.Element {
     </div>
   )
 
+  const vramGB = motore.vramTotale ? motore.vramTotale / 1073741824 : imp.vramMB ? imp.vramMB / 1024 : 0
   const vramUsata = motore.vramTotale && motore.vramLibera !== undefined ? 1 - motore.vramLibera / motore.vramTotale : 0
 
   return (
@@ -106,8 +109,48 @@ export function Impostazioni(): JSX.Element {
         </div>
 
         <div className="gruppo">
-          <h2>PRESTAZIONI (8 GB DI VRAM)</h2>
+          <h2>PRESTAZIONI E MEMORIA</h2>
           <div className="pannello">
+            <div className="voce">
+              <div className="et">
+                <b>Profilo della scheda video</b>
+                <small>
+                  {imp.memoria === 'auto'
+                    ? `Auto: ${vramGB ? `${vramGB.toFixed(1)} GB → ${vramGB < 6.84 ? '6 GB' : vramGB < 13.7 ? '8-12 GB' : '16 GB+'}` : 'si decide quando parte il motore'}`
+                    : '6 GB: VAE a tessere e margine di VRAM fisso; 8-12 GB: a tessere solo oltre i 2 MP'}
+                </small>
+              </div>
+              <Segmenti
+                valore={imp.memoria}
+                cambia={(memoria) => salva({ memoria })}
+                voci={[{ id: 'auto', nome: 'Auto' }, { id: 'bassa', nome: '6 GB' }, { id: 'normale', nome: '8-12 GB' }, { id: 'alta', nome: '16 GB+' }]}
+              />
+            </div>
+            <div className="voce">
+              <div className="et"><b>Turbo (8 passi)</b><small>Il LoRA Turbo8: circa 5 volte più veloce. Si sceglie da Qualità in Crea e Modifica</small></div>
+              <div className="riga">
+                {turbo.presente ? (
+                  <span className="distintivo si">✓ pronto · {imp.loraTurbo}</span>
+                ) : turbo.dl?.stato === 'in corso' || turbo.dl?.stato === 'verifica' ? (
+                  <span className="piccolo tenue">Scarico… {turbo.dl.totali ? Math.round((turbo.dl.ricevuti / turbo.dl.totali) * 100) : 0}%</span>
+                ) : (
+                  <button className="btn piccolo primario" onClick={() => void scaricaTurbo()}><I.fulmine /> Scarica il Turbo (~1,4 GB)</button>
+                )}
+              </div>
+            </div>
+            <div className="voce">
+              <div className="et"><b>Accelerazione fp16</b><small>--fast fp16_accumulation: qualche secondo in meno sulle RTX, qualità quasi uguale</small></div>
+              <Interruttore acceso={imp.veloce} cambia={(veloce) => salva({ veloce })}>{imp.veloce ? 'Accesa' : 'Spenta'}</Interruttore>
+            </div>
+            <div className="voce" style={{ display: 'block' }}>
+              <div className="avviso-box" style={{ marginTop: 0 }}>
+                <b>Ci mette minuti per una foto?</b> Su Windows, quando la VRAM finisce, il driver NVIDIA continua nella RAM
+                del PC e tutto va 5-10 volte più piano senza dare errori. Apri <i>Pannello di controllo NVIDIA → Gestisci
+                impostazioni 3D → Impostazioni globali</i> e metti <i>Criterio di fallback della memoria di sistema CUDA</i> su
+                <b> Preferisci nessun fallback</b>: così il motore sposta lui i pezzi in RAM, molto più in fretta. Poi: Turbo,
+                profilo 6 GB se la scheda è piccola, e chiudi browser e giochi che usano la GPU.
+              </div>
+            </div>
             <div className="voce">
               <div className="et"><b>Cache KV di Qwen 2.1</b><small>Riusa il prompt fra un passo e l'altro. Auto = VRAM libera, poi RAM.</small></div>
               <Segmenti valore={imp.cacheKV} cambia={(cacheKV) => salva({ cacheKV })} voci={[{ id: 'auto', nome: 'Auto' }, { id: 'gpu', nome: 'GPU' }, { id: 'cpu', nome: 'RAM' }, { id: 'off', nome: 'Spenta' }]} />

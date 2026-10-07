@@ -1,8 +1,8 @@
 {
   "name": "daprod-image",
   "productName": "DaProd Image",
-  "version": "0.1.0",
-  "description": "DaProd Image: crea e modifica foto con Qwen-Image-2.1 sul tuo PC (CUDA, 8 GB di VRAM). Zone, LoRA con un clic, galleria.",
+  "version": "0.2.0",
+  "description": "DaProd Image: crea e modifica foto con Qwen-Image-2.1 sul tuo PC (CUDA, da 6 GB di VRAM). Turbo a 8 passi, preset per poster e infografiche, zone con anteprima dal vivo, LoRA con un clic, galleria.",
   "author": "DaProd",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/cammo22/DaProdImage.git" },

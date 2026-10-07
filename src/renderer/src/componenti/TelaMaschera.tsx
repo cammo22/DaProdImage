@@ -1,10 +1,20 @@
 // La tela della pagina Modifica: la foto, e sopra la maschera che si disegna (pennello, gomma,
 // rettangolo, lazo). Rotella = zoom, spazio o tasto centrale = sposta. La maschera ha la
 // grandezza vera della foto, così combacia al pixel con quello che riceve il motore.
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, type JSX, type Ref } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type JSX, type ReactNode, type Ref } from 'react'
 import type { Bordi, Riquadro } from '@shared/tipi'
 
 export type Strumento = 'pennello' | 'gomma' | 'rettangolo' | 'lazo' | 'mano'
+
+/** l'anteprima dal vivo di un lavoro, posata sulla foto: area in pixel della foto (per Espandi esce dai bordi) */
+export interface AnteprimaTela {
+  src?: string
+  area: Riquadro
+  /** la maschera (bianco = zona): l'anteprima si vede solo lì dentro */
+  maschera?: string
+  /** Espandi: l'anteprima sta sotto la foto e si vede solo fuori */
+  sotto?: boolean
+}
 
 export interface ComandiTela {
   esporta(): { dataUrl: string; riquadro: Riquadro } | null
@@ -27,6 +37,8 @@ interface Props {
   bordi?: Bordi
   cambiaMaschera?: (c: boolean) => void
   cambiaDimensione?: (d: number) => void
+  anteprima?: AnteprimaTela
+  children?: ReactNode
   ref?: Ref<ComandiTela>
 }
 
@@ -321,6 +333,8 @@ export function TelaMaschera(p: Props): JSX.Element {
     })
   }
 
+  const an = p.anteprima
+  const posto = an ? { left: an.area.x, top: an.area.y, width: an.area.w, height: an.area.h } : undefined
   const b = p.bordi
   const classi = ['tela', strumento === 'mano' || !p.disegna ? 'mano' : '', trascina ? 'trascina' : ''].join(' ')
   return (
@@ -346,8 +360,20 @@ export function TelaMaschera(p: Props): JSX.Element {
         />
       ) : null}
       <div className="strato" style={{ transform: `translate(${vista.x}px, ${vista.y}px) scale(${vista.s})`, width: p.larghezza, height: p.altezza }}>
+        {an?.sotto && an.src && <img className="anteprima-viva" src={an.src} style={posto} draggable={false} alt="" />}
         <img src={p.url} width={p.larghezza} height={p.altezza} draggable={false} alt="" />
+        {an && !an.sotto && an.src && (an.maschera ? (
+          <div
+            className="velo-anteprima"
+            style={{ width: p.larghezza, height: p.altezza, maskImage: `url("${an.maschera}")`, maskMode: 'luminance', maskSize: '100% 100%', maskRepeat: 'no-repeat' }}
+          >
+            <img className="anteprima-viva" src={an.src} style={posto} draggable={false} alt="" />
+          </div>
+        ) : (
+          <img className="anteprima-viva" src={an.src} style={posto} draggable={false} alt="" />
+        ))}
         <canvas ref={tela} className="maschera" style={{ width: p.larghezza, height: p.altezza, display: p.disegna ? 'block' : 'none' }} />
+        {an && <div className="area-lavoro" style={{ ...posto, borderWidth: 2 / vista.s }} />}
       </div>
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
         {rett && (
@@ -368,6 +394,7 @@ export function TelaMaschera(p: Props): JSX.Element {
       {cursore && p.disegna && (strumento === 'pennello' || strumento === 'gomma') && (
         <div className="pennello" style={{ left: vista.x + cursore.x * vista.s, top: vista.y + cursore.y * vista.s, width: p.dimensione * vista.s, height: p.dimensione * vista.s }} />
       )}
+      {p.children}
       {p.disegna && (
         <div className="aiuto-tela">
           Tasto destro o Alt = cancella · Rotella = zoom · Spazio = sposta · Shift+rotella = grandezza pennello

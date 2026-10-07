@@ -4,10 +4,10 @@ import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bor
 import { api } from './api'
 
 export type Pagina = 'crea' | 'modifica' | 'galleria' | 'lora' | 'impostazioni'
-export type Qualita = 'bozza' | 'alta' | 'massima'
+export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
 export type ModoModifica = 'tutta' | 'zona' | 'espandi'
 
-export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, massima: 50 }
+export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
 
 export interface FotoBase {
   percorso: string
@@ -21,7 +21,8 @@ export interface StatoCrea {
   prompt: string
   negativo: string
   formato: string
-  mp: number
+  /** risoluzione: il lato corto in pixel (256p … 2048, il massimo nativo) */
+  ris: number
   qualita: Qualita
   quante: number
   seed: number
@@ -30,6 +31,10 @@ export interface StatoCrea {
   cfg: number
   sampler: string
   scheduler: string
+  /** il preset scelto a sinistra ('' = libero) e i suoi campi */
+  preset: string
+  stile: string
+  campi: Record<string, string>
 }
 
 export interface StatoModifica {
@@ -46,6 +51,8 @@ export interface StatoModifica {
   contesto: number
   ritaglia: boolean
   segnaZona: boolean
+  /** riempie la zona coi colori attorno prima di ridisegnarla (per rimuovere) */
+  riempi: boolean
   sfuma: number
   allarga: number
   bordi: Bordi
@@ -100,12 +107,19 @@ const leggiLista = <T,>(k: string): T[] => {
 }
 
 const CREA0: StatoCrea = {
-  prompt: '', negativo: '', formato: '1:1', mp: 1, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
-  cfg: 1, sampler: 'euler', scheduler: 'simple'
+  prompt: '', negativo: '', formato: '1:1', ris: 1024, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
+  cfg: 1, sampler: 'euler', scheduler: 'simple', preset: '', stile: '', campi: {}
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
-  ritaglia: true, segnaZona: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false
+  ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false
+}
+
+/** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
+function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
+  const { mp, ...resto } = c
+  // appena si salva, il campo mp sparisce: la conversione avviene una volta sola
+  return mp ? { ...resto, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : resto
 }
 
 let idAvviso = 0
@@ -117,7 +131,7 @@ export const usaStato = create<Stato>((set, get) => ({
   lavori: [],
   lore: [],
   loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
-  crea: leggiLocale('dpi-crea', CREA0),
+  crea: daVecchio(leggiLocale('dpi-crea', CREA0)),
   modifica: { ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [] },
   codaAperta: false,
   avvisi: [],

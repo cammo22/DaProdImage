@@ -5,7 +5,7 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { InfoMotore } from '@shared/tipi'
 import { COMFY, ENTRATA, LOG, PYTHON, TEMP, USCITA, UTENTE_COMFY, assicura } from '../percorsi'
-import { impostazioni } from '../impostazioni'
+import { impostazioni, profiloMemoria, salvaImpostazioni } from '../impostazioni'
 import { motoreInstallato } from '../installa/installatore'
 
 let proc: ChildProcess | null = null
@@ -68,6 +68,9 @@ export async function aggiornaVram(): Promise<void> {
     const r = await fetch(`http://${indirizzo()}/system_stats`)
     const j = (await r.json()) as { system: { comfyui_version: string }; devices: { name: string; vram_total: number; vram_free: number }[] }
     const d = j.devices[0]
+    // la VRAM della scheda si ricorda: serve a scegliere il profilo di memoria prima del prossimo avvio
+    const mb = d?.vram_total ? Math.round(d.vram_total / 1048576) : 0
+    if (mb && Math.abs(mb - impostazioni().vramMB) > 64) salvaImpostazioni({ vramMB: mb })
     cambia({
       vramTotale: d?.vram_total,
       vramLibera: d?.vram_free,
@@ -103,7 +106,11 @@ export function avviaMotore(): Promise<void> {
       '--preview-method', imp.anteprimaLive ? 'auto' : 'none',
       '--preview-size', '640'
     ]
-    if (imp.riservaVram > 0) args.push('--reserve-vram', String(imp.riservaVram))
+    // 6 GB: un margine fisso perché il motore scarichi lui i pezzi in RAM, invece di lasciare che il driver
+    // di Windows "allarghi" la VRAM nella RAM condivisa (lì tutto va 5-10 volte più piano)
+    const riserva = imp.riservaVram > 0 ? imp.riservaVram : profiloMemoria() === 'bassa' ? 0.6 : 0
+    if (riserva > 0) args.push('--reserve-vram', String(riserva))
+    if (imp.veloce && !/--fast\b/.test(imp.argomentiExtra)) args.push('--fast', 'fp16_accumulation')
     if (imp.argomentiExtra.trim()) args.push(...imp.argomentiExtra.trim().split(/\s+/))
     aggiungiRiga('> python ' + args.join(' '))
     const p = spawn(PYTHON, args, {
