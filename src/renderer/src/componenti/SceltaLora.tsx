@@ -29,7 +29,9 @@ export function Copertina({ l, grande }: { l: InfoLora; grande?: boolean }): JSX
 }
 
 export function SceltaLora(): JSX.Element {
-  const { lore, loraAttive, setLoraAttive, toggleLora, vai } = usaStato()
+  const { lore: tutte, loraAttive, setLoraAttive, toggleLora, vai, imp } = usaStato()
+  // il Turbo si accende dalla Qualità, non da qui
+  const lore = tutte.filter((l) => l.file !== imp?.loraTurbo)
   const [aperto, setAperto] = useState(false)
   const rif = useRef<HTMLDivElement>(null)
   useEffect(() => {

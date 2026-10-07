@@ -97,7 +97,8 @@ export function statoModelli(cartella = impostazioni().cartellaModelli): StatoVo
     const p = join(cartella, v.cartella, v.file)
     let presente = false
     try {
-      presente = statSync(p).size === v.byte
+      const n = statSync(p).size
+      presente = v.circa ? n > v.byte * 0.4 : n === v.byte
     } catch {
       /* manca */
     }
@@ -221,7 +222,7 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
   const passi: PassoSetup[] = [
     { id: 'python', titolo: 'Python ' + v.python, stato: 'attesa' },
     { id: 'comfyui', titolo: `Motore ComfyUI ${v.comfyui.versione}`, stato: 'attesa' },
-    { id: 'nodi', titolo: 'Nodi GGUF per Qwen-Image 2.1', stato: 'attesa' },
+    { id: 'nodi', titolo: 'Nodi GGUF e nodi DaProd', stato: 'attesa' },
     { id: 'pacchetti', titolo: 'PyTorch CUDA e pacchetti', stato: 'attesa' },
     { id: 'modelli', titolo: 'Modelli', stato: 'attesa' },
     { id: 'prova', titolo: 'Prova del motore', stato: 'attesa' }
@@ -293,7 +294,7 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
     }
     if (segnale.aborted) throw new Error('annullato')
 
-    // 3. i nostri nodi (ComfyUI-GGUF con la correzione)
+    // 3. i nostri nodi (ComfyUI-GGUF con la correzione, DaProd-Nodi per le zone)
     attuale = 'nodi'
     inizia('nodi', 'copio i nodi…')
     for (const n of readdirSync(NODI)) {

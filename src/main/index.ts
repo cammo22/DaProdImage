@@ -96,7 +96,7 @@ function registraIpc(): void {
   gestisci('impostazioni:salva', async (m: Partial<Impostazioni>) => {
     const prima = impostazioni()
     const nuove = salvaImpostazioni(m)
-    const motore = ['cartellaModelli', 'anteprimaLive', 'riservaVram', 'argomentiExtra', 'porta'] as const
+    const motore = ['cartellaModelli', 'anteprimaLive', 'riservaVram', 'argomentiExtra', 'porta', 'memoria', 'veloce'] as const
     if (motore.some((k) => k in m && JSON.stringify(m[k]) !== JSON.stringify(prima[k])) && infoMotore().stato === 'pronto') {
       void riavviaMotore().then(() => connetti())
     }
@@ -112,7 +112,7 @@ function registraIpc(): void {
     const ok = await installa(opz, (passi, riga) => invia('setup', passi, riga), async () => {
       await avviaEMotore()
       const nodi = await nodiDisponibili()
-      for (const n of ['UnetLoaderGGUF', 'TextEncodeQwenImage21', 'QwenImage21Cache', 'DifferentialDiffusion'])
+      for (const n of ['UnetLoaderGGUF', 'TextEncodeQwenImage21', 'QwenImage21Cache', 'DifferentialDiffusion', 'DaProdRiempiZona', 'DaProdAccordaColori'])
         if (!nodi[n]) throw new Error(`al motore manca il nodo ${n}`)
     })
     return ok

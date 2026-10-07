@@ -57,6 +57,8 @@ export interface Richiesta {
   ritaglia?: boolean
   /** zona: dà al modello anche la zona segnata in rosso */
   segnaZona?: boolean
+  /** zona: prima di ridisegnare riempie la zona coi colori attorno (per "rimuovi": il modello non vede più l'oggetto) */
+  riempi?: boolean
   /** zona/varia/rifinisci: quanto ridisegnare (denoise 0..1) */
   forza?: number
   /** zona: allarga la maschera (px) e sfuma il bordo (px) */
@@ -67,6 +69,8 @@ export interface Richiesta {
   /** rifinisci/ingrandisci: di quanto ingrandire */
   fattore?: number
   lora: LoraAttiva[]
+  /** Turbo: LoRA di distillazione a 8 passi (CFG 1), circa 5 volte più veloce */
+  turbo?: boolean
   trasparente?: boolean
   /** quante immagini fare (seed diversi) */
   quante: number
@@ -96,6 +100,12 @@ export interface Lavoro {
   /** secondi stimati alla fine */
   stima?: number
   anteprima?: string
+  /** dove va l'anteprima, in pixel della foto di partenza (la zona ritagliata; per Espandi esce dai bordi) */
+  areaAnteprima?: Riquadro
+  /** secondi per passo misurati in questo lavoro (per accorgersi se la scheda sta andando in RAM) */
+  secondiPasso?: number
+  /** megapixel su cui lavora il campionatore */
+  megapixel?: number
   risultati: string[]
   testo?: string
   errore?: string
@@ -174,6 +184,14 @@ export interface Impostazioni {
   tokenHF: string
   /** secondi per passo misurati, per megapixel (chiave = mp arrotondati a 0.25) */
   tempi: Record<string, number>
+  /** il LoRA Turbo (8 passi) dentro models/loras */
+  loraTurbo: string
+  /** profilo della memoria: auto = dalla VRAM della scheda; bassa = 6 GB; normale = 8-12 GB; alta = 16 GB e più */
+  memoria: 'auto' | 'bassa' | 'normale' | 'alta'
+  /** VRAM vista l'ultima volta (MB), per decidere il profilo prima che parta il motore */
+  vramMB: number
+  /** --fast di ComfyUI (accumulo fp16 sulle RTX): più veloce, qualità quasi uguale */
+  veloce: boolean
 }
 
 export type StatoMotore = 'spento' | 'avvio' | 'pronto' | 'errore' | 'non installato'
@@ -201,6 +219,8 @@ export interface VoceCatalogo {
   sha256?: string
   consigliato?: boolean
   necessario?: boolean
+  /** la dimensione è indicativa (file di terzi senza sha256 noto): basta che ci sia */
+  circa?: boolean
 }
 
 export interface StatoVoce extends VoceCatalogo {

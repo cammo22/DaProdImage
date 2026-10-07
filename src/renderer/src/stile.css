@@ -136,6 +136,7 @@ input[type='number'] { width: 90px; }
 .segmenti { display: flex; background: #0f0b1c; border: 1px solid var(--bordo); border-radius: 10px; padding: 3px; gap: 3px; }
 .segmenti button { flex: 1; border: 0; background: transparent; color: var(--tenue); border-radius: 7px; padding: 6px 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .segmenti button small { font-size: 11.5px; color: var(--spento); font-weight: 500; }
+.segmenti button svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 1px; }
 .segmenti button:hover { color: var(--testo); }
 .segmenti button.su { background: var(--rialzo); color: var(--oro); box-shadow: inset 0 0 0 1px var(--bordo2); }
 .segmenti button.su small { color: var(--tenue); }
@@ -148,7 +149,12 @@ input[type='number'] { width: 90px; }
 .chip.su { color: #1d1300; background: var(--oro); border-color: var(--oro); }
 .chip svg { width: 15px; height: 15px; }
 
-.formati { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.formati { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.risoluzioni { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.risoluzioni .formato { padding: 6px 2px; gap: 0; }
+.risoluzioni .formato b { font-size: 14px; letter-spacing: .3px; }
+.risoluzioni .formato small { font-size: 11px; color: var(--spento); font-weight: 500; }
+.risoluzioni .formato.su small { color: var(--tenue); }
 .formato { border: 1px solid var(--bordo); background: #0f0b1c; border-radius: 9px; padding: 7px 4px 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--tenue); font-size: 12.5px; font-weight: 600; }
 .formato i { display: block; border: 2px solid currentColor; border-radius: 3px; }
 .formato:hover { color: var(--testo); }
@@ -381,3 +387,40 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .menu-tendina .menu button { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 7px; cursor: pointer; color: var(--testo); font-weight: 600; }
 .menu-tendina .menu button:hover { background: var(--pannello2); }
 .menu-tendina .menu button small { display: block; color: var(--spento); font-weight: 500; }
+
+/* ---------- preset (Crea) ---------- */
+.barra-preset {
+  width: 84px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 16px;
+  overflow-y: auto; overflow-x: hidden; background: #100b1d; border-right: 1px solid #1d1636;
+}
+.barra-preset::-webkit-scrollbar { width: 4px; }
+.barra-preset button {
+  width: 70px; min-height: 56px; flex: none; border: 1px solid transparent; background: transparent; border-radius: 11px; color: var(--tenue); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11.5px; font-weight: 600; padding: 6px 2px; line-height: 1.1; text-align: center;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.barra-preset button svg { width: 22px; height: 22px; }
+.barra-preset button:hover { background: var(--pannello); color: var(--testo); }
+.barra-preset button.su { color: #1d1300; background: linear-gradient(160deg, #ffe27a, var(--oro) 50%, var(--oro2)); border-color: #ffe9a3; box-shadow: 0 6px 18px -8px rgba(255, 196, 40, .6); }
+.barra-preset .riga-sep { width: 40px; height: 1px; background: var(--bordo); margin: 4px 0; flex: none; }
+.scheda-preset { background: linear-gradient(180deg, rgba(255,213,74,.07), transparent 70%); }
+.scheda-preset h3 { color: var(--oro); font-size: 13px; }
+.scheda-preset h3 .ic svg { width: 18px; height: 18px; vertical-align: -4px; }
+.scheda-preset h3 .dx .btn { height: 24px; font-size: 12.5px; text-transform: none; letter-spacing: 0; }
+.campo-preset { display: flex; flex-direction: column; gap: 4px; }
+.campo-preset > span { font-size: 13px; color: var(--tenue); font-weight: 600; }
+.campo-preset input, .campo-preset textarea { font-size: 14.5px; padding: 7px 10px; }
+
+/* ---------- Turbo ---------- */
+.turbo-box { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,213,74,.45); background: linear-gradient(135deg, rgba(255,213,74,.10), rgba(255,61,242,.06)); }
+.turbo-box b { color: var(--oro); }
+.turbo-ic { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--oro); color: #1d1300; }
+.turbo-ic svg { width: 18px; height: 18px; }
+
+/* ---------- anteprima dal vivo sulla tela (Modifica) ---------- */
+.tela .strato img.anteprima-viva { object-fit: fill; image-rendering: auto; animation: appare .35s; }
+.tela .strato .velo-anteprima { position: absolute; left: 0; top: 0; pointer-events: none; }
+.tela .area-lavoro { position: absolute; border: 2px dashed var(--oro); border-radius: 2px; pointer-events: none; box-sizing: border-box; animation: pulsa 1.4s infinite; }
+.in-corso-tela { position: absolute; left: 0; right: 0; bottom: 0; height: 0; z-index: 5; }
+.in-corso-tela .sopra { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(13, 9, 23, .86); backdrop-filter: blur(8px); border: 1px solid var(--bordo2); border-radius: 12px; padding: 10px 16px; min-width: 340px; max-width: min(560px, 92%); display: flex; flex-direction: column; gap: 7px; cursor: default; }
+@keyframes appare { from { opacity: .4; } }

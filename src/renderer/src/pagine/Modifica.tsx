@@ -1,15 +1,16 @@
 // Modifica: tutta la foto, solo una zona (la segni col pennello) o allargarla oltre i bordi.
 import { useEffect, useRef, useState, type JSX } from 'react'
-import { usaStato, attesiModifica, PASSI_QUALITA, type ModoModifica, type Qualita, type FotoBase } from '../stato'
+import { usaStato, attesiModifica, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
-import { TelaMaschera, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
+import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
 import { PrimaDopo } from '../componenti/PrimaDopo'
-import { InCorso } from './Crea'
+import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
+import { PannelloLavoro } from './Crea'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
-import { SISTEMA_MIGLIORA_MODIFICA, richiestaBase } from '../azioni'
+import { SISTEMA_MIGLIORA_MODIFICA, perQualita, richiestaBase } from '../azioni'
 import type { Bordi } from '@shared/tipi'
 
 interface Rapida {
@@ -18,6 +19,8 @@ interface Rapida {
   completa?: boolean // il prompt va finito dall'utente (finisce con "…")
   trasparente?: boolean
   segna?: boolean
+  /** riempie la zona prima (rimuovere: il modello non vede più l'oggetto) */
+  riempi?: boolean
   forza?: number
 }
 
@@ -28,6 +31,9 @@ const RAPIDE_TUTTA: Rapida[] = [
   { nome: 'Colora B/N', prompt: 'Colorize this black and white photo with natural, realistic colors. Keep everything else identical.' },
   { nome: 'Luce da studio', prompt: 'Relight the photo with soft professional studio lighting and a natural color grade. Keep the subject, pose and composition identical.' },
   { nome: 'Più dettagli', prompt: 'Enhance the image quality: sharper details, cleaner textures, no noise or compression artifacts. Keep everything identical.' },
+  { nome: 'Cambia testo…', prompt: 'Replace the text "…" with "", keeping the same font, size, color, perspective and position.', completa: true },
+  { nome: 'Traduci testo…', prompt: 'Translate all the text in the image into …, keeping the same fonts, layout, colors and style. Change nothing else.', completa: true },
+  { nome: 'Togli scritte', prompt: 'Remove all text, captions, logos and watermarks from the image, filling those areas naturally. Keep everything else identical.' },
   { nome: 'Sorriso', prompt: 'Make the person smile naturally. Keep the identity, hair, clothes and everything else unchanged.' },
   { nome: 'Anime', prompt: 'Transform this image into a high quality anime illustration style. Keep the composition and the subject.' },
   { nome: 'Acquerello', prompt: 'Transform this image into a delicate watercolor painting. Keep the composition and the subject.' },
@@ -36,7 +42,8 @@ const RAPIDE_TUTTA: Rapida[] = [
   { nome: 'Foto realistica', prompt: 'Turn this into a photorealistic photograph with natural lighting and real textures. Keep the composition and the subject.' }
 ]
 const RAPIDE_ZONA: Rapida[] = [
-  { nome: 'Rimuovi oggetto', prompt: 'Remove the object completely and fill the area with the surrounding background so it looks natural and untouched.', segna: true },
+  { nome: 'Rimuovi oggetto', prompt: 'Remove the object completely and fill the area with the surrounding background so it looks natural and untouched.', segna: true, riempi: true },
+  { nome: 'Scrivi testo…', prompt: 'Write the text "…" in this area, with lettering that matches the style, perspective and lighting of the image.', completa: true },
   { nome: 'Sostituisci con…', prompt: 'Replace it with …', completa: true, segna: true },
   { nome: 'Cambia colore…', prompt: 'Change its color to …', completa: true },
   { nome: 'Aggiungi…', prompt: 'Add … in this area, matching the lighting and perspective of the scene', completa: true, segna: true },
@@ -56,14 +63,27 @@ export function Modifica(): JSX.Element {
   const [confronto, setConfronto] = useState(false)
   const [scrivendo, setScrivendo] = useState(false)
   const [rapidaTrasp, setRapidaTrasp] = useState(false)
+  const turbo = useTurbo()
 
   const base = m.base
   const indice = base ? m.versioni.findIndex((v) => v.percorso === base.percorso) : -1
   const precedente = indice > 0 ? m.versioni[indice - 1] : null
-  const passi = PASSI_QUALITA[m.qualita]
+  const { passi } = perQualita(m.qualita)
   const inCorso = lavori.find((l) => l.stato === 'in corso' && attesiModifica.has(l.id))
   const inAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiModifica.has(l.id)).length
-  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' ? Math.max(8, Math.round(passi * m.forza)) : passi) * m.quante
+  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * m.forza)) : passi) * m.quante
+
+  // l'anteprima dal vivo si posa sulla foto (se il lavoro è su questa foto): la zona si vede nascere al suo posto
+  const qi = inCorso?.richiesta
+  const anteprima: AnteprimaTela | undefined =
+    inCorso && qi && base && qi.immagini[0] === base.percorso && inCorso.areaAnteprima
+      ? {
+          src: inCorso.anteprima,
+          area: inCorso.areaAnteprima,
+          maschera: qi.modalita === 'zona' && qi.maschera ? urlFile(qi.maschera) : undefined,
+          sotto: qi.modalita === 'espandi'
+        }
+      : undefined
 
   // pennello proporzionato alla foto
   useEffect(() => {
@@ -141,7 +161,12 @@ export function Modifica(): JSX.Element {
   })
 
   const usaRapida = (r: Rapida): void => {
-    setModifica({ prompt: r.prompt, ...(r.segna !== undefined ? { segnaZona: r.segna } : {}), ...(r.forza ? { forza: r.forza } : { forza: m.modo === 'zona' ? 1 : m.forza }) })
+    setModifica({
+      prompt: r.prompt,
+      ...(r.segna !== undefined ? { segnaZona: r.segna } : {}),
+      ...(m.modo === 'zona' ? { riempi: !!r.riempi } : {}),
+      ...(r.forza ? { forza: r.forza } : { forza: m.modo === 'zona' ? 1 : m.forza })
+    })
     setRapidaTrasp(!!r.trasparente)
     if (r.completa) {
       setTimeout(() => {
@@ -174,13 +199,17 @@ export function Modifica(): JSX.Element {
       avvisa('Scrivi cosa cambiare (o scegli un\'azione rapida)', 'errore')
       return
     }
+    if (s.qualita === 'turbo' && !turbo.presente) {
+      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Area di lavoro), o scegli Alta', 'errore')
+      return
+    }
     const q = {
       ...richiestaBase(),
       modalita: (s.modo === 'tutta' ? 'modifica' : s.modo) as 'modifica' | 'zona' | 'espandi',
       prompt: conParoleLora(s.prompt.trim()),
       immagini: [s.base.percorso, ...s.riferimenti.map((r) => r.percorso)],
       megapixel: s.mp,
-      passi,
+      ...perQualita(s.qualita),
       quante: s.quante,
       origine: s.base.operaId,
       etichetta: s.prompt.trim().slice(0, 60) || 'Espandi'
@@ -193,7 +222,7 @@ export function Modifica(): JSX.Element {
         return
       }
       const maschera = await api.file.salvaTemp(e.dataUrl)
-      Object.assign(q, { maschera, riquadro: e.riquadro, contesto: s.contesto, ritaglia: s.ritaglia, segnaZona: s.segnaZona, forza: s.forza, sfuma: s.sfuma, allarga: s.allarga })
+      Object.assign(q, { maschera, riquadro: e.riquadro, contesto: s.contesto, ritaglia: s.ritaglia, segnaZona: s.segnaZona, riempi: s.riempi, forza: s.forza, sfuma: s.sfuma, allarga: s.allarga })
     }
     if (s.modo === 'espandi') {
       const b = s.bordi
@@ -319,11 +348,7 @@ export function Modifica(): JSX.Element {
               </div>
             </div>
           </div>
-        ) : inCorso && !confronto ? (
-          <div className="tela" style={{ display: 'grid', placeItems: 'center', padding: 20 }}>
-            <InCorso l={inCorso} ar={`${base.larghezza} / ${base.altezza}`} />
-          </div>
-        ) : confronto && precedente ? (
+        ) : confronto && precedente && !inCorso ? (
           <div className="tela" style={{ display: 'grid', placeItems: 'center', padding: 20, cursor: 'default' }}>
             <PrimaDopo prima={urlFile(precedente.percorso)} dopo={urlFile(base.percorso)} stile={{ maxHeight: 'calc(100vh - 230px)', maxWidth: '100%' }} />
           </div>
@@ -335,11 +360,18 @@ export function Modifica(): JSX.Element {
             altezza={base.altezza}
             strumento={strumento}
             dimensione={pennello}
-            disegna={disegna}
-            bordi={m.modo === 'espandi' ? m.bordi : undefined}
+            disegna={disegna && !inCorso}
+            bordi={qi?.modalita === 'espandi' && anteprima ? qi.bordi : m.modo === 'espandi' ? m.bordi : undefined}
             cambiaMaschera={setHaMaschera}
             cambiaDimensione={setPennello}
-          />
+            anteprima={anteprima}
+          >
+            {inCorso && (
+              <div className="in-corso-tela" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+                <PannelloLavoro l={inCorso} />
+              </div>
+            )}
+          </TelaMaschera>
         )}
 
         {m.versioni.length > 0 && (
@@ -447,6 +479,9 @@ export function Modifica(): JSX.Element {
               {m.ritaglia && <Cursore etichetta="Contesto attorno" valore={m.contesto} min={0.1} max={2} passo={0.1} formato={(v) => `${v.toFixed(1)}×`} cambia={(contesto) => setModifica({ contesto })} titolo="Quanto della foto attorno alla zona vede il modello" />}
               <Cursore etichetta="Bordo morbido" valore={m.sfuma} min={0} max={31} formato={(v) => `${v}px`} cambia={(sfuma) => setModifica({ sfuma })} />
               <Cursore etichetta="Allarga la zona" valore={m.allarga} min={0} max={64} formato={(v) => `${v}px`} cambia={(allarga) => setModifica({ allarga })} />
+              <Interruttore acceso={m.riempi} cambia={(riempi) => setModifica({ riempi })} sotto="Per rimuovere: la zona si spalma coi colori attorno prima di ridisegnarla, così il modello non rifà l'oggetto">
+                Riempi prima la zona
+              </Interruttore>
               <Interruttore acceso={m.segnaZona} cambia={(segnaZona) => setModifica({ segnaZona })} sotto="Sperimentale: il modello vede la zona contornata di rosso (aiuta su 'rimuovi' e 'aggiungi')">
                 Mostra la zona al modello
               </Interruttore>
@@ -459,9 +494,10 @@ export function Modifica(): JSX.Element {
               valore={m.mp}
               cambia={(mp) => setModifica({ mp })}
               voci={[
+                { id: 0.25, nome: '0,25', sotto: 'lampo', titolo: '0,25 MP (512×512): per provare al volo' },
+                { id: 0.5, nome: '0,5', sotto: 'veloce' },
                 { id: 1, nome: '1 MP', sotto: 'consigliato' },
-                { id: 1.5, nome: '1,5 MP' },
-                { id: 2, nome: '2 MP', sotto: 'più dettaglio' },
+                { id: 2, nome: '2 MP', sotto: 'dettaglio' },
                 { id: 4, nome: '4 MP', sotto: 'lento' }
               ]}
             />
@@ -470,11 +506,13 @@ export function Modifica(): JSX.Element {
                 valore={m.qualita}
                 cambia={(qualita) => setModifica({ qualita })}
                 voci={[
+                  { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi', titolo: 'LoRA Turbo8: circa 5 volte più veloce' },
                   { id: 'bozza', nome: 'Veloce', sotto: '20 passi' },
                   { id: 'alta', nome: 'Alta', sotto: '40 passi' },
                   { id: 'massima', nome: 'Massima', sotto: '50 passi' }
                 ]}
               />
+              {m.qualita === 'turbo' && <AvvisoTurbo />}
             </div>
             <div className="riga spazia" style={{ marginTop: 10 }}>
               <span className="tenue">Quante versioni</span>

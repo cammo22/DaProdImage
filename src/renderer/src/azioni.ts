@@ -1,7 +1,8 @@
 // Le azioni che servono a più pagine: costruire le richieste, aprire una foto in Modifica, rifinire, variare.
 import type { Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
-import { PASSI_QUALITA, usaStato, type FotoBase } from './stato'
+import { PASSI_QUALITA, usaStato, type FotoBase, type Qualita } from './stato'
+import { dimensioniRis } from './util'
 
 export const SISTEMA_MIGLIORA =
   "You are an expert prompt writer for the Qwen-Image 2.1 text-to-image model. Rewrite the user's request (it may be in Italian or any language) as one rich English paragraph of 80-160 words describing the finished image: the main subject and its details, action, setting and background, composition and framing, lighting, color palette, style or medium, and mood. Keep every element, count, color, position and constraint the user gave. Any text that must appear in the image goes inside double quotes, in its original language. No quality tags such as 8K or masterpiece. Output only the paragraph."
@@ -33,6 +34,21 @@ export function richiestaBase(): Richiesta {
   }
 }
 
+/** il LoRA Turbo è fra i LoRA? */
+export function turboPresente(): boolean {
+  const { imp, lore } = usaStato.getState()
+  return !!imp?.loraTurbo && lore.some((l) => l.file === imp.loraTurbo)
+}
+
+/** passi (e Turbo) per una qualità; il Turbo vuole CFG 1, euler, simple */
+export function perQualita(q: Qualita): Pick<Richiesta, 'passi' | 'turbo'> & Partial<Pick<Richiesta, 'cfg' | 'sampler' | 'scheduler'>> {
+  if (q === 'turbo') return { passi: PASSI_QUALITA.turbo, turbo: true, cfg: 1, sampler: 'euler', scheduler: 'simple' }
+  return { passi: PASSI_QUALITA[q], turbo: false }
+}
+
+/** la qualità per i lavori "di servizio" (rifinisci, varia): Turbo se è acceso in Crea */
+const qualitaServizio = (): Qualita => (usaStato.getState().crea.qualita === 'turbo' && turboPresente() ? 'turbo' : 'alta')
+
 export const fotoDaOpera = (o: Opera): FotoBase => ({ percorso: o.file, larghezza: o.larghezza, altezza: o.altezza, operaId: o.id, prompt: o.prompt })
 
 export function apriInModifica(f: FotoBase): void {
@@ -56,7 +72,9 @@ export function rifinisci(o: Opera, fattore?: number, forza?: number): Promise<v
   const { crea } = usaStato.getState()
   const mp = (o.larghezza * o.altezza) / 1048576
   const bozza = o.etichetta === 'Bozza'
-  const f = fattore ?? (bozza ? Math.max(1, Math.sqrt(crea.mp / mp)) : Math.min(2, Math.sqrt(4.2 / mp)))
+  const d = dimensioniRis(crea.formato, crea.ris)
+  const scelta = (d.w * d.h) / 1048576
+  const f = fattore ?? (bozza ? Math.max(1, Math.sqrt(scelta / mp)) : Math.min(2, Math.sqrt(4.2 / mp)))
   return accoda(
     {
       ...richiestaBase(),
@@ -68,7 +86,7 @@ export function rifinisci(o: Opera, fattore?: number, forza?: number): Promise<v
       immagini: [o.file],
       fattore: f,
       forza: forza ?? (bozza ? 0.55 : 0.35),
-      passi: PASSI_QUALITA.alta,
+      ...perQualita(qualitaServizio()),
       trasparente: o.trasparente,
       origine: o.id,
       etichetta: bozza ? 'Rifinita' : `Rifinita ×${f.toFixed(1)}`
@@ -88,6 +106,7 @@ export function varia(o: Opera, forza = 0.6, quante = 2): Promise<void> {
       immagini: [o.file],
       forza,
       quante,
+      ...perQualita(qualitaServizio()),
       trasparente: o.trasparente,
       origine: o.id,
       etichetta: 'Variazione'

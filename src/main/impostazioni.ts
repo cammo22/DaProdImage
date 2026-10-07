@@ -25,7 +25,11 @@ const PREDEFINITE: Impostazioni = {
   installato: false,
   tokenCivitai: '',
   tokenHF: '',
-  tempi: {}
+  tempi: {},
+  loraTurbo: 'turbo8_lora_step2500.safetensors',
+  memoria: 'auto',
+  vramMB: 0,
+  veloce: false
 }
 
 let attuali: Impostazioni | null = null
@@ -58,6 +62,15 @@ export function registraTempo(megapixel: number, secondiPerPasso: number): void 
   const prima = tempi[chiave]
   tempi[chiave] = prima ? prima * 0.6 + secondiPerPasso * 0.4 : secondiPerPasso
   salvaImpostazioni({ tempi })
+}
+
+/** il profilo di memoria da usare: quello scelto, o dalla VRAM della scheda */
+export function profiloMemoria(vramByte?: number): 'bassa' | 'normale' | 'alta' {
+  const imp = impostazioni()
+  if (imp.memoria !== 'auto') return imp.memoria
+  const mb = vramByte ? vramByte / 1048576 : imp.vramMB
+  if (!mb) return 'normale'
+  return mb < 7000 ? 'bassa' : mb < 14000 ? 'normale' : 'alta'
 }
 
 /** stima dei secondi per passo a questa grandezza (dalle misure, o dal conto sui pixel) */

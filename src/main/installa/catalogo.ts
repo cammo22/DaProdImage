@@ -65,6 +65,14 @@ export const CATALOGO: VoceCatalogo[] = [
   },
   // --- LoRA consigliati ---
   {
+    // Turbo8 (chriswritescode): distillazione a 8 passi, CFG 1, euler/simple. Niente sha256 pubblicato: basta che ci sia
+    id: 'lora-turbo', tipo: 'lora', nome: 'Turbo 8 passi (Turbo8)',
+    descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Il modo Turbo di Crea e Modifica.',
+    file: 'turbo8_lora_step2500.safetensors', cartella: 'loras',
+    url: 'https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1/resolve/main/turbo8_lora_step2500.safetensors',
+    byte: 1_360_000_000, circa: true, consigliato: true
+  },
+  {
     id: 'lora-uc', tipo: 'lora', nome: 'Uncensored (abenzerps)',
     descrizione: 'Il LoRA "uncensored" che accompagna il modello.',
     file: 'qwen-image-2.1-uncensored-lora.safetensors', cartella: 'loras', url: UC + 'qwen-image-2.1-uncensored-lora.safetensors',

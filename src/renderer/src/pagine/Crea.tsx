@@ -1,13 +1,16 @@
 // Crea: dal testo all'immagine.
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { usaStato, PASSI_QUALITA, type Qualita } from '../stato'
+import { usaStato, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
-import { FORMATI, dimensioni, durata, normalizza, stimaSecondi } from '../util'
-import { SISTEMA_DESCRIVI, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { BarraPreset, SchedaPreset } from '../componenti/Preset'
+import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
+import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi, troppoLenta } from '../util'
+import { SISTEMA_DESCRIVI, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { presetDa } from '../preset'
 import type { Lavoro, Opera } from '@shared/tipi'
 
 const IDEE = [
@@ -28,6 +31,7 @@ const ar = (f: string): string => {
 
 export function Crea(): JSX.Element {
   const { crea, setCrea, imp, lavori, avvisa } = usaStato()
+  const turbo = useTurbo()
   const [precedente, setPrecedente] = useState<string | null>(null)
   const [scrivendo, setScrivendo] = useState(false)
   const [avanzate, setAvanzate] = useState(false)
@@ -36,9 +40,10 @@ export function Crea(): JSX.Element {
   const [vedoInCorso, setVedoInCorso] = useState(true)
 
   const bozza = crea.qualita === 'bozza'
-  const mpReale = bozza ? Math.max(0.35, crea.mp / 2) : crea.mp
-  const dim = dimensioni(crea.formato, mpReale)
-  const passi = PASSI_QUALITA[crea.qualita]
+  // la bozza lavora a metà dei pixel (lato corto / √2)
+  const dim = dimensioniRis(crea.formato, bozza ? Math.max(256, Math.round(crea.ris / Math.SQRT2)) : crea.ris)
+  const { passi } = perQualita(crea.qualita)
+  const preset = presetDa(crea.preset)
   const stima = stimaSecondi(imp?.tempi, (dim.w * dim.h) / 1048576, passi) * crea.quante
 
   // i lavori di questa pagina (creati, rifiniti, variati)
@@ -70,22 +75,26 @@ export function Crea(): JSX.Element {
       avvisa('Scrivi prima cosa vuoi vedere', 'errore')
       return
     }
+    if (crea.qualita === 'turbo' && !turbo.presente) {
+      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
+      return
+    }
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
       prompt: conParoleLora(crea.prompt.trim()),
       negativo: crea.negativo,
       seed: crea.casuale ? -1 : crea.seed,
-      passi,
       cfg: crea.cfg,
       sampler: crea.sampler,
       scheduler: crea.scheduler,
       larghezza: dim.w,
       altezza: dim.h,
-      megapixel: crea.mp,
+      megapixel: (dim.w * dim.h) / 1048576,
       quante: crea.quante,
       trasparente: crea.trasparente,
-      etichetta: bozza ? 'Bozza' : undefined
+      ...perQualita(crea.qualita),
+      etichetta: bozza ? 'Bozza' : preset ? preset.nome : undefined
     }
     await api.lavori.accoda(q)
     if (crea.quante > 1) avvisa(`${crea.quante} immagini in coda`, 'ok')
@@ -141,18 +150,20 @@ export function Crea(): JSX.Element {
 
   return (
     <div className="pagina">
+      <BarraPreset prima={setPrecedente} />
       <div className="colonna">
         <div className="scorri">
+          <SchedaPreset />
           <div className="sezione">
             <h3>
-              Cosa vuoi vedere
+              {preset ? 'Prompt (lo scrive il preset)' : 'Cosa vuoi vedere'}
               <span className="dx">{crea.prompt.length > 0 && `${crea.prompt.length} car.`}</span>
             </h3>
             <textarea
               value={crea.prompt}
               placeholder="Descrivi l'immagine, anche in italiano. Più dettagli dai (luce, stile, inquadratura), meglio è."
               onChange={(e) => setCrea({ prompt: e.target.value })}
-              style={{ minHeight: 150 }}
+              style={{ minHeight: preset ? 110 : 150 }}
               disabled={scrivendo}
             />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
@@ -186,16 +197,14 @@ export function Crea(): JSX.Element {
                 )
               })}
             </div>
-            <div style={{ marginTop: 10 }}>
-              <Segmenti
-                valore={crea.mp}
-                cambia={(mp) => setCrea({ mp })}
-                voci={[
-                  { id: 1, nome: '1 MP', sotto: 'veloce' },
-                  { id: 2, nome: '2 MP', sotto: 'dettaglio' },
-                  { id: 4, nome: '4 MP', sotto: '2K nativo', titolo: 'Qwen-Image 2.1 genera nativo fino a 2048×2048: più lento su 8 GB' }
-                ]}
-              />
+            <h3 style={{ marginTop: 14 }}>Risoluzione <span className="dx">{((dim.w * dim.h) / 1e6).toFixed(2)} MP{bozza ? ' · bozza a metà pixel' : ''}</span></h3>
+            <div className="risoluzioni">
+              {RISOLUZIONI.map((r) => (
+                <button key={r.id} className={`formato ${crea.ris === r.id ? 'su' : ''}`} onClick={() => setCrea({ ris: r.id })} title={r.titolo}>
+                  <b>{r.nome}</b>
+                  <small>{r.sotto}</small>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -205,11 +214,13 @@ export function Crea(): JSX.Element {
               valore={crea.qualita}
               cambia={(qualita) => setCrea({ qualita })}
               voci={[
-                { id: 'bozza', nome: 'Bozza veloce', sotto: '20 passi, ½ pixel', titolo: 'Per esplorare: poi "Rifinisci" porta la bozza scelta in alta qualità' },
-                { id: 'alta', nome: 'Alta', sotto: '40 passi (standard)' },
+                { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi · 5× veloce', titolo: 'LoRA Turbo8: 8 passi invece di 40, CFG 1. Il modo più veloce, anche su 6 GB' },
+                { id: 'bozza', nome: 'Bozza', sotto: '20 passi, ½ pixel', titolo: 'Per esplorare: poi "Rifinisci" porta la bozza scelta in alta qualità' },
+                { id: 'alta', nome: 'Alta', sotto: '40 passi' },
                 { id: 'massima', nome: 'Massima', sotto: '50 passi' }
               ]}
             />
+            {crea.qualita === 'turbo' && <AvvisoTurbo />}
             {bozza && <div className="piccolo tenue" style={{ marginTop: 8 }}>Esplori più idee in poco tempo; sulla bozza che ti piace premi <b className="oro">Rifinisci</b>.</div>}
           </div>
 
@@ -248,6 +259,7 @@ export function Crea(): JSX.Element {
             </h3>
             {avanzate && (
               <div className="col" style={{ gap: 12 }}>
+                {crea.qualita === 'turbo' && <div className="piccolo oro">Col Turbo CFG, sampler e scheduler restano quelli suoi (1, euler, simple).</div>}
                 <Cursore etichetta="CFG (1 = percorso ufficiale)" valore={crea.cfg} min={1} max={6} passo={0.1} formato={(v) => v.toFixed(1)} cambia={(cfg) => setCrea({ cfg })} />
                 <div className="col" style={{ gap: 4 }}>
                   <span className="piccolo tenue">Prompt negativo {crea.cfg <= 1 && <span className="spento">(conta solo con CFG sopra 1, e raddoppia il tempo)</span>}</span>
@@ -337,26 +349,47 @@ export function Crea(): JSX.Element {
 }
 
 export function InCorso({ l, ar }: { l: Lavoro; ar: string }): JSX.Element {
-  const p = percentuale(l)
   return (
     <div className="in-corso" style={{ width: '100%', height: '100%' }}>
       {l.anteprima ? <img src={l.anteprima} alt="" style={{ width: 'auto', height: 'auto', maxHeight: '100%' }} /> : <div className="attesa-grande" style={{ ['--ar' as string]: ar }} />}
-      <div className="sopra">
-        <div className="riga spazia">
-          <b>{l.fase}</b>
-          <span className="tenue piccolo">
-            {l.fase === 'Disegno' && `${l.passo}/${l.passiTotali} · `}
-            {l.stima ? `~${durata(l.stima)}` : ''}
-          </span>
-        </div>
-        <div className={`barra-progresso ${p === null ? 'indeterminata' : ''}`}>
-          <i style={{ width: `${p ?? 30}%` }} />
-        </div>
-        <div className="riga spazia piccolo spento">
-          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 360 }}>{l.richiesta.etichetta || l.richiesta.prompt}</span>
-          <button className="btn piccolo fantasma" onClick={() => api.lavori.annulla(l.id)}>Annulla</button>
-        </div>
+      <PannelloLavoro l={l} />
+    </div>
+  )
+}
+
+/** fase, passi, barra, tempo che manca e Annulla (sopra l'anteprima di Crea e sulla tela di Modifica) */
+export function PannelloLavoro({ l }: { l: Lavoro }): JSX.Element {
+  const p = percentuale(l)
+  const lenta = troppoLenta(l.secondiPasso, l.megapixel || 1)
+  return (
+    <div className="sopra">
+      <div className="riga spazia">
+        <b>{l.fase}</b>
+        <span className="tenue piccolo">
+          {l.fase === 'Disegno' && `${l.passo}/${l.passiTotali} · `}
+          {l.stima ? `~${durata(l.stima)}` : ''}
+        </span>
       </div>
+      <div className={`barra-progresso ${p === null ? 'indeterminata' : ''}`}>
+        <i style={{ width: `${p ?? 30}%` }} />
+      </div>
+      <div className="riga spazia piccolo spento">
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 360 }}>{l.richiesta.etichetta || l.richiesta.prompt}</span>
+        <button className="btn piccolo fantasma" onClick={() => api.lavori.annulla(l.id)}>Annulla</button>
+      </div>
+      {lenta && <AvvisoLenta secondi={l.secondiPasso!} />}
+    </div>
+  )
+}
+
+/** la scheda va molto più piano del normale: quasi sempre è la VRAM che finisce nella RAM condivisa */
+export function AvvisoLenta({ secondi }: { secondi: number }): JSX.Element {
+  return (
+    <div className="avviso-box" style={{ marginTop: 2, fontSize: 13 }}>
+      <b>{secondi.toFixed(1)} s per passo: molto più lento del normale.</b> Di solito la scheda è piena e Windows usa la RAM.
+      Prova <b>Turbo</b>, una risoluzione più bassa o il profilo <b>6 GB</b>; nel Pannello NVIDIA metti
+      “Criterio di fallback della memoria di sistema CUDA” su <i>Preferisci nessun fallback</i>.{' '}
+      <a href="#" onClick={(e) => { e.preventDefault(); usaStato.getState().vai('impostazioni') }}>Opzioni ↗</a>
     </div>
   )
 }

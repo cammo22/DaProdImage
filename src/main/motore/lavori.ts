@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
-import { impostazioni, registraTempo, stimaPasso } from '../impostazioni'
+import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type Ingressi } from './grafi'
 import { accoda, caricaImmagine, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
@@ -116,6 +116,10 @@ suMessaggio((m) => {
         const ultimi = tempiPasso.slice(-6)
         const sp = ultimi.length ? ultimi.reduce((a, b) => a + b, 0) / ultimi.length : l.stima && l.passiTotali ? l.stima / Math.max(1, l.passiTotali - l.passo) : 0
         if (sp) l.stima = Math.round(sp * (max - v) + 3)
+        if (tempiPasso.length > 2) {
+          const t = tempiPasso.slice(2)
+          l.secondiPasso = Math.round((t.reduce((a, b) => a + b, 0) / t.length) * 100) / 100
+        }
       }
       l.passo = v
       l.passiTotali = max
@@ -204,8 +208,10 @@ async function esegui(l: Lavoro): Promise<void> {
     }
     if (!collegato()) await connetti()
     const ing = await prepara(l.richiesta)
-    const grafo = costruisci(l.richiesta, imp, ing, l.id.slice(0, 8))
+    const grafo = costruisci(l.richiesta, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale))
     fasiCorrenti = grafo.fasi
+    l.areaAnteprima = grafo.area
+    l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
     uscitaAttesa = { nodo: grafo.uscita, immagini: [] }
