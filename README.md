@@ -34,6 +34,10 @@ Gira con il modello [Qwen-Image-2.1 Uncensored GGUF](https://huggingface.co/aben
 
 Serve: Windows 10/11, NVIDIA (serie 20 o più nuova, driver aggiornati), **16 GB di RAM o più** (32+ consigliati), ~30 GB liberi.
 
+**Aggiornamenti**: l'app controlla da sola le release (all'avvio e ogni 6 ore), scarica la versione nuova in sottofondo e
+propone **Riavvia e aggiorna**. Motore, modelli, galleria e LoRA restano dove sono; se serve, il motore si aggiorna da solo.
+L'installer non è firmato: la prima volta Windows SmartScreen chiede conferma (*Ulteriori informazioni → Esegui comunque*).
+
 ## ✨ Cosa fa
 
 | Pagina | |

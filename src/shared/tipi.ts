@@ -226,6 +226,16 @@ export interface ControlloSistema {
   avvisi: string[]
 }
 
+export interface StatoAggiornamento {
+  stato: 'nessuno' | 'sviluppo' | 'controllo' | 'aggiornato' | 'scarico' | 'pronto' | 'errore'
+  attuale: string
+  versione?: string
+  note?: string
+  percentuale?: number
+  errore?: string
+  ultimoControllo?: number
+}
+
 export interface Download {
   id: string
   nome: string

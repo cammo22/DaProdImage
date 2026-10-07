@@ -30,6 +30,8 @@ export interface OpzioniSetup {
   modello: string // id del catalogo
   fileEsistente?: string // un .gguf che l'utente ha già
   extra: string[] // id del catalogo da scaricare in più (LoRA consigliati…)
+  /** aggiornamento del motore: il modello resta quello delle impostazioni, niente download */
+  mantieniModello?: boolean
 }
 
 export function versioni(): Versioni {
@@ -333,7 +335,9 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
     const imp = impostazioni()
     const servono = [scelto, voce('te-int8')!, voce('vae-fix')!, voce('ultrasharp')!, ...opz.extra.map((id) => voce(id)).filter((x) => !!x)]
     // se l'utente ha già il modello, lo si porta dentro (collegamento o copia)
-    if (opz.fileEsistente && existsSync(opz.fileEsistente)) {
+    if (opz.mantieniModello) {
+      servono.splice(servono.indexOf(scelto), 1)
+    } else if (opz.fileEsistente && existsSync(opz.fileEsistente)) {
       const dest = join(opz.cartellaModelli, 'diffusion_models', basename(opz.fileEsistente))
       p('modelli').dettaglio = 'porto dentro ' + basename(opz.fileEsistente) + '…'
       notifica(passi)

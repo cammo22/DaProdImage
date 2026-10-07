@@ -21,9 +21,11 @@ const VOCI: { id: Pagina; nome: string; icona: () => JSX.Element }[] = [
 ]
 
 export function App(): JSX.Element {
-  const { pagina, vai, motore, lavori, codaAperta, avvisi, avvisa } = usaStato()
+  const { pagina, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
   const [pronto, setPronto] = useState(false)
   const [installato, setInstallato] = useState(true)
+  // il motore era installato ma la sua versione è cambiata (aggiornamento dell'app): si aggiorna da solo
+  const [aggiornaMotore, setAggiornaMotore] = useState(false)
   const [rilascio, setRilascio] = useState(false)
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export function App(): JSX.Element {
       await collegaEventi()
       const s = await api.setup.stato()
       setInstallato(s.installato)
+      setAggiornaMotore(!s.installato && !!usaStato.getState().imp?.installato)
       setPronto(true)
     })()
   }, [])
@@ -97,6 +100,16 @@ export function App(): JSX.Element {
           DAPROD <b>IMAGE</b>
         </div>
         <span className="spazio" />
+        {agg.stato === 'scarico' && (
+          <span className="pillola" title={`Scarico DaProd Image ${agg.versione}`} onClick={() => vai('impostazioni')}>
+            <I.scarica /> Aggiornamento {agg.versione} · {agg.percentuale ?? 0}%
+          </span>
+        )}
+        {agg.stato === 'pronto' && (
+          <button className="btn piccolo primario" onClick={() => api.aggiornamento.installa()} title={agg.note || ''}>
+            <I.ricicla /> Riavvia e aggiorna a {agg.versione}
+          </button>
+        )}
         {installato && (
           <>
             <span className={`pillola ${statoMotore}`} onClick={() => vai('impostazioni')} title={motore.messaggio || ''}>
@@ -116,7 +129,7 @@ export function App(): JSX.Element {
         <div style={{ gridColumn: '1 / -1' }} />
       ) : !installato ? (
         <div className="contenuto" style={{ gridColumn: '1 / -1' }}>
-          <Setup fatto={() => { setInstallato(true); void ricaricaLore() }} />
+          <Setup aggiorna={aggiornaMotore && !!imp?.installato} fatto={() => { setInstallato(true); setAggiornaMotore(false); void ricaricaLore() }} />
         </div>
       ) : (
         <>

@@ -14,6 +14,12 @@ extraResources:
     to: bin
   - from: engine
     to: engine
+# aggiornamenti: l'app legge latest.yml dall'ultima release di questo repository (electron-updater)
+publish:
+  provider: github
+  owner: cammo22
+  repo: DaProdImage
+  releaseType: release
 win:
   target:
     - target: nsis

@@ -1,6 +1,6 @@
 // L'API del processo principale, con i tipi giusti.
 import type {
-  ControlloSistema, Download, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, StatoVoce
+  ControlloSistema, Download, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, StatoAggiornamento, StatoVoce
 } from '@shared/tipi'
 
 type Via = () => void
@@ -20,6 +20,8 @@ export interface OpzioniSetup {
   modello: string
   fileEsistente?: string
   extra: string[]
+  /** aggiornamento del motore: tiene il modello che c'è, non ne scarica uno nuovo */
+  mantieniModello?: boolean
 }
 
 export interface Api {
@@ -55,6 +57,7 @@ export interface Api {
     percorso(f: File): string
   }
   app: { apriLink(u: string): Promise<void>; versione(): Promise<string>; apriCartella(q: 'modelli' | 'dati' | 'log'): Promise<void> }
+  aggiornamento: { stato(): Promise<StatoAggiornamento>; controlla(): Promise<StatoAggiornamento>; installa(): Promise<void> }
   trascina(p: string): void
   su: {
     motore(f: (i: InfoMotore) => void): Via
@@ -64,6 +67,7 @@ export interface Api {
     setup(f: (passi: PassoSetup[], riga?: string) => void): Via
     galleria(f: () => void): Via
     download(f: (d: Download) => void): Via
+    aggiornamento(f: (s: StatoAggiornamento) => void): Via
   }
 }
 

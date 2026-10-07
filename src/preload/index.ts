@@ -32,10 +32,11 @@ const api = {
     percorso: (f: File) => webUtils.getPathForFile(f)
   },
   app: { apriLink: chiama('app:apriLink'), versione: chiama('app:versione'), apriCartella: chiama('app:apriCartella') },
+  aggiornamento: { stato: chiama('aggiornamento:stato'), controlla: chiama('aggiornamento:controlla'), installa: chiama('aggiornamento:installa') },
   trascina: (percorso: string) => ipcRenderer.send('trascina', percorso),
   su: {
     motore: ascolta('motore'), motoreLog: ascolta('motoreLog'), lavori: ascolta('lavori'), lavoro: ascolta('lavoro'),
-    setup: ascolta('setup'), galleria: ascolta('galleria'), download: ascolta('download')
+    setup: ascolta('setup'), galleria: ascolta('galleria'), download: ascolta('download'), aggiornamento: ascolta('aggiornamento')
   }
 }
 

@@ -14,10 +14,13 @@ import { accodaRichiesta, annullaLavoro, elencoLavori, scriviTesto, suCambioLavo
 import { elenco, elimina, importa, opera, preferita, ricaricaGalleria, salvaOra, suCambioGalleria } from './galleria'
 import { aggiornaLora, elencoLora, eliminaLora, importaLora, scaricaLora } from './lora'
 import { leggiMetadati } from './png'
+import { avviaAggiornamenti, controllaAggiornamenti, installaAggiornamento, statoAggiornamento, suAggiornamento } from './aggiornamenti'
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'daprod', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }])
 
 let finestra: BrowserWindow | null = null
+/** true quando si sta già chiudendo (il motore è fermo o si sta fermando) */
+let chiusura = false
 const invia = (canale: string, ...dati: unknown[]): void => {
   if (finestra && !finestra.isDestroyed()) finestra.webContents.send(canale, ...dati)
 }
@@ -289,6 +292,17 @@ function registraIpc(): void {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url)
   })
   gestisci('app:versione', () => app.getVersion())
+  // aggiornamenti dell'app (release di GitHub)
+  gestisci('aggiornamento:stato', () => statoAggiornamento())
+  gestisci('aggiornamento:controlla', () => controllaAggiornamenti())
+  gestisci('aggiornamento:installa', async () => {
+    // prima si ferma il motore (se no il setup trova i file occupati), poi si installa e si riapre
+    chiusura = true
+    scollega()
+    await fermaMotore()
+    salvaOra()
+    installaAggiornamento()
+  })
   gestisci('app:apriCartella', (quale: 'modelli' | 'dati' | 'log') => {
     const c = quale === 'modelli' ? impostazioni().cartellaModelli : quale === 'log' ? join(RADICE, 'log') : RADICE
     assicura(c)
@@ -318,11 +332,12 @@ app.whenReady().then(() => {
   suLogMotore((r) => invia('motoreLog', r))
   suCambioLavori((l, uno) => (uno ? invia('lavoro', uno) : invia('lavori', l)))
   suCambioGalleria(() => invia('galleria'))
+  suAggiornamento((s) => invia('aggiornamento', s))
   creaFinestra()
   if (motoreInstallato() && impostazioni().installato) void avviaEMotore().catch(() => undefined)
+  avviaAggiornamenti()
 })
 
-let chiusura = false
 app.on('before-quit', (e) => {
   salvaOra()
   if (chiusura) return

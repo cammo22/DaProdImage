@@ -5,7 +5,13 @@ tutta la foto o solo una zona, espande, rifinisce, LoRA con un clic, galleria. I
 interfaccia**, installato e guidato dall'app.
 
 - **Si scrive in italiano parlato**: commenti, CHANGELOG, README, messaggi dell'interfaccia. Nomi tecnici in inglese dove serve.
-- **Una versione = `version` in `package.json` + voce in `CHANGELOG.md`.** `npm run dist` fa l'installer NSIS in `dist/`.
+- **Una versione = `version` in `package.json` + voce in `CHANGELOG.md`.** Unita su `main`, la CI (`.github/workflows/app.yml`)
+  compila l'installer e pubblica da sola la release vX.Y.Z con `DaProd-Image-Setup-X.Y.Z.exe`, il `.blockmap` e `latest.yml`.
+  Le app installate se ne accorgono (`src/main/aggiornamenti.ts`, electron-updater: all'avvio e ogni 6 ore), scaricano
+  solo i pezzi cambiati e propongono **Riavvia e aggiorna** (prima si ferma il motore). `npm run dist` fa l'installer in locale.
+- **Se cambia il motore** (commit di ComfyUI, pacchetti, i nostri nodi in `engine/`), si alza `motore` (e/o il commit) in
+  `engine/versioni.json`: al primo avvio dopo l'aggiornamento l'app vede che il motore non è alla versione giusta e lo
+  aggiorna da sola (pagina di setup in modo "aggiorna", `mantieniModello`: niente scelta del modello, niente download).
 - **Prima di consegnare**: `npm run typecheck` e `npm run build`. Le prove con l'app vera: `node test/setup.mjs`
   (foto della pagina di installazione, `--installa` la fa davvero) e `node test/foto.mjs` (foto delle pagine in `test/.out/`).
 

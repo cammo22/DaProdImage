@@ -16,3 +16,5 @@ La prima versione.
 - **LoRA con un clic**: trascina i file o incolla un link Hugging Face/Civitai, forza, parole chiave, controllo di compatibilità.
 - **VAE Texture-Fix** come predefinito (trame più pulite) e LoRA "Detail Fix" fra i consigliati.
 - Coda con anteprima dal vivo, fasi e tempo stimato (misurato sulla tua scheda).
+- **Aggiornamenti automatici** dalle release di GitHub (Opzioni → Aggiornamenti, o il tasto in alto quando è pronto);
+  se una versione nuova cambia il motore, l'app lo aggiorna da sola al primo avvio.

@@ -7,7 +7,7 @@ import type { ControlloSistema, PassoSetup, StatoVoce } from '@shared/tipi'
 
 type Fase = 'controllo' | 'modello' | 'installa'
 
-export function Setup({ fatto }: { fatto: () => void }): JSX.Element {
+export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boolean }): JSX.Element {
   const { imp } = usaStato()
   const [fase, setFase] = useState<Fase>('controllo')
   const [controllo, setControllo] = useState<ControlloSistema | null>(null)
@@ -57,6 +57,22 @@ export function Setup({ fatto }: { fatto: () => void }): JSX.Element {
     lore.filter((l) => extra.includes(l.id) && !l.presente).reduce((a, c) => a + c.byte, 0) +
     (motoreGia ? 0 : 3.6e9)
 
+  // aggiornamento del motore dopo un aggiornamento dell'app: parte da solo, tiene modelli e impostazioni
+  useEffect(() => {
+    if (!aggiorna || !imp) return
+    void (async () => {
+      setFase('installa')
+      setEsito(null)
+      const ok = await api.setup.avvia({ cartellaModelli: imp.cartellaModelli, modello: '', extra: [], mantieniModello: true })
+      setEsito(ok)
+      if (ok) {
+        await ricaricaImp()
+        fatto()
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aggiorna])
+
   const installa = async (): Promise<void> => {
     setFase('installa')
     setEsito(null)
@@ -73,7 +89,11 @@ export function Setup({ fatto }: { fatto: () => void }): JSX.Element {
       <div className="scheda">
         <img src="./icona.svg" alt="" style={{ width: 64, height: 64 }} />
         <h1>DAPROD <b>IMAGE</b></h1>
-        <p className="sotto">Qwen-Image 2.1 sul tuo PC: crea, modifica le foto e le loro zone, LoRA con un clic. Prima prepariamo il motore (una volta sola).</p>
+        {aggiorna ? (
+          <p className="sotto">È arrivata una versione nuova: aggiorno il motore. I modelli, la galleria e le impostazioni restano dove sono.</p>
+        ) : (
+          <p className="sotto">Qwen-Image 2.1 sul tuo PC: crea, modifica le foto e le loro zone, LoRA con un clic. Prima prepariamo il motore (una volta sola).</p>
+        )}
 
         <div className="pannello blocco">
           <h2>1 · Il tuo PC</h2>
@@ -168,8 +188,8 @@ export function Setup({ fatto }: { fatto: () => void }): JSX.Element {
               {esito === false && (
                 <>
                   <span className="tenue flex1">Qualcosa non è andato: riprova, riparte da dove si era fermato.</span>
-                  <button className="btn" onClick={() => setFase('modello')}>Indietro</button>
-                  <button className="btn primario" onClick={installa}>Riprova</button>
+                  {!aggiorna && <button className="btn" onClick={() => setFase('modello')}>Indietro</button>}
+                  <button className="btn primario" onClick={aggiorna ? () => api.setup.avvia({ cartellaModelli: imp!.cartellaModelli, modello: '', extra: [], mantieniModello: true }).then((ok) => { setEsito(ok); if (ok) fatto() }) : installa}>Riprova</button>
                 </>
               )}
               {esito === true && (

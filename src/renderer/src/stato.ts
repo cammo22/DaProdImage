@@ -1,6 +1,6 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi } from '@shared/tipi'
+import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
 
 export type Pagina = 'crea' | 'modifica' | 'galleria' | 'lora' | 'impostazioni'
@@ -71,6 +71,8 @@ interface Stato {
   avvisi: Avviso[]
   /** l'opera aperta nel visore (galleria) */
   visore: Opera | null
+  /** aggiornamenti dell'app */
+  agg: StatoAggiornamento
   vai(p: Pagina): void
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
@@ -120,6 +122,7 @@ export const usaStato = create<Stato>((set, get) => ({
   codaAperta: false,
   avvisi: [],
   visore: null,
+  agg: { stato: 'nessuno', attuale: '' },
   vai: (pagina) => set({ pagina }),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
@@ -181,6 +184,8 @@ export async function collegaEventi(): Promise<void> {
   const s = usaStato.getState()
   s.setImp(await api.impostazioni.leggi())
   usaStato.setState({ motore: await api.motore.info(), lavori: await api.lavori.elenco(), lore: await api.lora.elenco() })
+  usaStato.setState({ agg: await api.aggiornamento.stato() })
+  api.su.aggiornamento((agg) => usaStato.setState({ agg }))
   api.su.motore((motore) => usaStato.setState({ motore }))
   api.su.lavori((lavori) => usaStato.setState({ lavori: [...lavori] }))
   api.su.lavoro((uno) => {

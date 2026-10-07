@@ -8,7 +8,7 @@ import { byte } from '../util'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 
 export function Impostazioni(): JSX.Element {
-  const { imp, motore, avvisa } = usaStato()
+  const { imp, motore, avvisa, agg } = usaStato()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
@@ -206,10 +206,45 @@ export function Impostazioni(): JSX.Element {
         </div>
 
         <div className="gruppo">
-          <h2>DAPROD IMAGE</h2>
+          <h2>AGGIORNAMENTI</h2>
           <div className="pannello" style={{ padding: 14 }}>
             <div className="riga a-capo">
               <span>Versione <b className="oro">{versione}</b></span>
+              <span className="tenue">
+                {{
+                  nessuno: "Controllo automatico all'avvio e ogni 6 ore.",
+                  sviluppo: 'In sviluppo gli aggiornamenti sono spenti.',
+                  controllo: 'Controllo…',
+                  aggiornato: "È l'ultima versione.",
+                  scarico: `Scarico la ${agg.versione}… ${agg.percentuale ?? 0}%`,
+                  pronto: `La ${agg.versione} è pronta: si installa al riavvio.`,
+                  errore: `Non riesco a controllare: ${agg.errore || ''}`
+                }[agg.stato]}
+              </span>
+              <span className="flex1" />
+              {agg.stato === 'pronto' ? (
+                <button className="btn primario" onClick={() => api.aggiornamento.installa()}><I.ricicla /> Riavvia e aggiorna</button>
+              ) : (
+                <button className="btn piccolo" disabled={agg.stato === 'sviluppo' || agg.stato === 'controllo' || agg.stato === 'scarico'} onClick={() => api.aggiornamento.controlla()}>
+                  <I.ricicla /> Controlla ora
+                </button>
+              )}
+              <button className="btn piccolo fantasma" onClick={() => api.app.apriLink('https://github.com/cammo22/DaProdImage/releases')}>Tutte le versioni ↗</button>
+            </div>
+            {agg.stato === 'scarico' && <div className="barra-progresso" style={{ marginTop: 10 }}><i style={{ width: `${agg.percentuale ?? 0}%` }} /></div>}
+            {agg.note && (agg.stato === 'pronto' || agg.stato === 'scarico') && (
+              <div className="log" style={{ height: 'auto', maxHeight: 220, marginTop: 10, fontFamily: 'var(--font)', fontSize: 14 }}>{agg.note}</div>
+            )}
+            <div className="piccolo spento" style={{ marginTop: 8 }}>
+              L'app si aggiorna dalle release di GitHub (scarica solo i pezzi cambiati). Motore, modelli, galleria e LoRA restano dove sono; se una versione nuova cambia il motore, lo aggiorna da sola al primo avvio.
+            </div>
+          </div>
+        </div>
+
+        <div className="gruppo">
+          <h2>DAPROD IMAGE</h2>
+          <div className="pannello" style={{ padding: 14 }}>
+            <div className="riga a-capo">
               <span className="spento">Qwen-Image 2.1 (Qwen Research License) · ComfyUI (GPL-3.0) · ComfyUI-GGUF (Apache-2.0)</span>
               <span className="flex1" />
               <button className="btn piccolo" onClick={() => api.app.apriLink('https://github.com/cammo22/DaProdImage')}><I.link /> GitHub</button>
