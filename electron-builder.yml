@@ -1,0 +1,30 @@
+# Installer di DaProd Image. Build: npm run dist
+appId: it.daprod.image
+productName: DaProd Image
+copyright: © DaProd
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# uv (per Python e i pacchetti) e il motore (nodi GGUF con la nostra correzione) viaggiano fuori dall'asar
+extraResources:
+  - from: resources/bin
+    to: bin
+  - from: engine
+    to: engine
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: DaProd Image
+  artifactName: DaProd-Image-Setup-${version}.${ext}
+  deleteAppDataOnUninstall: false

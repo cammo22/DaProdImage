@@ -1,0 +1,51 @@
+# Compila l'installer di DaProd Image (Windows, NSIS).
+#  - su ogni PR: tipi + build + installer fra gli artefatti
+#  - su ogni push su main: se la versione di package.json non ha ancora una release, la pubblica da sola
+#    (vX.Y.Z, con le note prese dal CHANGELOG). Basta alzare la versione e unire.
+name: App (Windows)
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Controllo dei tipi
+        run: npm run typecheck
+      - name: uv per l'installatore del motore
+        run: npm run prendi-uv
+      - name: Build e installer
+        run: |
+          npm run build
+          npx electron-builder --win --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: dist/*.exe
+      - name: Release (se la versione è nuova)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(node -p "require('./package.json').version")
+          if gh release view "v$V" >/dev/null 2>&1; then echo "v$V esiste già"; exit 0; fi
+          awk -v v="$V" '$0 ~ "^## "v {on=1; next} /^## / && on {exit} on' CHANGELOG.md > note.md
+          gh release create "v$V" dist/*.exe --title "DaProd Image $V" --notes-file note.md

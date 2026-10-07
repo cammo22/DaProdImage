@@ -1,0 +1,7 @@
+{
+  "motore": 1,
+  "python": "3.13",
+  "comfyui": { "commit": "b26625f23a888367b92153b28d93e159e83e677b", "versione": "0.39.0" },
+  "torch": { "indice": "https://download.pytorch.org/whl/cu130", "pacchetti": ["torch", "torchvision"] },
+  "extra": ["gguf>=0.13.0", "sentencepiece", "protobuf"]
+}
