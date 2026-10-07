@@ -5,3 +5,4 @@ dist/
 .DS_Store
 test/.out/
 resources/bin/uv.exe
+__pycache__/
