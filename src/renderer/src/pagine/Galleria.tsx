@@ -145,7 +145,7 @@ export function Galleria(): JSX.Element {
               <button className="btn piccolo" onClick={() => setScelte(new Set())}>Annulla scelta</button>
             </>
           ) : (
-            <span className="spento piccolo">{importo ? `Importo ${importo} file…` : `${opere.length} immagini · Ctrl+clic: sceglierne più · Ctrl+rotella: grandezza`}</span>
+            <span className="spento piccolo" title="Ctrl+clic per sceglierne più · Ctrl+rotella per la grandezza delle miniature">{importo ? `Importo ${importo} file…` : `${opere.length} immagini`}</span>
           )}
           <input type="range" min={110} max={460} value={lato} style={{ width: 110, ['--p' as string]: `${((lato - 110) / 350) * 100}%` }} onChange={(e) => cambiaLato(Number(e.target.value))} title="Grandezza delle miniature (anche Ctrl+rotella)" />
           <button className="btn piccolo" onClick={async () => { const ps = await api.file.scegliImmagini(true); if (ps.length) await importaFile(ps) }} title="Porta dentro foto dal PC (diventano PNG)"><I.piu /> Importa</button>
