@@ -116,6 +116,9 @@ function codifica(g: Grafo, pixels: Rif, vae: Rif, mp: number): Rif {
   return r(aTessere(g, mp) ? g.add('VAEEncodeTiled', { pixels, vae, ...TESSERE }, fase) : g.add('VAEEncode', { pixels, vae }, fase))
 }
 
+/** l'istruzione chiede di togliere qualcosa? (allora la zona si riempie prima, così l'oggetto non torna) */
+export const RIMUOVI = /\b(rimuov|togli|elimin|cancell|leva|levare|sparire|remove|erase|delete|get rid|take out|clean ?up)/i
+
 /** in che parte del riquadro sta la zona, a parole (il modello non vede la maschera: così sa di cosa si parla) */
 export function doveNelRiquadro(zona: Riquadro, box: { x: number; y: number; w: number; h: number }): string | null {
   if ((zona.w * zona.h) / (box.w * box.h) > 0.55) return null
@@ -191,7 +194,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       prompt: q.prompt,
       max_length: q.maxToken || 400,
       sampling_mode: 'on',
-      'sampling_mode.temperature': 0.7,
+      'sampling_mode.temperature': q.temperatura ?? 0.7,
       'sampling_mode.top_k': 20,
       'sampling_mode.top_p': 0.9,
       'sampling_mode.min_p': 0,
@@ -304,7 +307,11 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     maschera = r(g.add('LoadImageMask', { image: ing.maschera, channel: 'red' }, 'Carico la zona'))
   }
   const ritaglia = q.modalita === 'zona' ? q.ritaglia !== false : false
-  const box = riquadroLavoro(W, H, zona, q.contesto ?? 0.6, q.megapixel, ritaglia)
+  const box = riquadroLavoro(W, H, zona, q.contesto ?? 0.8, q.megapixel, ritaglia)
+  // bordi proporzionati alla zona (niente cursori da regolare): più grande la zona, più largo e morbido il bordo
+  const lato0 = zona ? Math.min(zona.w, zona.h) : 0
+  const allargaDef = q.modalita === 'espandi' ? 24 : Math.max(6, Math.min(28, Math.round(lato0 * 0.05)))
+  const sfumaDef = q.modalita === 'espandi' ? 24 : Math.max(8, Math.min(24, Math.round(lato0 * 0.06)))
   const tutta = box.x === 0 && box.y === 0 && box.w === W && box.h === H
   const ritaglio = tutta ? foto : r(g.add('ImageCrop', { image: foto, width: box.w, height: box.h, x: box.x, y: box.y }))
   const mRit = tutta ? maschera : r(g.add('CropMask', { mask: maschera, x: box.x, y: box.y, width: box.w, height: box.h }))
@@ -313,12 +320,12 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const mGrandeImg = r(g.add('ImageScale', { image: mImg, upscale_method: 'bilinear', width: box.tw, height: box.th, crop: 'disabled' }))
   const mGrande = r(g.add('ImageToMask', { image: mGrandeImg, channel: 'red' }))
   const scala = box.tw / box.w
-  const allarga = Math.round((q.allarga ?? (q.modalita === 'espandi' ? 24 : 8)) * scala)
+  const allarga = Math.round((q.allarga ?? allargaDef) * scala)
   // la zona "dura" (allargata): quella che si riempie, si ridisegna di sicuro e su cui si accordano i colori
   const mDura = allarga > 0 ? r(g.add('GrowMask', { mask: mGrande, expand: allarga, tapered_corners: true })) : mGrande
   // nel latente la maschera è morbida: con la DifferentialDiffusion il bordo si ridisegna solo negli ultimi
   // passi e si fonde con quello che c'è attorno, invece di fare uno scalino
-  const morbido = Math.max(0, Math.min(31, Math.round((q.modalita === 'espandi' ? 16 : (q.sfuma ?? 10) * 0.6) * scala)))
+  const morbido = Math.max(0, Math.min(31, Math.round((q.modalita === 'espandi' ? 16 : (q.sfuma ?? sfumaDef) * 0.6) * scala)))
   let mLatente = mDura
   if (morbido >= 2) {
     const a = r(g.add('MaskToImage', { mask: mDura }))
@@ -327,10 +334,10 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   }
 
   // "rimuovi": la zona si riempie prima coi colori attorno, così il modello non vede più l'oggetto da togliere
-  const riempi = q.modalita === 'zona' && !!q.riempi
+  const riempi = q.modalita === 'zona' && (q.riempi ?? RIMUOVI.test(q.prompt))
   const sorgente = riempi ? r(g.add('DaProdRiempiZona', { image: grande, mask: mDura }, 'Riempio la zona')) : grande
 
-  // cosa vede il modello: la foto pulita, o con la zona contornata di rosso
+  // cosa vede il modello: image_1 è il pezzo su cui si lavora (grande come il latente)
   let vista = sorgente
   let prompt = q.prompt
   // resolution 0: image_1 resta esattamente box.tw×box.th come il latente (se no la modifica si sposta)
@@ -346,24 +353,38 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     prompt = `Zoom out and extend <image1> into a wider frame: reveal more of the surroundings ${dove}, continuing the scene naturally with matching perspective, lighting and depth of field. Keep everything already visible exactly the same.${q.prompt.trim() ? ' ' + q.prompt.trim() : ''}`
     vista = originale
     risoluzione = Math.round((Math.sqrt(Math.min(q.megapixel, (im.larghezza * im.altezza) / 1048576)) * 1024) / 32) * 32
-  } else if (q.segnaZona) {
-    const fuori = r(g.add('GrowMask', { mask: mGrande, expand: Math.max(4, Math.round(6 * scala)), tapered_corners: true }))
-    const anello = r(g.add('MaskComposite', { destination: fuori, source: mGrande, x: 0, y: 0, operation: 'subtract' }))
-    const rosso = r(g.add('EmptyImage', { width: box.tw, height: box.th, batch_size: 1, color: 0xff0000 }))
-    vista = r(g.add('ImageCompositeMasked', { destination: sorgente, source: rosso, x: 0, y: 0, resize_source: false, mask: anello }))
-    prompt = `In <image1>, change only the area outlined in red: ${q.prompt.trim()} Remove the red outline; keep everything outside it unchanged.`
-  } else if (zona) {
-    // il modello non vede la maschera: gli si dice almeno dove guardare ("cambia il suo colore" di cosa?)
-    const dove = doveNelRiquadro(zona, box)
-    if (dove) prompt = `In ${dove} of the image: ${q.prompt.trim()}`
   }
-  if (riempi) prompt += ' The smudged, blurry patch is only a placeholder: redraw it sharp and natural, matching the perspective, lighting and texture of the surroundings.'
   // i riferimenti li porto io a ~1 MP
   const inputs: Record<string, unknown> = { clip, prompt, negative_prompt: neg, resolution: risoluzione, vae, 'images.image_1': vista }
-  ing.immagini.slice(1, 16).forEach((ri, i) => {
+  const riferimenti = ing.immagini.slice(1, 15)
+  riferimenti.forEach((ri, i) => {
     const caricata = r(g.add('LoadImage', { image: ri.nome }, 'Carico i riferimenti'))
     inputs[`images.image_${i + 2}`] = r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: Math.min(1, q.megapixel), resolution_steps: 32 }))
   })
+  if (q.modalita === 'zona') {
+    // Il modello guarda SEMPRE la foto intera: come ultima immagine riceve tutta la foto con la zona evidenziata in
+    // rosso (velo trasparente + bordo pieno), così capisce il contesto e sa esattamente dove lavorare. Il latente
+    // resta bloccato fuori dalla maschera: anche se sbagliasse, fuori dalla zona non cambia niente.
+    const pd = dimensioniPer(Math.min(1, (W * H) / 1048576), W, H)
+    let fotoP = r(g.add('ImageScale', { image: foto, upscale_method: 'lanczos', width: pd.w, height: pd.h, crop: 'disabled' }))
+    const mP = r(g.add('ImageToMask', { image: r(g.add('ImageScale', { image: r(g.add('MaskToImage', { mask: maschera })), upscale_method: 'bilinear', width: pd.w, height: pd.h, crop: 'disabled' })), channel: 'red' }))
+    if (riempi) fotoP = r(g.add('DaProdRiempiZona', { image: fotoP, mask: mP }))
+    const velo = r(g.add('MaskComposite', { destination: mP, source: r(g.add('SolidMask', { value: 0.45, width: pd.w, height: pd.h })), x: 0, y: 0, operation: 'multiply' }))
+    const fuori = r(g.add('GrowMask', { mask: mP, expand: Math.max(3, Math.round(Math.max(pd.w, pd.h) / 220)), tapered_corners: true }))
+    const bordo = r(g.add('MaskComposite', { destination: fuori, source: mP, x: 0, y: 0, operation: 'subtract' }))
+    const rosso = r(g.add('EmptyImage', { width: pd.w, height: pd.h, batch_size: 1, color: 0xff0000 }))
+    const conVelo = r(g.add('ImageCompositeMasked', { destination: fotoP, source: rosso, x: 0, y: 0, resize_source: false, mask: velo }))
+    const panoramica = r(g.add('ImageCompositeMasked', { destination: conVelo, source: rosso, x: 0, y: 0, resize_source: false, mask: bordo }, 'Guardo tutta la foto'))
+    const n = riferimenti.length + 2
+    inputs[`images.image_${n}`] = panoramica
+    const dove = zona && !tutta ? doveNelRiquadro(zona, box) : null
+    const istruzione = q.prompt.trim().replace(/[.\s]+$/, '')
+    inputs.prompt =
+      `${istruzione}. Make this change only inside the area highlighted in red in <image${n}>, which shows the whole photo` +
+      (tutta ? '; <image1> is that same photo.' : `; <image1> is a close-up of that part of the photo${dove ? `, with the area in ${dove}` : ''}.`) +
+      ' Keep everything outside that area exactly the same, and do not add any red tint or outline.' +
+      (riempi ? ' The smudged, blurry patch in <image1> is only a placeholder: redraw it sharp and natural, matching the perspective, lighting and texture of the surroundings.' : '')
+  }
   const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
   const mp = (box.tw * box.th) / 1048576
   const lat0 = codifica(g, sorgente, vae, mp)
@@ -376,8 +397,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const fatto = r(g.add('DaProdAccordaColori', { image: sviluppa(g, { ...q, trasparente: false }, ks, vae, mp), reference: grande, mask: mDura, strength: 1 }))
   const indietro = r(g.add('ImageScale', { image: fatto, upscale_method: 'lanczos', width: box.w, height: box.h, crop: 'disabled' }, 'Incollo'))
   // bordo morbido alla grandezza originale
-  const sfuma = Math.max(0, Math.min(31, Math.round(q.sfuma ?? (q.modalita === 'espandi' ? 24 : 10))))
-  const allargaOrig = Math.round(q.allarga ?? (q.modalita === 'espandi' ? 24 : 8))
+  const sfuma = Math.max(0, Math.min(31, Math.round(q.sfuma ?? sfumaDef)))
+  const allargaOrig = Math.round(q.allarga ?? allargaDef)
   let mFin = mRit
   if (allargaOrig > 0) mFin = r(g.add('GrowMask', { mask: mFin, expand: Math.round(allargaOrig * 0.75), tapered_corners: true }))
   if (sfuma > 0) {

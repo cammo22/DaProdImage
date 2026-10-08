@@ -29,7 +29,8 @@ const PREDEFINITE: Impostazioni = {
   loraTurbo: 'turbo8_lora_step2500.safetensors',
   memoria: 'auto',
   vramMB: 0,
-  veloce: false
+  veloce: false,
+  traduci: true
 }
 
 let attuali: Impostazioni | null = null

@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0 — 2026-10-08
+
+Modifica che funziona sempre, anteprime vere, foto di ogni formato.
+
+- **Anteprima dal vivo nitida, passo per passo** (come in Invoke): il motore usa TAEQI 2.1, il decoder piccolissimo di
+  madebyollin per Qwen-Image 2.1 (15 MB, si scarica da solo). Prima l'anteprima usciva a 1/16 della risoluzione e
+  non si vedeva niente: ora in Modifica la zona si vede davvero nascere al suo posto.
+- **Modifica di una zona senza impostazioni**: il modello riceve sempre anche **la foto intera con la zona evidenziata
+  in rosso**, così capisce il contesto e sa esattamente dove lavorare; fuori dalla zona resta identica al pixel. Via
+  forza, contesto, bordi e interruttori: bordo e morbidezza si regolano sulla grandezza della zona, e se scrivi
+  "rimuovi…" la zona si ripulisce da sola prima di ridisegnarla. La grandezza di lavoro è in "Avanzate".
+- **Dopo una modifica si continua**: la nuova versione resta sulla tela, pronta da ritoccare, con la barra delle
+  versioni (‹ ›), **Tieni premuto: prima**, **Confronta** (con "Tieni questa e continua") e **Torna indietro**.
+- **Traduzione automatica in inglese**: Qwen-Image capisce molto meglio l'inglese, quindi i prompt in italiano li traduce
+  il Qwen3-VL già caricato (niente modelli in più) prima di disegnare; i testi fra virgolette restano identici.
+  Si vede la traduzione mentre lavora e nel visore. Si spegne da Opzioni.
+- **Tutte le foto diventano PNG**, come in DaP-Convertitore: JPG, WEBP, AVIF e GIF li apre Chromium col verso EXIF
+  giusto; HEIC, TIFF, RAW delle fotocamere e JXL passano da WIC di Windows (colori portati in sRGB). Sistemato il
+  motivo per cui in Modifica funzionavano solo i PNG.
+- **Galleria**: righe ordinate con le proporzioni vere (niente più miniature sovrapposte), Ctrl+rotella per la
+  grandezza, **Importa** e trascina qualsiasi foto (diventa PNG), visore con **zoom a rotella**, trascina e doppio clic.
+  Lo zoom c'è anche sul risultato in Crea.
+- **Barra in alto bianca** per tutti (anche col tema scuro di Windows), con **RAM, VRAM e GPU** (uso e temperatura)
+  in tempo reale.
+- Sistemato il velo "Rilascia…" che restava sopra la finestra dopo aver trascinato un file.
+
 ## 0.2.0 — 2026-10-07
 
 Più veloce, anche su 6 GB, e molto più da fare.

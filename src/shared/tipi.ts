@@ -9,7 +9,8 @@ export type Modalita =
   | 'rifinisci' // ingrandisce e ridisegna i dettagli (bozza → alta qualità)
   | 'varia' // variazioni che tengono la composizione
   | 'ingrandisci' // ingrandimento col modello di upscaling, senza ridisegnare
-  | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto)
+  | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
+  | 'importa' // (solo in galleria) una foto portata dentro da fuori
 
 export interface LoraAttiva {
   file: string
@@ -77,6 +78,8 @@ export interface Richiesta {
   /** descrivi: istruzione di sistema e lunghezza massima */
   sistema?: string
   maxToken?: number
+  /** descrivi: quanto è creativo (0.7 di solito; bassa per tradurre) */
+  temperatura?: number
   /** per la galleria: da quale opera nasce */
   origine?: string
   /** etichetta corta per la coda (es. "Rimuovi sfondo") */
@@ -100,6 +103,8 @@ export interface Lavoro {
   /** secondi stimati alla fine */
   stima?: number
   anteprima?: string
+  /** il prompt come l'ha ricevuto il modello (tradotto in inglese, se serviva) */
+  promptInglese?: string
   /** dove va l'anteprima, in pixel della foto di partenza (la zona ritagliata; per Espandi esce dai bordi) */
   areaAnteprima?: Riquadro
   /** secondi per passo misurati in questo lavoro (per accorgersi se la scheda sta andando in RAM) */
@@ -134,6 +139,8 @@ export interface Opera {
   preferita: boolean
   origine?: string
   etichetta?: string
+  /** il prompt tradotto in inglese che ha visto il modello (se era in un'altra lingua) */
+  promptInglese?: string
 }
 
 export interface FiltroGalleria {
@@ -192,6 +199,19 @@ export interface Impostazioni {
   vramMB: number
   /** --fast di ComfyUI (accumulo fp16 sulle RTX): più veloce, qualità quasi uguale */
   veloce: boolean
+  /** i prompt in italiano (o in altre lingue) si traducono in inglese prima di disegnare */
+  traduci: boolean
+}
+
+/** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
+export interface Risorse {
+  ramTotale: number
+  ramLibera: number
+  vramTotale?: number
+  vramUsata?: number
+  gpu?: string
+  gpuUso?: number
+  gpuTemp?: number
 }
 
 export type StatoMotore = 'spento' | 'avvio' | 'pronto' | 'errore' | 'non installato'
@@ -209,7 +229,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima'
   nome: string
   descrizione: string
   file: string

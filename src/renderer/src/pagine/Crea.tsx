@@ -7,6 +7,7 @@ import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Contro
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
 import { BarraPreset, SchedaPreset } from '../componenti/Preset'
+import { VistaZoom } from '../componenti/VistaZoom'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi, troppoLenta } from '../util'
 import { SISTEMA_DESCRIVI, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
@@ -297,7 +298,7 @@ export function Crea(): JSX.Element {
           {mostraInCorso && inCorso ? (
             <InCorso l={inCorso} ar={ar(crea.formato)} />
           ) : op ? (
-            <img className={`grande ${op.trasparente ? 'scacchi' : ''}`} src={urlFile(op.file)} alt="" onDragStart={(e) => { e.preventDefault(); api.trascina(op.file) }} />
+            <VistaZoom src={urlFile(op.file)} scacchi={op.trasparente} />
           ) : (
             <div className="vuoto">
               <div className="grosso">CREA CON <b>QWEN-IMAGE 2.1</b></div>
@@ -377,6 +378,7 @@ export function PannelloLavoro({ l }: { l: Lavoro }): JSX.Element {
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 360 }}>{l.richiesta.etichetta || l.richiesta.prompt}</span>
         <button className="btn piccolo fantasma" onClick={() => api.lavori.annulla(l.id)}>Annulla</button>
       </div>
+      {l.promptInglese && <div className="piccolo spento tradotto" title={l.promptInglese}>In inglese: {l.promptInglese}</div>}
       {lenta && <AvvisoLenta secondi={l.secondiPasso!} />}
     </div>
   )

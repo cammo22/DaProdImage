@@ -22,12 +22,12 @@ const api = {
   galleria: {
     elenco: chiama('galleria:elenco'), opera: chiama('galleria:opera'), preferita: chiama('galleria:preferita'), elimina: chiama('galleria:elimina'),
     mostra: chiama('galleria:mostra'), apriCartella: chiama('galleria:apriCartella'), copia: chiama('galleria:copia'), esporta: chiama('galleria:esporta'),
-    importa: chiama('galleria:importa'), meta: chiama('galleria:meta')
+    importa: chiama('galleria:importa'), meta: chiama('galleria:meta'), importaFoto: chiama('galleria:importaFoto')
   },
   lora: { elenco: chiama('lora:elenco'), aggiorna: chiama('lora:aggiorna'), importa: chiama('lora:importa'), elimina: chiama('lora:elimina'), scarica: chiama('lora:scarica'), apriCartella: chiama('lora:apriCartella') },
   file: {
     scegliImmagini: chiama('file:scegliImmagini'), scegli: chiama('file:scegli'), scegliCartella: chiama('file:scegliCartella'),
-    salvaTemp: chiama('file:salvaTemp'), info: chiama('file:info'), portaDentro: chiama('file:portaDentro'),
+    salvaTemp: chiama('file:salvaTemp'), info: chiama('file:info'), portaDentro: chiama('file:portaDentro'), inPng: chiama('file:inPng'),
     /** il percorso vero di un file trascinato nella finestra */
     percorso: (f: File) => webUtils.getPathForFile(f)
   },
@@ -36,7 +36,8 @@ const api = {
   trascina: (percorso: string) => ipcRenderer.send('trascina', percorso),
   su: {
     motore: ascolta('motore'), motoreLog: ascolta('motoreLog'), lavori: ascolta('lavori'), lavoro: ascolta('lavoro'),
-    setup: ascolta('setup'), galleria: ascolta('galleria'), download: ascolta('download'), aggiornamento: ascolta('aggiornamento')
+    setup: ascolta('setup'), galleria: ascolta('galleria'), download: ascolta('download'), aggiornamento: ascolta('aggiornamento'),
+    risorse: ascolta('risorse')
   }
 }
 

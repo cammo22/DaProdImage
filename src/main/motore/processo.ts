@@ -103,8 +103,10 @@ export function avviaMotore(): Promise<void> {
       '--input-directory', ENTRATA,
       '--user-directory', UTENTE_COMFY,
       '--temp-directory', join(TEMP, 'comfy'),
-      '--preview-method', imp.anteprimaLive ? 'auto' : 'none',
-      '--preview-size', '640'
+      // taesd: con il decoder TAEQI 2.1 in models/vae_approx l'anteprima è nitida a ogni passo ("auto" userebbe
+      // sempre l'approssimazione lineare, a 1/16 della risoluzione); se il file manca il motore torna da solo a quella
+      '--preview-method', imp.anteprimaLive ? 'taesd' : 'none',
+      '--preview-size', '1024'
     ]
     // 6 GB: un margine fisso perché il motore scarichi lui i pezzi in RAM, invece di lasciare che il driver
     // di Windows "allarghi" la VRAM nella RAM condivisa (lì tutto va 5-10 volte più piano)

@@ -54,6 +54,8 @@ L'installer non è firmato: la prima volta Windows SmartScreen chiede conferma (
 
 ## ⚙ Come funziona dentro
 
+- Anteprima dal vivo nitida con **TAEQI 2.1** (madebyollin), traduzione automatica dei prompt in inglese con il Qwen3-VL già
+  caricato, tutte le foto convertite in PNG (HEIC/RAW/TIFF con WIC di Windows, come DaP-Convertitore).
 - Il motore è **ComfyUI** (versione fissata), senza la sua interfaccia, installato con **uv** in `%LOCALAPPDATA%\DaProdImage`.
 - **ComfyUI-GGUF** viaggia dentro l'app: è il fork di leejet (l'unico che conosce `qwen_image21`) con una nostra
   correzione per ComfyUI 0.39 (vedi `engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`).

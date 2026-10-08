@@ -11,12 +11,15 @@ import { annullaSetup, cercaModelliEsistenti, controlloSistema, installa, motore
 import { avviaMotore, fermaMotore, infoMotore, logMotore, riavviaMotore, suCambioMotore, suLogMotore } from './motore/processo'
 import { connetti, dimenticaNodi, liberaMemoria, nodiDisponibili, scollega } from './motore/cliente'
 import { accodaRichiesta, annullaLavoro, elencoLavori, scriviTesto, suCambioLavori, svuotaCoda, togliFiniti } from './motore/lavori'
-import { elenco, elimina, importa, opera, preferita, ricaricaGalleria, salvaOra, suCambioGalleria } from './galleria'
+import { elenco, elimina, importa, importaFoto, opera, preferita, ricaricaGalleria, salvaOra, suCambioGalleria } from './galleria'
+import { ESTENSIONI_FOTO, SOLO_WIC, pngConWic } from './converti'
+import { seguiRisorse } from './risorse'
 import { aggiornaLora, elencoLora, eliminaLora, importaLora, scaricaLora } from './lora'
 import { leggiMetadati } from './png'
 import { avviaAggiornamenti, controllaAggiornamenti, installaAggiornamento, statoAggiornamento, suAggiornamento } from './aggiornamenti'
 
-protocol.registerSchemesAsPrivileged([{ scheme: 'daprod', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }])
+// corsEnabled: le <img crossOrigin> (canvas) e la mask-image della zona leggono da qui con il CORS
+protocol.registerSchemesAsPrivileged([{ scheme: 'daprod', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }])
 
 let finestra: BrowserWindow | null = null
 /** true quando si sta già chiudendo (il motore è fermo o si sta fermando) */
@@ -44,7 +47,8 @@ function creaFinestra(): void {
     // nell'app installata l'icona è quella dell'exe; in sviluppo si prende quella di build/
     ...(existsSync(join(app.getAppPath(), 'build', 'icon.png')) ? { icon: join(app.getAppPath(), 'build', 'icon.png') } : {}),
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#0f0a1a', symbolColor: '#e9e0ff', height: 38 },
+    // la barra del titolo è sempre chiara, anche col tema scuro di Windows
+    titleBarOverlay: { color: '#ffffff', symbolColor: '#1b1530', height: 38 },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -203,6 +207,7 @@ function registraIpc(): void {
     else copyFileSync(o.file, r.filePath)
   })
   gestisci('galleria:importa', (percorsi: string[]) => importa(percorsi))
+  gestisci('galleria:importaFoto', (png: string, nome: string) => importaFoto(png, nome))
   gestisci('galleria:meta', (percorso: string) => {
     try {
       return leggiMetadati(readFileSync(percorso))
@@ -247,7 +252,7 @@ function registraIpc(): void {
     if (!finestra) return []
     const r = await dialog.showOpenDialog(finestra, {
       properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'],
-      filters: [{ name: 'Immagini', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'avif'] }]
+      filters: [{ name: 'Immagini', extensions: ESTENSIONI_FOTO }]
     })
     return r.canceled ? [] : r.filePaths
   })
@@ -269,16 +274,28 @@ function registraIpc(): void {
     writeFileSync(p, Buffer.from(m[2], 'base64'))
     return p
   })
-  // copia dei file scelti/trascinati dentro TEMP (il protocollo daprod:// legge solo le cartelle dell'app)
-  gestisci('file:portaDentro', (percorsi: string[]) => {
+  // copia dei file scelti/trascinati dentro TEMP (il protocollo daprod:// legge solo le cartelle dell'app);
+  // i formati che l'interfaccia non sa aprire (HEIC, RAW, TIFF, JXL…) diventano subito PNG con WIC
+  gestisci('file:portaDentro', async (percorsi: string[]) => {
     assicura(TEMP)
-    return percorsi.map((p) => {
-      if (permesso(p)) return p
+    const fuori: string[] = []
+    for (const p of percorsi) {
+      if (SOLO_WIC.test(p)) {
+        fuori.push((await pngConWic(p)).percorso)
+        continue
+      }
+      if (permesso(p)) {
+        fuori.push(p)
+        continue
+      }
       const dest = join(TEMP, `${randomUUID().slice(0, 8)}-${basename(p).replace(/[^\w.-]+/g, '_')}`)
       copyFileSync(p, dest)
-      return dest
-    })
+      fuori.push(dest)
+    }
+    return fuori
   })
+  // l'interfaccia non è riuscita ad aprirla: ci prova WIC
+  gestisci('file:inPng', (p: string, latoMax?: number) => pngConWic(p, latoMax || 0))
   gestisci('file:info', (p: string) => {
     try {
       const st = statSync(p)
@@ -321,11 +338,16 @@ function registraIpc(): void {
 
 app.whenReady().then(() => {
   app.setAppUserModelId('it.daprod.image')
-  protocol.handle('daprod', (req) => {
+  protocol.handle('daprod', async (req) => {
     const u = new URL(req.url)
     const p = decodeURIComponent(u.pathname.slice(1))
     if (!permesso(p)) return new Response('vietato', { status: 403 })
-    return net.fetch(pathToFileURL(p).toString())
+    // l'intestazione CORS serve al canvas dell'interfaccia: senza, le foto lette da qui lo "sporcano" e non si
+    // possono più convertire in PNG (era il motivo per cui solo i PNG funzionavano in Modifica)
+    const r = await net.fetch(pathToFileURL(p).toString())
+    const h = new Headers(r.headers)
+    h.set('Access-Control-Allow-Origin', '*')
+    return new Response(r.body, { status: r.status, headers: h })
   })
   registraIpc()
   suCambioMotore((i) => invia('motore', i))
@@ -334,6 +356,7 @@ app.whenReady().then(() => {
   suCambioGalleria(() => invia('galleria'))
   suAggiornamento((s) => invia('aggiornamento', s))
   creaFinestra()
+  seguiRisorse((r) => invia('risorse', r), () => !!finestra && !finestra.isDestroyed() && finestra.isVisible() && !finestra.isMinimized())
   if (motoreInstallato() && impostazioni().installato) void avviaEMotore().catch(() => undefined)
   avviaAggiornamenti()
 })

@@ -187,13 +187,21 @@ export async function elimina(ids: string[]): Promise<void> {
 }
 
 /** importa foto da fuori nella galleria (copia, con le impostazioni se le hanno) */
-export function importa(percorsi: string[]): Opera[] {
+/** i PNG fatti con DaProd Image tornano con le loro impostazioni; gli altri file li converte l'interfaccia (importaFoto) */
+export function importa(percorsi: string[]): { importate: Opera[]; altre: string[] } {
   const nuove: Opera[] = []
+  const altre: string[] = []
   for (const p of percorsi) {
-    if (!p.toLowerCase().endsWith('.png')) continue
+    if (!p.toLowerCase().endsWith('.png')) {
+      altre.push(p)
+      continue
+    }
     const buf = readFileSync(p)
     const meta = leggiMetadati(buf) as Partial<Opera> | null
-    if (!meta) continue
+    if (!meta) {
+      altre.push(p)
+      continue
+    }
     const tmp = join(MINIATURE, 'imp-' + randomUUID() + '.png')
     assicura(MINIATURE)
     copyFileSync(p, tmp)
@@ -205,7 +213,18 @@ export function importa(percorsi: string[]): Opera[] {
       })
     )
   }
-  return nuove
+  return { importate: nuove, altre }
+}
+
+/** una foto qualsiasi, già convertita in PNG, entra in galleria come "Importata" */
+export function importaFoto(png: string, nome: string): Opera {
+  const tmp = join(MINIATURE, 'imp-' + randomUUID() + '.png')
+  assicura(MINIATURE)
+  copyFileSync(png, tmp)
+  return aggiungi(tmp, {
+    durata: 0, modalita: 'importa', prompt: '', negativo: '', seed: 0, passi: 0, cfg: 1, sampler: '', scheduler: '',
+    lora: [], modello: '', etichetta: basename(nome).replace(/\.[^.]+$/, '')
+  })
 }
 
 export const ricaricaGalleria = (): void => {
