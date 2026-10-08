@@ -56,11 +56,23 @@ a { color: var(--oro); }
 .app { display: grid; grid-template-rows: var(--barra) 1fr; grid-template-columns: 78px 1fr; height: 100%; }
 .barra-titolo {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 0 150px 0 14px;
-  -webkit-app-region: drag; background: linear-gradient(180deg, #120c22, var(--fondo)); border-bottom: 1px solid #1d1636;
+  -webkit-app-region: drag; background: #ffffff; border-bottom: 1px solid #e4def5; color: #1b1530;
 }
-.barra-titolo .logo { display: flex; align-items: center; gap: 9px; font-family: var(--titolo); font-weight: 900; font-size: 14px; letter-spacing: 1.5px; }
+.barra-titolo .logo { display: flex; align-items: center; gap: 9px; font-family: var(--titolo); font-weight: 900; font-size: 14px; letter-spacing: 1.5px; color: #1b1530; }
 .barra-titolo .logo img { width: 22px; height: 22px; }
-.barra-titolo .logo b { color: var(--oro); }
+.barra-titolo .logo b { background: linear-gradient(90deg, var(--viola), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* nella barra chiara le pillole e gli indicatori sono chiari */
+.barra-titolo .pillola { background: #f4f1fb; border-color: #e0d9f2; color: #4a4068; }
+.barra-titolo .pillola.pronto .punto { box-shadow: 0 0 6px var(--verde); }
+.barra-titolo .btn:not(.primario) { background: #f4f1fb; border-color: #d9d1ee; color: #2a2245; }
+.indicatori { display: flex; align-items: center; gap: 12px; -webkit-app-region: no-drag; }
+.metro { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4a4068; white-space: nowrap; cursor: default; }
+.metro b { font-size: 11px; letter-spacing: .8px; color: #7a6f9c; font-weight: 700; }
+.metro .barra { width: 46px; height: 6px; border-radius: 3px; background: #ebe6f6; overflow: hidden; }
+.metro .barra i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #3ee08f, #2bb673); transition: width .6s; }
+.metro.alto .barra i { background: linear-gradient(90deg, #ffc23a, #f59e0b); }
+.metro.pieno .barra i { background: linear-gradient(90deg, #ff7a8c, #e5374f); }
+.metro .num { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 64px; }
 .barra-titolo .spazio { flex: 1; }
 .barra-titolo button, .barra-titolo .pillola { -webkit-app-region: no-drag; }
 
@@ -240,9 +252,10 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .galleria { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .galleria .testa { display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #1d1636; background: var(--fondo2); }
 .galleria .testa input[type='search'] { max-width: 320px; }
-.griglia { flex: 1; overflow-y: auto; padding: 16px 18px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--lato, 220px), 1fr)); gap: 12px; align-content: start; }
-.tessera { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #0f0b1c; cursor: pointer; border: 1px solid #221a3a; }
-.tessera img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
+.griglia { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 18px 24px; display: flex; flex-direction: column; gap: 10px; }
+.riga-foto { display: flex; gap: 10px; flex: none; }
+.tessera { position: relative; height: 100%; flex: none; border-radius: 10px; overflow: hidden; background: #0f0b1c; cursor: pointer; border: 1px solid #221a3a; }
+.tessera img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
 .tessera:hover img { transform: scale(1.04); }
 .tessera .velo { position: absolute; inset: auto 0 0 0; padding: 26px 10px 8px; background: linear-gradient(transparent, rgba(8,5,16,.92)); font-size: 12.5px; color: var(--tenue); opacity: 0; transition: opacity .15s; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tessera:hover .velo { opacity: 1; }
@@ -253,13 +266,13 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .tessera .stelle svg { width: 17px; height: 17px; }
 .tessera .tipo { position: absolute; left: 7px; top: 7px; font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px; border-radius: 6px; background: rgba(13,9,23,.75); color: var(--tenue); }
 .tessera.scelta { outline: 3px solid var(--oro); outline-offset: -3px; }
-.giorno { grid-column: 1 / -1; font-family: var(--titolo); font-size: 11.5px; letter-spacing: 2px; color: var(--spento); padding: 8px 2px 0; }
+.giorno { flex: none; font-family: var(--titolo); font-size: 11.5px; letter-spacing: 2px; color: var(--spento); padding: 8px 2px 0; }
 
 /* visore */
 .visore { position: fixed; inset: var(--barra) 0 0 0; z-index: 60; background: rgba(6, 4, 12, .94); backdrop-filter: blur(6px); display: grid; grid-template-columns: 1fr 380px; }
-.visore .immagine { position: relative; display: grid; place-items: center; padding: 24px; min-width: 0; min-height: 0; }
-.visore .immagine img { max-width: 100%; max-height: calc(100vh - var(--barra) - 48px); object-fit: contain; border-radius: 6px; }
-.visore .freccia { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--bordo2); background: rgba(24,18,43,.8); color: var(--testo); cursor: pointer; display: grid; place-items: center; }
+.visore .immagine { position: relative; display: grid; place-items: center; padding: 0; min-width: 0; min-height: 0; overflow: hidden; }
+.visore .immagine > .confronto { margin: 24px; }
+.visore .freccia { z-index: 3; position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--bordo2); background: rgba(24,18,43,.8); color: var(--testo); cursor: pointer; display: grid; place-items: center; }
 .visore .freccia.sx { left: 18px; } .visore .freccia.dx { right: 18px; }
 .visore .info { background: var(--fondo2); border-left: 1px solid var(--bordo); display: flex; flex-direction: column; min-height: 0; }
 .visore .info .prompt { background: #0f0b1c; border: 1px solid var(--bordo); border-radius: 9px; padding: 10px; font-size: 14px; color: var(--testo); white-space: pre-wrap; max-height: 210px; overflow-y: auto; user-select: text; }
@@ -424,3 +437,29 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .in-corso-tela { position: absolute; left: 0; right: 0; bottom: 0; height: 0; z-index: 5; }
 .in-corso-tela .sopra { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(13, 9, 23, .86); backdrop-filter: blur(8px); border: 1px solid var(--bordo2); border-radius: 12px; padding: 10px 16px; min-width: 340px; max-width: min(560px, 92%); display: flex; flex-direction: column; gap: 7px; cursor: default; }
 @keyframes appare { from { opacity: .4; } }
+
+/* ---------- foto con zoom (rotella, trascina, doppio clic) ---------- */
+.vista-zoom { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.vista-zoom:active { cursor: grabbing; }
+.vista-zoom > img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; border-radius: 4px; box-shadow: 0 20px 60px -20px #000; transition: opacity .2s; }
+.vista-zoom .comandi-zoom { position: absolute; right: 14px; bottom: 14px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(13,9,23,.82); border: 1px solid var(--bordo2); backdrop-filter: blur(6px); opacity: .55; transition: opacity .15s; z-index: 2; }
+.vista-zoom:hover .comandi-zoom { opacity: 1; }
+.vista-zoom .comandi-zoom button { width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--testo); cursor: pointer; font-size: 17px; display: grid; place-items: center; }
+.vista-zoom .comandi-zoom button:hover, .vista-zoom .comandi-zoom button.su { background: var(--rialzo); color: var(--oro); }
+.vista-zoom .comandi-zoom button svg { width: 15px; height: 15px; }
+.vista-zoom .comandi-zoom span { min-width: 48px; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--tenue); font-variant-numeric: tabular-nums; }
+
+/* ---------- Modifica: versioni, confronto, nota zona ---------- */
+.barra-versioni { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 12px; background: rgba(13, 9, 23, .86); border: 1px solid var(--bordo2); backdrop-filter: blur(8px); box-shadow: 0 12px 30px -12px #000; cursor: default; white-space: nowrap; }
+.barra-versioni b { color: var(--oro); min-width: 52px; text-align: center; }
+.barra-versioni .sep { width: 1px; height: 22px; background: var(--bordo2); margin: 0 4px; }
+.barra-versioni .freccina { font-size: 22px; line-height: 1; margin-top: -3px; }
+.barra-confronto { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 5px 8px 5px 12px; border-radius: 12px; background: rgba(13, 9, 23, .86); border: 1px solid var(--bordo2); z-index: 5; white-space: nowrap; }
+.vedi-prima { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: var(--fondo); pointer-events: none; padding: 20px; }
+.vedi-prima img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.vedi-prima span { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); padding: 3px 10px; border-radius: 7px; background: rgba(13,9,23,.85); color: var(--oro); font-weight: 700; letter-spacing: 1px; font-size: 12.5px; }
+.nota-zona { font-size: 13.5px; color: var(--tenue); line-height: 1.45; padding: 10px 12px; border-radius: 10px; background: rgba(138, 44, 255, .08); border: 1px solid rgba(138, 44, 255, .3); }
+.nota-zona svg { width: 16px; height: 16px; vertical-align: -3px; color: var(--magenta); margin-right: 2px; }
+.nota-zona b { color: var(--testo); }
+.tradotto { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; font-style: italic; }
+.in-corso img { transition: filter .3s; }

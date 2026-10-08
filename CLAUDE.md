@@ -30,11 +30,16 @@ interfaccia**, installato e guidato dall'app.
 - **DaProd-Nodi** (`engine/custom_nodes/DaProd-Nodi/__init__.py`, solo torch): `DaProdRiempiZona` (push-pull: riempie la
   zona coi colori attorno) e `DaProdAccordaColori` (toglie lo scarto di colore del VAE misurandolo in un anello fuori
   dalla zona). Si provano senza ComfyUI importando il file con un torch CPU qualsiasi.
+- **Anteprime**: `--preview-method taesd` col decoder `taeqi2_1_decoder.pth` (madebyollin/taesd, voce `tae` del catalogo,
+  in `models/vae_approx`): nitide a ogni passo. "auto" in ComfyUI vuol dire latent2rgb, a 1/16 della risoluzione.
 - **Profilo memoria** (`impostazioni.memoria`, `profiloMemoria()`): auto dalla VRAM (`vramMB` ricordata da `system_stats`);
   `bassa` (< 7 GB) = VAE a tessere da 0,6 MP e `--reserve-vram 0.6`; `normale` = tessere oltre 2,2 MP; `alta` = mai.
 - `processo.ts` lancia `main.py` con `--models-directory`, `--output-directory` ecc. sulla porta 8818 (o la prima libera)
   e lo chiude con `taskkill /T`. `cliente.ts`: HTTP + WebSocket; il `prompt_id` lo sceglie l'app, così i messaggi che
   arrivano prima della risposta non si perdono. Anteprime binarie tipo 1 e 4.
+- **Traduzione** (`motore/traduci.ts`, `impostazioni.traduci`): se il prompt sembra italiano, prima del disegno un
+  `TextGenerate` con lo stesso Qwen3-VL lo porta in inglese (testi fra virgolette e `<imageN>` identici); in cache per
+  prompt. Il grafo riceve l'inglese, in galleria resta il prompt originale più `promptInglese`.
 - `lavori.ts` è **la coda**: un lavoro alla volta al motore, fasi dai nodi (`fasi` del grafo), stima dai secondi per
   passo misurati (`impostazioni.tempi`), risultato spostato in galleria.
 
@@ -51,9 +56,11 @@ interfaccia**, installato e guidato dall'app.
   modifica si sposta), `VAEEncode` + `SetLatentNoiseMask` + `DifferentialDiffusion`, poi si rimpicciolisce e si incolla
   con `ImageCompositeMasked` e bordo sfumato: **fuori dalla zona la foto resta identica al pixel**.
   "Mostra la zona al modello" disegna un contorno rosso sull'image_1 (sperimentale).
-  Nel latente la maschera è **morbida** (sfocata), con "Riempi prima" (`q.riempi`, acceso da "Rimuovi oggetto") l'image_1 e
-  il latente partono dalla zona riempita, senza contorno rosso il prompt dice **dove** sta la zona (`doveNelRiquadro`),
-  e dopo il VAE `DaProdAccordaColori` rimette i colori a posto. `GrafoPronto.area` dice dove posare l'anteprima.
+  Il modello vede **sempre la foto intera**: l'ultima immagine è tutta la foto (≤ 1 MP) con la zona evidenziata in rosso
+  (velo al 45% + bordo pieno) e il prompt dice di cambiare solo lì (e dove sta nel ritaglio, `doveNelRiquadro`).
+  Nessuna impostazione nell'interfaccia: contesto 0,8, bordo e sfumatura proporzionati alla zona, riempimento
+  automatico se l'istruzione dice di togliere (`RIMUOVI`). Maschera **morbida** nel latente, `DaProdAccordaColori`
+  dopo il VAE. `GrafoPronto.area` dice dove posare l'anteprima.
 - **Espandi**: `ImagePadForOutpaint` per la tela e la maschera, ma l'image_1 è la **foto originale** (senza bande
   grigie: il modello di modifica le "conserva") con l'istruzione "zoom out and extend"; il centro resta bloccato dalla
   maschera del latente. Provato anche il riempimento testo→immagine con descrizione automatica: giunture peggiori.
@@ -68,9 +75,12 @@ interfaccia**, installato e guidato dall'app.
   la maschera con `mask-mode: luminance`, sotto la foto per Espandi).
 - Le pagine Crea e Modifica **restano montate** (la maschera disegnata non si perde cambiando pagina): i tasti
   controllano `pagina` prima di agire.
-- Le immagini si mostrano col protocollo `daprod://f/<percorso>` che serve **solo** le cartelle dell'app: le foto
-  scelte da fuori passano da `file:portaDentro` (copia in temp) e `normalizza` (PNG pulito, rotazione EXIF applicata,
-  max 24 MP) così maschera e motore combaciano al pixel.
+- Le immagini si mostrano col protocollo `daprod://f/<percorso>` che serve **solo** le cartelle dell'app (con CORS: le
+  `<img>` che finiscono su un canvas hanno `crossOrigin`, se no il canvas si "sporca"). Ogni foto da fuori diventa PNG:
+  `file:portaDentro` (copia in temp; HEIC/RAW/TIFF/JXL subito con WIC, `src/main/converti.ts`, come DaP-Convertitore)
+  e `normalizza` (Chromium + EXIF, se non ce la fa `file:inPng` con WIC; max 24 MP).
+- `VistaZoom`: foto con rotella/trascina/doppio clic (Crea, visore). Galleria a righe giustificate. Barra del titolo
+  sempre bianca (`titleBarOverlay` chiaro) con RAM/VRAM/GPU da `src/main/risorse.ts` (nvidia-smi ogni 2 s).
 - Le impostazioni di ogni immagine stanno **dentro il PNG** (chunk iTXt `daprod`, `src/main/png.ts`): la galleria si
   ricostruisce dai file e un PNG trascinato in Galleria torna con prompt, seed e LoRA.
 - LoRA: dall'intestazione safetensors si capisce se sono per Qwen 2.1 (`transformer_blocks.N.attn.to_q`/`img_mlp`)

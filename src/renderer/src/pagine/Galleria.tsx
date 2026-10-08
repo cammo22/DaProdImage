@@ -1,11 +1,12 @@
 // Galleria: tutte le immagini, con ricerca, preferite, visore e azioni.
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { usaStato } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Segmenti } from '../componenti/Controlli'
 import { PrimaDopo } from '../componenti/PrimaDopo'
-import { durata, ETICHETTE_MODALITA } from '../util'
+import { durata, ETICHETTE_MODALITA, normalizza } from '../util'
+import { VistaZoom } from '../componenti/VistaZoom'
 import { apriInModifica, fotoDaOpera, ingrandisci, rifinisci, riusa, varia } from '../azioni'
 import type { FiltroGalleria, Opera } from '@shared/tipi'
 
@@ -24,6 +25,59 @@ export function Galleria(): JSX.Element {
   const [filtro, setFiltro] = useState<FiltroGalleria>({ modalita: 'tutte', testo: '' })
   const [lato, setLato] = useState(() => Number(localStorage.getItem('dpi-lato') || 220))
   const [scelte, setScelte] = useState<Set<string>>(new Set())
+  const [importo, setImporto] = useState(0)
+  const griglia = useRef<HTMLDivElement>(null)
+  const [larghezza, setLarghezza] = useState(0)
+
+  // le righe si ricalcolano sulla larghezza vera della griglia
+  useEffect(() => {
+    const el = griglia.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setLarghezza(el.clientWidth - 36))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const cambiaLato = (n: number): void => {
+    const v = Math.max(110, Math.min(460, Math.round(n)))
+    setLato(v)
+    localStorage.setItem('dpi-lato', String(v))
+  }
+  // Ctrl+rotella = miniature più grandi o più piccole
+  useEffect(() => {
+    const el = griglia.current
+    if (!el) return
+    const rotella = (e: WheelEvent): void => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      cambiaLato(lato * (e.deltaY < 0 ? 1.12 : 1 / 1.12))
+    }
+    el.addEventListener('wheel', rotella, { passive: false })
+    return () => el.removeEventListener('wheel', rotella)
+  })
+
+  /** PNG di DaProd con le impostazioni; tutte le altre foto si convertono in PNG ed entrano come "Importate" */
+  const importaFile = async (ps: string[]): Promise<void> => {
+    setImporto(ps.length)
+    try {
+      const r = await api.galleria.importa(ps)
+      let fatte = r.importate.length
+      let errori = 0
+      for (const p of r.altre) {
+        try {
+          const f = await normalizza(p)
+          await api.galleria.importaFoto(f.percorso, p)
+          fatte++
+        } catch {
+          errori++
+        }
+      }
+      if (fatte) avvisa(`${fatte} ${fatte === 1 ? 'immagine importata' : 'immagini importate'}${r.importate.length ? ` (${r.importate.length} con le impostazioni di DaProd)` : ''}`, 'ok')
+      if (errori) avvisa(`${errori} ${errori === 1 ? 'file non si apre' : 'file non si aprono'} come immagine`, 'errore')
+    } finally {
+      setImporto(0)
+    }
+  }
 
   const carica = (): void => {
     void api.galleria.elenco(filtro).then(setOpere)
@@ -66,8 +120,7 @@ export function Galleria(): JSX.Element {
           e.preventDefault()
           e.stopPropagation()
           const ps = Array.from(e.dataTransfer.files).map((f) => api.file.percorso(f))
-          const n = await api.galleria.importa(ps)
-          avvisa(n.length ? `${n.length} immagini importate con le loro impostazioni` : 'Solo i PNG fatti con DaProd Image si importano con le impostazioni', n.length ? 'ok' : 'info')
+          if (ps.length) await importaFile(ps)
         }}
       >
         <div className="testa">
@@ -92,21 +145,22 @@ export function Galleria(): JSX.Element {
               <button className="btn piccolo" onClick={() => setScelte(new Set())}>Annulla scelta</button>
             </>
           ) : (
-            <span className="spento piccolo">{opere.length} immagini · Ctrl+clic per sceglierne più</span>
+            <span className="spento piccolo">{importo ? `Importo ${importo} file…` : `${opere.length} immagini · Ctrl+clic: sceglierne più · Ctrl+rotella: grandezza`}</span>
           )}
-          <input type="range" min={130} max={420} value={lato} style={{ width: 110, ['--p' as string]: `${((lato - 130) / 290) * 100}%` }} onChange={(e) => { setLato(Number(e.target.value)); localStorage.setItem('dpi-lato', e.target.value) }} title="Grandezza delle miniature" />
+          <input type="range" min={110} max={460} value={lato} style={{ width: 110, ['--p' as string]: `${((lato - 110) / 350) * 100}%` }} onChange={(e) => cambiaLato(Number(e.target.value))} title="Grandezza delle miniature (anche Ctrl+rotella)" />
+          <button className="btn piccolo" onClick={async () => { const ps = await api.file.scegliImmagini(true); if (ps.length) await importaFile(ps) }} title="Porta dentro foto dal PC (diventano PNG)"><I.piu /> Importa</button>
           <button className="btn piccolo" onClick={() => api.galleria.apriCartella()}><I.cartella /> Cartella</button>
         </div>
-        <div className="griglia" style={{ ['--lato' as string]: `${lato}px` }}>
+        <div className="griglia" ref={griglia}>
           {opere.length === 0 && (
             <div className="vuoto" style={{ gridColumn: '1 / -1', margin: '80px auto' }}>
               <div className="grosso">LA GALLERIA È <b>VUOTA</b></div>
               <p>Tutto quello che crei o modifichi finisce qui (e nella cartella Immagini\DaProd Image).</p>
-              <p className="piccolo">Trascina qui dei PNG fatti con DaProd Image per riportarli dentro con le loro impostazioni.</p>
+              <p className="piccolo">Trascina qui delle foto per portarle dentro (diventano PNG); i PNG fatti con DaProd Image tornano con le loro impostazioni.</p>
             </div>
           )}
           {gruppi.map((g) => (
-            <GruppoGiorno key={g.titolo} titolo={g.titolo} opere={g.opere} scelte={scelte} clic={clic} />
+            <GruppoGiorno key={g.titolo} titolo={g.titolo} opere={g.opere} scelte={scelte} clic={clic} lato={lato} larghezza={larghezza} />
           ))}
         </div>
       </div>
@@ -115,36 +169,68 @@ export function Galleria(): JSX.Element {
   )
 }
 
-function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; clic: (o: Opera, e: React.MouseEvent) => void }): JSX.Element {
+const SPAZIO = 10
+
+/** righe "giustificate": ogni foto con le sue proporzioni, le righe piene arrivano esatte al bordo (come Google Foto) */
+function righe(opere: Opera[], lato: number, larghezza: number): { h: number; opere: Opera[] }[] {
+  const out: { h: number; opere: Opera[] }[] = []
+  if (larghezza <= 0) return [{ h: lato, opere }]
+  let riga: Opera[] = []
+  let somma = 0
+  for (const o of opere) {
+    const a = o.larghezza && o.altezza ? Math.max(0.25, Math.min(4, o.larghezza / o.altezza)) : 1
+    riga.push(o)
+    somma += a
+    const spazi = SPAZIO * (riga.length - 1)
+    if (somma * lato + spazi >= larghezza) {
+      out.push({ h: (larghezza - spazi) / somma, opere: riga })
+      riga = []
+      somma = 0
+    }
+  }
+  if (riga.length) out.push({ h: lato, opere: riga })
+  return out
+}
+
+function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; clic: (o: Opera, e: React.MouseEvent) => void; lato: number; larghezza: number }): JSX.Element {
+  const r = useMemo(() => righe(p.opere, p.lato, p.larghezza), [p.opere, p.lato, p.larghezza])
   return (
     <>
       <div className="giorno">{p.titolo}</div>
-      {p.opere.map((o) => (
-        <div
-          key={o.id}
-          className={`tessera ${p.scelte.has(o.id) ? 'scelta' : ''} ${o.trasparente ? 'scacchi' : ''}`}
-          onClick={(e) => p.clic(o, e)}
-          draggable
-          onDragStart={(e) => {
-            e.preventDefault()
-            api.trascina(o.file)
-          }}
-        >
-          <img src={urlFile(o.miniatura || o.file)} alt="" loading="lazy" />
-          <span className="tipo">{o.etichetta === 'Bozza' ? 'BOZZA' : ETICHETTE_MODALITA[o.modalita]?.toUpperCase()}</span>
-          <div className="stelle">
-            <button
-              className={o.preferita ? 'si' : ''}
-              onClick={(e) => {
-                e.stopPropagation()
-                void api.galleria.preferita(o.id, !o.preferita)
-              }}
-              title="Preferita"
-            >
-              {o.preferita ? <I.stellaPiena /> : <I.stella />}
-            </button>
-          </div>
-          <div className="velo">{o.prompt || o.etichetta}</div>
+      {r.map((riga, i) => (
+        <div className="riga-foto" key={i} style={{ height: Math.round(riga.h) }}>
+          {riga.opere.map((o) => {
+            const a = o.larghezza && o.altezza ? Math.max(0.25, Math.min(4, o.larghezza / o.altezza)) : 1
+            return (
+              <div
+                key={o.id}
+                className={`tessera ${p.scelte.has(o.id) ? 'scelta' : ''} ${o.trasparente ? 'scacchi' : ''}`}
+                style={{ width: Math.floor(a * riga.h) }}
+                onClick={(e) => p.clic(o, e)}
+                draggable
+                onDragStart={(e) => {
+                  e.preventDefault()
+                  api.trascina(o.file)
+                }}
+              >
+                <img src={urlFile(o.miniatura || o.file)} alt="" loading="lazy" />
+                <span className="tipo">{o.etichetta === 'Bozza' ? 'BOZZA' : ETICHETTE_MODALITA[o.modalita]?.toUpperCase()}</span>
+                <div className="stelle">
+                  <button
+                    className={o.preferita ? 'si' : ''}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void api.galleria.preferita(o.id, !o.preferita)
+                    }}
+                    title="Preferita"
+                  >
+                    {o.preferita ? <I.stellaPiena /> : <I.stella />}
+                  </button>
+                </div>
+                <div className="velo">{o.prompt || o.etichetta}</div>
+              </div>
+            )
+          })}
         </div>
       ))}
     </>
@@ -191,7 +277,7 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
         {confronta && origine ? (
           <PrimaDopo prima={urlFile(origine.file)} dopo={urlFile(attuale.file)} stile={{ maxHeight: 'calc(100vh - 90px)' }} />
         ) : (
-          <img src={urlFile(attuale.file)} alt="" className={attuale.trasparente ? 'scacchi' : ''} draggable onDragStart={(e) => { e.preventDefault(); api.trascina(attuale.file) }} />
+          <VistaZoom src={urlFile(attuale.file)} scacchi={attuale.trasparente} />
         )}
         {i > 0 && <button className="freccia sx" onClick={() => apriVisore(opere[i - 1])}>‹</button>}
         {i < opere.length - 1 && <button className="freccia dx" onClick={() => apriVisore(opere[i + 1])}>›</button>}
@@ -204,6 +290,7 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
         <div className="scorri">
           <div className="sezione col">
             {attuale.prompt && <div className="prompt">{attuale.prompt}</div>}
+            {attuale.promptInglese && <div className="piccolo spento" style={{ userSelect: 'text' }}>Al modello, in inglese: {attuale.promptInglese}</div>}
             {attuale.negativo && <div className="piccolo spento">Negativo: {attuale.negativo}</div>}
             <div className="riga a-capo">
               <button className="btn piccolo" onClick={() => navigator.clipboard.writeText(attuale.prompt).then(() => avvisa('Prompt copiato', 'ok'))}><I.copia /> Copia prompt</button>

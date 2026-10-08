@@ -1,6 +1,6 @@
 // L'API del processo principale, con i tipi giusti.
 import type {
-  ControlloSistema, Download, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, StatoAggiornamento, StatoVoce
+  ControlloSistema, Download, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, Risorse, StatoAggiornamento, StatoVoce
 } from '@shared/tipi'
 
 type Via = () => void
@@ -43,7 +43,8 @@ export interface Api {
   galleria: {
     elenco(f: FiltroGalleria): Promise<Opera[]>; opera(id: string): Promise<Opera | undefined>; preferita(id: string, si: boolean): Promise<void>
     elimina(ids: string[]): Promise<void>; mostra(id: string): Promise<void>; apriCartella(): Promise<void>; copia(id: string): Promise<void>
-    esporta(id: string): Promise<void>; importa(p: string[]): Promise<Opera[]>; meta(p: string): Promise<Partial<Opera> | null>
+    esporta(id: string): Promise<void>; importa(p: string[]): Promise<{ importate: Opera[]; altre: string[] }>; meta(p: string): Promise<Partial<Opera> | null>
+    importaFoto(png: string, nome: string): Promise<Opera>
   }
   lora: {
     elenco(): Promise<InfoLora[]>; aggiorna(file: string, m: Partial<InfoLora>): Promise<void>; importa(p: string[]): Promise<string[]>
@@ -54,6 +55,7 @@ export interface Api {
     scegliCartella(attuale?: string): Promise<string | null>; salvaTemp(dataUrl: string, nome?: string): Promise<string>
     info(p: string): Promise<{ byte: number; larghezza: number; altezza: number; nome: string; estensione: string } | null>
     portaDentro(p: string[]): Promise<string[]>
+    inPng(p: string, latoMax?: number): Promise<{ percorso: string; larghezza: number; altezza: number }>
     percorso(f: File): string
   }
   app: { apriLink(u: string): Promise<void>; versione(): Promise<string>; apriCartella(q: 'modelli' | 'dati' | 'log'): Promise<void> }
@@ -68,6 +70,7 @@ export interface Api {
     galleria(f: () => void): Via
     download(f: (d: Download) => void): Via
     aggiornamento(f: (s: StatoAggiornamento) => void): Via
+    risorse(f: (r: Risorse) => void): Via
   }
 }
 

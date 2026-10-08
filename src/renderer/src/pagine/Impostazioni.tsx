@@ -139,6 +139,10 @@ export function Impostazioni(): JSX.Element {
               </div>
             </div>
             <div className="voce">
+              <div className="et"><b>Traduci in inglese da solo</b><small>Qwen-Image capisce meglio l'inglese: i prompt in italiano li traduce Qwen3-VL (già caricato, niente modelli in più) prima di disegnare. I testi fra virgolette restano identici</small></div>
+              <Interruttore acceso={imp.traduci} cambia={(traduci) => salva({ traduci })}>{imp.traduci ? 'Accesa' : 'Spenta'}</Interruttore>
+            </div>
+            <div className="voce">
               <div className="et"><b>Accelerazione fp16</b><small>--fast fp16_accumulation: qualche secondo in meno sulle RTX, qualità quasi uguale</small></div>
               <Interruttore acceso={imp.veloce} cambia={(veloce) => salva({ veloce })}>{imp.veloce ? 'Accesa' : 'Spenta'}</Interruttore>
             </div>

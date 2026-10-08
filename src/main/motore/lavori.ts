@@ -7,7 +7,8 @@ import { randomUUID } from 'node:crypto'
 import type { Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
-import { costruisci, type Ingressi } from './grafi'
+import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
+import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
 import { accoda, caricaImmagine, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
@@ -175,6 +176,50 @@ async function prepara(q: Richiesta): Promise<Ingressi> {
   return { immagini, maschera }
 }
 
+type Uscita = { nodo: string; immagini: { filename: string; subfolder: string; type: string }[]; testo?: string }
+
+/** manda un grafo al motore e aspetta che finisca (le fasi e l'avanzamento arrivano dai messaggi) */
+async function lancia(grafo: GrafoPronto): Promise<Uscita> {
+  fasiCorrenti = grafo.fasi
+  uscitaAttesa = { nodo: grafo.uscita, immagini: [] }
+  const fine = new Promise<MessaggioComfy>((ok, ko) => {
+    attesa = { ok, ko }
+  })
+  promptCorrente = randomUUID()
+  await accoda(grafo.prompt, promptCorrente)
+  await fine
+  const uscita = uscitaAttesa as Uscita
+  if (!uscita.immagini.length && !uscita.testo) {
+    const h = await usciteDa(promptCorrente, grafo.uscita).catch(() => null)
+    if (h) Object.assign(uscita, h)
+  }
+  return uscita
+}
+
+// le traduzioni già fatte (più immagini dallo stesso prompt = una traduzione sola)
+const tradotti = new Map<string, string>()
+const CON_PROMPT = new Set(['crea', 'modifica', 'zona', 'espandi', 'varia', 'rifinisci'])
+
+/** il prompt in inglese per il modello: se è in italiano lo traduce Qwen3-VL (già caricato), se no resta com'è */
+async function inInglese(l: Lavoro): Promise<string> {
+  const q = l.richiesta
+  const p = q.prompt.trim()
+  if (!impostazioni().traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return q.prompt
+  const gia = tradotti.get(p)
+  if (gia) return gia
+  l.fase = 'Traduco il prompt in inglese'
+  avvisa(l)
+  const g = costruisci({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, impostazioni(), { immagini: [] }, 'traduci')
+  g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
+  const u = await lancia(g)
+  const t = pulisciTraduzione(u.testo || '', p)
+  tradotti.set(p, t)
+  if (tradotti.size > 200) tradotti.delete(tradotti.keys().next().value as string)
+  l.passo = 0
+  l.passiTotali = 0
+  return t
+}
+
 let girando = false
 async function prossimo(): Promise<void> {
   if (girando) return
@@ -208,24 +253,16 @@ async function esegui(l: Lavoro): Promise<void> {
     }
     if (!collegato()) await connetti()
     const ing = await prepara(l.richiesta)
-    const grafo = costruisci(l.richiesta, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale))
-    fasiCorrenti = grafo.fasi
+    const inglese = await inInglese(l)
+    if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
+    tempiPasso = []
+    ultimoPasso = 0
+    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale))
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
-    uscitaAttesa = { nodo: grafo.uscita, immagini: [] }
-    const fine = new Promise<MessaggioComfy>((ok, ko) => {
-      attesa = { ok, ko }
-    })
-    promptCorrente = randomUUID()
-    await accoda(grafo.prompt, promptCorrente)
-    await fine
-    const uscita = uscitaAttesa
-    if (uscita && !uscita.immagini.length && !uscita.testo) {
-      const h = await usciteDa(promptCorrente, grafo.uscita).catch(() => null)
-      if (h) Object.assign(uscita, h)
-    }
+    const uscita = await lancia(grafo)
     if (l.richiesta.modalita === 'descrivi') {
       l.testo = (uscita?.testo || '').trim()
     } else {
@@ -249,7 +286,8 @@ async function esegui(l: Lavoro): Promise<void> {
           forza: q.forza,
           trasparente: q.trasparente,
           origine: q.origine,
-          etichetta: q.etichetta
+          etichetta: q.etichetta,
+          promptInglese: l.promptInglese
         })
         l.risultati.push(op.id)
       }

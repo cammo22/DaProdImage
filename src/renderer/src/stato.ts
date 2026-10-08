@@ -1,6 +1,6 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, StatoAggiornamento } from '@shared/tipi'
+import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
 
 export type Pagina = 'crea' | 'modifica' | 'galleria' | 'lora' | 'impostazioni'
@@ -80,6 +80,8 @@ interface Stato {
   visore: Opera | null
   /** aggiornamenti dell'app */
   agg: StatoAggiornamento
+  /** RAM, VRAM e GPU (dalla barra in alto) */
+  risorse: Risorse | null
   vai(p: Pagina): void
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
@@ -137,6 +139,7 @@ export const usaStato = create<Stato>((set, get) => ({
   avvisi: [],
   visore: null,
   agg: { stato: 'nessuno', attuale: '' },
+  risorse: null,
   vai: (pagina) => set({ pagina }),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
@@ -200,6 +203,7 @@ export async function collegaEventi(): Promise<void> {
   usaStato.setState({ motore: await api.motore.info(), lavori: await api.lavori.elenco(), lore: await api.lora.elenco() })
   usaStato.setState({ agg: await api.aggiornamento.stato() })
   api.su.aggiornamento((agg) => usaStato.setState({ agg }))
+  api.su.risorse((risorse) => usaStato.setState({ risorse }))
   api.su.motore((motore) => usaStato.setState({ motore }))
   api.su.lavori((lavori) => usaStato.setState({ lavori: [...lavori] }))
   api.su.lavoro((uno) => {

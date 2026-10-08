@@ -334,7 +334,7 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
     inizia('modelli', 'controllo i modelli…')
     const scelto = voce(opz.modello) || voce('q4km')!
     const imp = impostazioni()
-    const servono = [scelto, voce('te-int8')!, voce('vae-fix')!, voce('ultrasharp')!, ...opz.extra.map((id) => voce(id)).filter((x) => !!x)]
+    const servono = [scelto, voce('te-int8')!, voce('vae-fix')!, voce('ultrasharp')!, voce('tae')!, ...opz.extra.map((id) => voce(id)).filter((x) => !!x)]
     // se l'utente ha già il modello, lo si porta dentro (collegamento o copia)
     if (opz.mantieniModello) {
       servono.splice(servono.indexOf(scelto), 1)

@@ -56,6 +56,15 @@ export const CATALOGO: VoceCatalogo[] = [
     file: 'qwen_image_2.1_vae_bf16.safetensors', cartella: 'vae', url: UC + 'vae/qwen_image_2.1_vae_bf16.safetensors',
     byte: 675509688, sha256: 'bb21f7473051e1ac368515dd3f2e15cd44d7a11748ee8823e1ddca3e4876b7c9'
   },
+  // --- anteprima dal vivo: il "tiny VAE" di madebyollin per Qwen-Image 2.1 (64 canali, 16×) ---
+  {
+    // senza questo il motore mostra l'anteprima a 1/16 della risoluzione (una macchia); con questo è nitida a ogni passo
+    id: 'tae', tipo: 'anteprima', nome: 'TAEQI 2.1 (anteprime dal vivo)',
+    descrizione: 'Il decoder piccolissimo che fa vedere l\'immagine nascere passo per passo, nitida. Solo per le anteprime.',
+    file: 'taeqi2_1_decoder.pth', cartella: 'vae_approx',
+    url: 'https://raw.githubusercontent.com/madebyollin/taesd/main/taeqi2_1_decoder.pth',
+    byte: 15314938, sha256: '53c2212f4ea6c8ad06a30d4969d891f80339ff87bb3f77fe793848613d3a9042', consigliato: true, necessario: true
+  },
   // --- ingrandimento ---
   {
     id: 'ultrasharp', tipo: 'upscaler', nome: '4x-UltraSharp',

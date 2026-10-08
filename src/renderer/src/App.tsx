@@ -20,6 +20,38 @@ const VOCI: { id: Pagina; nome: string; icona: () => JSX.Element }[] = [
   { id: 'lora', nome: 'LoRA', icona: I.lora }
 ]
 
+const gb = (b: number): string => (b / 1073741824).toFixed(b >= 10 * 1073741824 ? 0 : 1)
+
+/** un indicatore piccolo: nome, barra, numeri (rosso quando è quasi pieno) */
+function Metro(p: { nome: string; parte: number; testo: string; titolo: string }): JSX.Element {
+  const f = Math.max(0, Math.min(1, p.parte))
+  return (
+    <span className={`metro ${f > 0.9 ? 'pieno' : f > 0.75 ? 'alto' : ''}`} title={p.titolo}>
+      <b>{p.nome}</b>
+      <span className="barra"><i style={{ width: `${f * 100}%` }} /></span>
+      <span className="num">{p.testo}</span>
+    </span>
+  )
+}
+
+/** RAM, VRAM e GPU in tempo reale nella barra in alto */
+function Indicatori(): JSX.Element | null {
+  const r = usaStato((s) => s.risorse)
+  if (!r) return null
+  const ramUsata = r.ramTotale - r.ramLibera
+  return (
+    <span className="indicatori">
+      <Metro nome="RAM" parte={ramUsata / r.ramTotale} testo={`${gb(ramUsata)}/${gb(r.ramTotale)} GB`} titolo={`RAM usata ${gb(ramUsata)} GB, libera ${gb(r.ramLibera)} GB`} />
+      {r.vramTotale ? (
+        <Metro nome="VRAM" parte={(r.vramUsata || 0) / r.vramTotale} testo={`${gb(r.vramUsata || 0)}/${gb(r.vramTotale)} GB`} titolo={`VRAM usata ${gb(r.vramUsata || 0)} GB, libera ${gb(r.vramTotale - (r.vramUsata || 0))} GB${r.gpu ? ` · ${r.gpu}` : ''}`} />
+      ) : null}
+      {r.gpuUso !== undefined && (
+        <Metro nome="GPU" parte={r.gpuUso / 100} testo={`${r.gpuUso}%${r.gpuTemp !== undefined ? ` · ${r.gpuTemp}°` : ''}`} titolo={`${r.gpu || 'Scheda video'}: in uso al ${r.gpuUso}%${r.gpuTemp !== undefined ? `, ${r.gpuTemp} °C` : ''}`} />
+      )}
+    </span>
+  )
+}
+
 export function App(): JSX.Element {
   const { pagina, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
   const [pronto, setPronto] = useState(false)
@@ -38,23 +70,27 @@ export function App(): JSX.Element {
     })()
   }, [])
 
-  // file trascinati sulla finestra (dove una pagina non li prende già): foto → Modifica, .safetensors → LoRA
+  // file trascinati sulla finestra (dove una pagina non li prende già): foto → Modifica, .safetensors → LoRA.
+  // Il velo "Rilascia" si toglie sempre: al rilascio (anche se lo prende una pagina, per questo in cattura),
+  // quando il file esce dalla finestra, o se per un attimo non arriva più nessun dragover.
   useEffect(() => {
-    let conta = 0
-    const entra = (e: DragEvent): void => {
+    let timer = 0
+    const via = (): void => {
+      window.clearTimeout(timer)
+      setRilascio(false)
+    }
+    const sopra = (e: DragEvent): void => {
       if (!e.dataTransfer?.types.includes('Files')) return
-      conta++
+      e.preventDefault()
       setRilascio(true)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(via, 350)
     }
-    const esce = (): void => {
-      conta = Math.max(0, conta - 1)
-      if (!conta) setRilascio(false)
+    const esce = (e: DragEvent): void => {
+      if (!e.relatedTarget) via()
     }
-    const sopra = (e: DragEvent): void => e.preventDefault()
     const giu = async (e: DragEvent): Promise<void> => {
       e.preventDefault()
-      conta = 0
-      setRilascio(false)
       const files = Array.from(e.dataTransfer?.files || [])
       if (!files.length) return
       const percorsi = files.map((f) => api.file.percorso(f))
@@ -65,7 +101,7 @@ export function App(): JSX.Element {
         avvisa(`${lore.length} LoRA aggiunti`, 'ok')
         return
       }
-      const foto = percorsi.find((p) => /\.(png|jpe?g|webp|bmp|gif|avif)$/i.test(p))
+      const foto = percorsi.find((p) => !/\.(safetensors|ckpt|pt|gguf|json|txt|zip)$/i.test(p))
       if (foto) {
         try {
           apriInModifica(await normalizza(foto))
@@ -75,20 +111,22 @@ export function App(): JSX.Element {
       }
     }
     const h = (e: DragEvent): void => void giu(e)
-    window.addEventListener('dragenter', entra)
-    window.addEventListener('dragleave', esce)
     window.addEventListener('dragover', sopra)
+    window.addEventListener('dragleave', esce)
+    window.addEventListener('drop', via, true)
+    window.addEventListener('dragend', via, true)
     window.addEventListener('drop', h)
     return () => {
-      window.removeEventListener('dragenter', entra)
-      window.removeEventListener('dragleave', esce)
+      window.clearTimeout(timer)
       window.removeEventListener('dragover', sopra)
+      window.removeEventListener('dragleave', esce)
+      window.removeEventListener('drop', via, true)
+      window.removeEventListener('dragend', via, true)
       window.removeEventListener('drop', h)
     }
   }, [])
 
   const attivi = lavori.filter((l) => l.stato === 'in coda' || l.stato === 'in corso').length
-  const vram = motore.vramTotale && motore.vramLibera !== undefined ? 1 - motore.vramLibera / motore.vramTotale : 0
   const statoMotore = motore.stato === 'pronto' ? 'pronto' : motore.stato === 'avvio' ? 'avvio' : motore.stato === 'errore' ? 'errore' : ''
   const testoMotore = { pronto: 'Motore pronto', avvio: 'Avvio del motore…', errore: 'Motore fermo', spento: 'Motore spento', 'non installato': 'Da installare' }[motore.stato]
 
@@ -110,15 +148,11 @@ export function App(): JSX.Element {
             <I.ricicla /> Riavvia e aggiorna a {agg.versione}
           </button>
         )}
+        <Indicatori />
         {installato && (
           <>
             <span className={`pillola ${statoMotore}`} onClick={() => vai('impostazioni')} title={motore.messaggio || ''}>
               <span className="punto" /> {testoMotore}
-              {motore.vramTotale ? (
-                <span className="vram" title={`VRAM usata ${Math.round(vram * 100)}%`}>
-                  <i style={{ width: `${vram * 100}%` }} />
-                </span>
-              ) : null}
             </span>
             {motore.stato === 'errore' && <button className="btn piccolo" onClick={() => api.motore.riavvia().catch((e: Error) => avvisa(e.message, 'errore'))}>Riavvia</button>}
           </>
@@ -170,7 +204,7 @@ export function App(): JSX.Element {
       </div>
       {rilascio && (
         <div className="velo-rilascio">
-          <div>Rilascia: le foto si aprono in Modifica, i .safetensors vanno fra i LoRA</div>
+          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
         </div>
       )}
     </div>

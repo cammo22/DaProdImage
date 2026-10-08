@@ -84,35 +84,47 @@ export function stimaSecondi(tempi: Record<string, number> | undefined, mp: numb
 const carica = (src: string): Promise<HTMLImageElement> =>
   new Promise((ok, ko) => {
     const im = new Image()
+    // senza crossOrigin il canvas resta "sporco" e toDataURL si rifiuta (il protocollo daprod:// manda il CORS)
+    im.crossOrigin = 'anonymous'
     im.onload = () => ok(im)
     im.onerror = () => ko(new Error('non riesco ad aprire questa immagine'))
     im.src = src
   })
 
+const MAX_PIXEL = 24e6
+
 /**
- * Porta una foto qualsiasi (jpg con rotazione EXIF, webp, png dagli appunti…) a un PNG pulito
- * nelle cartelle dell'app: così la maschera disegnata e quella che vede il motore combaciano al pixel.
- * Oltre i 24 MP la riduce.
+ * Porta una foto qualsiasi a un PNG pulito nelle cartelle dell'app: così la maschera disegnata e quella che vede
+ * il motore combaciano al pixel. Chromium apre JPG/WEBP/AVIF/GIF/BMP e applica la rotazione EXIF; quello che non
+ * sa aprire (HEIC, RAW, TIFF, JXL…) lo converte WIC di Windows nel processo principale. Oltre i 24 MP si riduce.
  */
 export async function normalizza(percorso: string): Promise<FotoBase> {
   const [dentro] = await api.file.portaDentro([percorso])
-  const im = await carica(urlFile(dentro, Date.now()))
+  let im: HTMLImageElement
+  try {
+    im = await carica(urlFile(dentro, Date.now()))
+  } catch {
+    const w = await api.file.inPng(dentro)
+    im = await carica(urlFile(w.percorso, Date.now()))
+    if (w.larghezza * w.altezza <= MAX_PIXEL) return { percorso: w.percorso, larghezza: w.larghezza, altezza: w.altezza }
+  }
   let w = im.naturalWidth
   let h = im.naturalHeight
-  const max = 24e6
-  if (w * h > max) {
-    const s = Math.sqrt(max / (w * h))
+  if (w * h > MAX_PIXEL) {
+    const s = Math.sqrt(MAX_PIXEL / (w * h))
     w = Math.round(w * s)
     h = Math.round(h * s)
   }
   if (/\.png$/i.test(dentro) && w === im.naturalWidth && h === im.naturalHeight) {
-    // un PNG senza rotazioni va già bene così
+    // un PNG che non va ridotto va già bene così
     return { percorso: dentro, larghezza: w, altezza: h }
   }
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
-  c.getContext('2d')!.drawImage(im, 0, 0, w, h)
+  const g = c.getContext('2d')!
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(im, 0, 0, w, h)
   const p = await api.file.salvaTemp(c.toDataURL('image/png'))
   return { percorso: p, larghezza: w, altezza: h }
 }
@@ -135,5 +147,5 @@ export function immagineDaIncolla(e: ClipboardEvent): Promise<string> | null {
 }
 
 export const ETICHETTE_MODALITA: Record<string, string> = {
-  crea: 'Creata', modifica: 'Modificata', zona: 'Zona', espandi: 'Espansa', rifinisci: 'Rifinita', varia: 'Variazione', ingrandisci: 'Ingrandita', descrivi: 'Testo'
+  crea: 'Creata', modifica: 'Modificata', zona: 'Zona', espandi: 'Espansa', rifinisci: 'Rifinita', varia: 'Variazione', ingrandisci: 'Ingrandita', descrivi: 'Testo', importa: 'Importata'
 }

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, attesiModifica, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
-import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
+import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
 import { PrimaDopo } from '../componenti/PrimaDopo'
@@ -18,9 +18,7 @@ interface Rapida {
   prompt: string
   completa?: boolean // il prompt va finito dall'utente (finisce con "…")
   trasparente?: boolean
-  segna?: boolean
-  /** riempie la zona prima (rimuovere: il modello non vede più l'oggetto) */
-  riempi?: boolean
+  /** quanto ridisegnare (solo Ritocca lo abbassa) */
   forza?: number
 }
 
@@ -42,11 +40,11 @@ const RAPIDE_TUTTA: Rapida[] = [
   { nome: 'Foto realistica', prompt: 'Turn this into a photorealistic photograph with natural lighting and real textures. Keep the composition and the subject.' }
 ]
 const RAPIDE_ZONA: Rapida[] = [
-  { nome: 'Rimuovi oggetto', prompt: 'Remove the object completely and fill the area with the surrounding background so it looks natural and untouched.', segna: true, riempi: true },
+  { nome: 'Rimuovi oggetto', prompt: 'Remove the object completely and fill the area with the surrounding background so it looks natural and untouched.' },
   { nome: 'Scrivi testo…', prompt: 'Write the text "…" in this area, with lettering that matches the style, perspective and lighting of the image.', completa: true },
-  { nome: 'Sostituisci con…', prompt: 'Replace it with …', completa: true, segna: true },
+  { nome: 'Sostituisci con…', prompt: 'Replace it with …', completa: true },
   { nome: 'Cambia colore…', prompt: 'Change its color to …', completa: true },
-  { nome: 'Aggiungi…', prompt: 'Add … in this area, matching the lighting and perspective of the scene', completa: true, segna: true },
+  { nome: 'Aggiungi…', prompt: 'Add … in this area, matching the lighting and perspective of the scene', completa: true },
   { nome: 'Ritocca', prompt: 'Clean up and retouch this area naturally: remove blemishes and defects, keep it realistic.', forza: 0.6 },
   { nome: 'Cambia vestito…', prompt: 'Change the clothing to …', completa: true }
 ]
@@ -61,6 +59,10 @@ export function Modifica(): JSX.Element {
   const [pennello, setPennello] = useState(60)
   const [haMaschera, setHaMaschera] = useState(false)
   const [confronto, setConfronto] = useState(false)
+  const [vediPrima, setVediPrima] = useState(false)
+  const [avanzate, setAvanzate] = useState(false)
+  // la forza la cambia solo un'azione rapida (Ritocca); scrivendo a mano si torna a ridisegnare del tutto
+  const [forzaRapida, setForzaRapida] = useState<number | undefined>(undefined)
   const [scrivendo, setScrivendo] = useState(false)
   const [rapidaTrasp, setRapidaTrasp] = useState(false)
   const turbo = useTurbo()
@@ -68,10 +70,11 @@ export function Modifica(): JSX.Element {
   const base = m.base
   const indice = base ? m.versioni.findIndex((v) => v.percorso === base.percorso) : -1
   const precedente = indice > 0 ? m.versioni[indice - 1] : null
+  const successiva = indice >= 0 && indice < m.versioni.length - 1 ? m.versioni[indice + 1] : null
   const { passi } = perQualita(m.qualita)
   const inCorso = lavori.find((l) => l.stato === 'in corso' && attesiModifica.has(l.id))
   const inAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiModifica.has(l.id)).length
-  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * m.forza)) : passi) * m.quante
+  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * forzaRapida)) : passi) * m.quante
 
   // l'anteprima dal vivo si posa sulla foto (se il lavoro è su questa foto): la zona si vede nascere al suo posto
   const qi = inCorso?.richiesta
@@ -96,11 +99,7 @@ export function Modifica(): JSX.Element {
     setConfronto(false)
   }, [m.modo])
 
-  // un risultato nuovo: si mostra il confronto
-  useEffect(() => {
-    if (indice > 0 && indice === m.versioni.length - 1) setConfronto(true)
-  }, [m.versioni.length])
-
+  // un risultato nuovo resta sulla tela, pronto per continuare a modificarlo (il confronto si apre a mano)
   const apri = async (percorso: string): Promise<void> => {
     try {
       const f = await normalizza(percorso)
@@ -161,12 +160,8 @@ export function Modifica(): JSX.Element {
   })
 
   const usaRapida = (r: Rapida): void => {
-    setModifica({
-      prompt: r.prompt,
-      ...(r.segna !== undefined ? { segnaZona: r.segna } : {}),
-      ...(m.modo === 'zona' ? { riempi: !!r.riempi } : {}),
-      ...(r.forza ? { forza: r.forza } : { forza: m.modo === 'zona' ? 1 : m.forza })
-    })
+    setModifica({ prompt: r.prompt })
+    setForzaRapida(r.forza)
     setRapidaTrasp(!!r.trasparente)
     if (r.completa) {
       setTimeout(() => {
@@ -222,7 +217,8 @@ export function Modifica(): JSX.Element {
         return
       }
       const maschera = await api.file.salvaTemp(e.dataUrl)
-      Object.assign(q, { maschera, riquadro: e.riquadro, contesto: s.contesto, ritaglia: s.ritaglia, segnaZona: s.segnaZona, riempi: s.riempi, forza: s.forza, sfuma: s.sfuma, allarga: s.allarga })
+      // tutto il resto (contesto, bordi, riempimento per "rimuovi") lo decide il motore dalla zona e dall'istruzione
+      Object.assign(q, { maschera, riquadro: e.riquadro, forza: forzaRapida })
     }
     if (s.modo === 'espandi') {
       const b = s.bordi
@@ -325,11 +321,6 @@ export function Modifica(): JSX.Element {
             </>
           )}
           <span className="flex1" />
-          {base && precedente && (
-            <button className={`btn piccolo ${confronto ? 'attivo' : ''}`} onClick={() => setConfronto(!confronto)} title="Confronta con la versione prima">
-              <I.occhio /> Prima/dopo
-            </button>
-          )}
           {base && <button className="btn piccolo icona" onClick={() => tela.current?.adatta()} title="Adatta alla finestra"><I.adatta /></button>}
           <button className="btn piccolo" onClick={async () => { const [p] = await api.file.scegliImmagini(false); if (p) void apri(p) }}>
             <I.immagine /> {base ? 'Cambia foto' : 'Apri foto'}
@@ -349,8 +340,13 @@ export function Modifica(): JSX.Element {
             </div>
           </div>
         ) : confronto && precedente && !inCorso ? (
-          <div className="tela" style={{ display: 'grid', placeItems: 'center', padding: 20, cursor: 'default' }}>
-            <PrimaDopo prima={urlFile(precedente.percorso)} dopo={urlFile(base.percorso)} stile={{ maxHeight: 'calc(100vh - 230px)', maxWidth: '100%' }} />
+          <div className="tela" style={{ display: 'grid', placeItems: 'center', padding: '56px 20px 20px', cursor: 'default' }}>
+            <div className="barra-confronto">
+              <span className="tenue">Trascina la linea per confrontare</span>
+              <button className="btn piccolo" onClick={() => { setModifica({ base: precedente }); setConfronto(false) }}><I.annulla /> Torna a quella prima</button>
+              <button className="btn piccolo primario" onClick={() => setConfronto(false)}><I.modifica /> Tieni questa e continua</button>
+            </div>
+            <PrimaDopo prima={urlFile(precedente.percorso)} dopo={urlFile(base.percorso)} stile={{ maxHeight: 'calc(100vh - 260px)', maxWidth: '100%' }} />
           </div>
         ) : (
           <TelaMaschera
@@ -366,6 +362,36 @@ export function Modifica(): JSX.Element {
             cambiaDimensione={setPennello}
             anteprima={anteprima}
           >
+            {vediPrima && precedente && (
+              <div className="vedi-prima">
+                <img src={urlFile(precedente.percorso)} alt="" />
+                <span>{indice - 1 === 0 ? 'Originale' : `v${indice}`}</span>
+              </div>
+            )}
+            {!inCorso && m.versioni.length > 1 && indice >= 0 && (
+              <div className="barra-versioni" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+                <button className="btn piccolo icona" disabled={!precedente} onClick={() => precedente && setModifica({ base: precedente })} title="Versione prima"><span className="freccina">‹</span></button>
+                <b>{indice === 0 ? 'Originale' : `v${indice + 1}`}</b>
+                <span className="spento">di {m.versioni.length}</span>
+                <button className="btn piccolo icona" disabled={!successiva} onClick={() => successiva && setModifica({ base: successiva })} title="Versione dopo"><span className="freccina">›</span></button>
+                {precedente && (
+                  <>
+                    <span className="sep" />
+                    <button
+                      className={`btn piccolo ${vediPrima ? 'attivo' : ''}`}
+                      onPointerDown={() => setVediPrima(true)}
+                      onPointerUp={() => setVediPrima(false)}
+                      onPointerLeave={() => setVediPrima(false)}
+                      title="Tieni premuto per vedere com'era prima"
+                    >
+                      <I.occhio /> Tieni premuto: prima
+                    </button>
+                    <button className="btn piccolo" onClick={() => setConfronto(true)} title="Prima e dopo con la linea da trascinare"><I.inverti /> Confronta</button>
+                    <button className="btn piccolo" onClick={() => setModifica({ base: precedente })} title="Scarta questa modifica e torna alla versione prima"><I.annulla /> Torna indietro</button>
+                  </>
+                )}
+              </div>
+            )}
             {inCorso && (
               <div className="in-corso-tela" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
                 <PannelloLavoro l={inCorso} />
@@ -399,7 +425,10 @@ export function Modifica(): JSX.Element {
             <textarea
               ref={prompt}
               value={m.prompt}
-              onChange={(e) => setModifica({ prompt: e.target.value })}
+              onChange={(e) => {
+                setModifica({ prompt: e.target.value })
+                setForzaRapida(undefined)
+              }}
               placeholder={m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
               style={{ minHeight: 100 }}
               disabled={scrivendo}
@@ -470,38 +499,17 @@ export function Modifica(): JSX.Element {
           </div>
 
           {m.modo === 'zona' && (
-            <div className="sezione col" style={{ gap: 10 }}>
-              <h3 style={{ margin: 0 }}>Zona</h3>
-              <Cursore etichetta="Forza (quanto ridisegnare)" valore={m.forza} min={0.2} max={1} passo={0.05} formato={(v) => `${Math.round(v * 100)}%`} cambia={(forza) => setModifica({ forza })} titolo="100% = ridisegna da zero; più basso tiene forme e colori di prima" />
-              <Interruttore acceso={m.ritaglia} cambia={(ritaglia) => setModifica({ ritaglia })} sotto="Lavora solo attorno alla zona, più in grande: molto più dettaglio e più veloce">
-                Dettaglio zona (ritaglia)
-              </Interruttore>
-              {m.ritaglia && <Cursore etichetta="Contesto attorno" valore={m.contesto} min={0.1} max={2} passo={0.1} formato={(v) => `${v.toFixed(1)}×`} cambia={(contesto) => setModifica({ contesto })} titolo="Quanto della foto attorno alla zona vede il modello" />}
-              <Cursore etichetta="Bordo morbido" valore={m.sfuma} min={0} max={31} formato={(v) => `${v}px`} cambia={(sfuma) => setModifica({ sfuma })} />
-              <Cursore etichetta="Allarga la zona" valore={m.allarga} min={0} max={64} formato={(v) => `${v}px`} cambia={(allarga) => setModifica({ allarga })} />
-              <Interruttore acceso={m.riempi} cambia={(riempi) => setModifica({ riempi })} sotto="Per rimuovere: la zona si spalma coi colori attorno prima di ridisegnarla, così il modello non rifà l'oggetto">
-                Riempi prima la zona
-              </Interruttore>
-              <Interruttore acceso={m.segnaZona} cambia={(segnaZona) => setModifica({ segnaZona })} sotto="Sperimentale: il modello vede la zona contornata di rosso (aiuta su 'rimuovi' e 'aggiungi')">
-                Mostra la zona al modello
-              </Interruttore>
+            <div className="sezione">
+              <div className="nota-zona">
+                <I.occhio /> Il modello guarda <b>tutta la foto</b> con la tua zona evidenziata e cambia <b>solo lì</b>: fuori dalla zona la foto resta identica al pixel.
+                Per togliere qualcosa scrivi "rimuovi…": la zona si ripulisce da sola prima di ridisegnarla.
+              </div>
             </div>
           )}
 
           <div className="sezione">
-            <h3>Area di lavoro <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
-            <Segmenti
-              valore={m.mp}
-              cambia={(mp) => setModifica({ mp })}
-              voci={[
-                { id: 0.25, nome: '0,25', sotto: 'lampo', titolo: '0,25 MP (512×512): per provare al volo' },
-                { id: 0.5, nome: '0,5', sotto: 'veloce' },
-                { id: 1, nome: '1 MP', sotto: 'consigliato' },
-                { id: 2, nome: '2 MP', sotto: 'dettaglio' },
-                { id: 4, nome: '4 MP', sotto: 'lento' }
-              ]}
-            />
-            <div style={{ marginTop: 10 }}>
+            <h3>Qualità <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
+            <div>
               <Segmenti<Qualita>
                 valore={m.qualita}
                 cambia={(qualita) => setModifica({ qualita })}
@@ -518,6 +526,22 @@ export function Modifica(): JSX.Element {
               <span className="tenue">Quante versioni</span>
               <Contatore valore={m.quante} min={1} max={8} cambia={(quante) => setModifica({ quante })} />
             </div>
+            <h3 style={{ cursor: 'pointer', marginTop: 12, marginBottom: avanzate ? 9 : 0 }} onClick={() => setAvanzate(!avanzate)}>
+              {avanzate ? '▾' : '▸'} Avanzate <span className="dx">{m.mp === 1 ? '' : `${String(m.mp).replace('.', ',')} MP`}</span>
+            </h3>
+            {avanzate && (
+              <Segmenti
+                valore={m.mp}
+                cambia={(mp) => setModifica({ mp })}
+                voci={[
+                  { id: 0.25, nome: '0,25', sotto: 'lampo', titolo: '0,25 MP (512×512): per provare al volo' },
+                  { id: 0.5, nome: '0,5', sotto: 'veloce' },
+                  { id: 1, nome: '1 MP', sotto: 'consigliato' },
+                  { id: 2, nome: '2 MP', sotto: 'dettaglio' },
+                  { id: 4, nome: '4 MP', sotto: 'lento' }
+                ]}
+              />
+            )}
           </div>
 
           <div className="sezione">
