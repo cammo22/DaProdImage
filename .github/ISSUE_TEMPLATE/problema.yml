@@ -1,0 +1,53 @@
+name: Qualcosa non va
+description: Un errore, un'immagine che non esce, l'app lenta o bloccata.
+labels: [problema]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie! Con versione, scheda video e log si trova il problema molto prima.
+        **Ci mette minuti per una foto?** Prima guarda [qui](https://github.com/cammo22/DaProdImage#requisiti): quasi sempre è il fallback della memoria NVIDIA.
+  - type: input
+    id: versione
+    attributes:
+      label: Versione di DaProd Image
+      description: Opzioni → Aggiornamenti
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: scheda
+    attributes:
+      label: Scheda video e RAM
+      description: Le vedi nella barra in alto o in Opzioni → Motore
+      placeholder: "RTX 4060 8 GB, 32 GB di RAM"
+    validations:
+      required: true
+  - type: dropdown
+    id: dove
+    attributes:
+      label: Dove succede
+      options:
+        - Installazione o aggiornamento del motore
+        - Crea
+        - Modifica (tutta la foto)
+        - Modifica (solo una zona)
+        - Espandi
+        - Galleria
+        - LoRA
+        - Altro
+    validations:
+      required: true
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa succede
+      description: Cosa hai fatto, cosa ti aspettavi, cosa è successo. Se c'è, il messaggio d'errore.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log del motore
+      description: Opzioni → Motore → Log (le ultime righe bastano)
+      render: text

@@ -1,0 +1,16 @@
+name: Un'idea
+description: Una cosa che manca o che si potrebbe fare meglio.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: L'idea
+      description: Cosa vorresti poter fare, e perché ti servirebbe.
+    validations:
+      required: true
+  - type: textarea
+    id: esempio
+    attributes:
+      label: Un esempio
+      description: Un prompt, una foto, un'app che lo fa già: qualsiasi cosa aiuti a capire.
