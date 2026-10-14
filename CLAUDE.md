@@ -98,6 +98,7 @@ interfaccia**, installato e guidato dall'app.
   `trascina()` ruota l'osso attorno al genitore (lunghezze fisse, si porta dietro i discendenti; il bacino sposta tutto); mani = 5 dita con piegamento 0–1 + divaricazione + polso
   (`geometriaMano`); `disegnaOpenPose()` fa la mappa di posa (colori OpenPose, dita ad arcobaleno) e `descriviPosa()` la posa in inglese. In **Personaggio** posa `omino` (crop + scheletro come
   `<image2>`); nel **Laboratorio** un `Ingresso` di tipo `posa` (JSON) e il passo `POSA_TUA` con `PassoWf.posa`: `richiestaPasso` (async) mette lo scheletro ultima immagine e sostituisce `{posa}` con il suo `<imageN>`.
+  `pulisciOmino.ts`: `controllaScheletro(lavoroId…)` — a lavoro finito il Qwen3-VL risponde YES/NO se resta lo scheletro, e se sì parte una modifica (`PROMPT_PULIZIA`) che lo toglie; `SENZA_SCHELETRO` chiude i prompt che usano l'omino.
   **Idee** (`regista.ts`): le azioni rapide di Modifica sono idee a toggle (`idee`); `pianificaIdee` (Qwen3-VL, `SISTEMA_IDEE`, foto + eventuale foglio con i riferimenti) le mescola in un'istruzione sola
   (`fantasia`: temperatura), piano in `pianoIdee` (con chiave). **Esempio**: il piano è JSON `{instruction, crops}` (attributi a parole + riquadri 0–1000 sul foglio, `leggiPiano`, `riquadroNellaFoto`,
   `ritagliaFoto` in `foglio.ts`); `pianoEsempio.ritagli` sostituiscono i riferimenti.

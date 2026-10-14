@@ -14,6 +14,7 @@ import { SISTEMA_SORPRESA } from './azioni'
 import type { ChiaveLora } from './rapide'
 import type { PosizioneCamera } from './componenti/Camera'
 import { immagineOmino } from './ominoImmagine'
+import { controllaScheletro } from './pulisciOmino'
 import { leggiPosa } from './omino'
 import type { Richiesta } from '@shared/tipi'
 
@@ -251,13 +252,14 @@ async function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null
   const base = baseCorrente || run.base
   const immagini = passo.crea ? rif.map((r) => r.percorso) : [base!.percorso, ...rif.map((r) => r.percorso)]
   let prompt = passo.prompt
-  // l'omino: la posa diventa una mappa di posa, un'immagine in più (la ultima), e {posa} nel prompt è il suo <imageN>
+  // l'omino: la posa diventa una mappa di posa (punti chiave) e va per PRIMA, come un controllo: così il modello la segue senza
+  // disegnarla sulla foto. Le altre immagini scalano di una (<image1> diventa <image2>…); `{posa}` = la mappa, `{foto}` = la foto del personaggio
   const posa = leggiPosa(passo.posa)
   if (posa) {
     const w = passo.crea ? 768 : base!.larghezza
     const h = passo.crea ? 1024 : base!.altezza
-    immagini.push(await immagineOmino(posa, w, h))
-    prompt = prompt.replace(/\{posa\}/g, `<image${immagini.length}>`)
+    immagini.unshift(await immagineOmino(posa, w, h))
+    prompt = prompt.replace(/<image(\d+)>/g, (_m, n: string) => `<image${Number(n) + 1}>`).replace(/\{posa\}/g, '<image1>').replace(/\{foto\}/g, '<image2>')
   }
   if (passo.crea) {
     const d = dimensioniRis(passo.crea.formato, Math.round((passo.crea.ris || 1024) * Math.sqrt(run.opzioni.mp)))
@@ -287,6 +289,8 @@ async function accodaPasso(runId: string, i: number, base: FotoBase | null): Pro
     const corrente = usaLab.getState().runs.find((r) => r.id === runId)
     if (!corrente || corrente.fermata) return
     const ids = await api.lavori.accoda(await richiestaPasso(corrente, i, base))
+    // con l'omino si controlla che nella foto non sia rimasto lo scheletro: se c'è, la foto ripulita prende il posto
+    if (corrente.definizione[i].posa) controllaScheletro(ids[0], corrente.opzioni.qualita, (pulita) => aggiorna(runId, (r) => { r.passi[i].operaId = pulita.id }))
     aggiorna(runId, (r) => {
       r.passi[i].lavoroId = ids[0]
       r.passi[i].stato = 'in coda'
