@@ -48,7 +48,7 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
   }, [])
 
   const diffusione = catalogo.filter((c) => c.tipo === 'diffusione')
-  const lore = catalogo.filter((c) => c.tipo === 'lora')
+  const lore = catalogo.filter((c) => c.tipo === 'lora' && !c.link)
   const necessari = catalogo.filter((c) => c.necessario)
   const sceltaVoce = scelta.startsWith('file:') ? null : catalogo.find((c) => c.id === scelta)
   const daScaricare =
@@ -129,8 +129,8 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
                 <label key={d.id} className={`opzione ${scelta === d.id ? 'su' : ''}`}>
                   <input type="radio" checked={scelta === d.id} onChange={() => setScelta(d.id)} />
                   <div>
-                    <div className="t">{d.nome} {d.consigliato && <span className="distintivo si">consigliato per 8 GB</span>} {d.presente && <span className="distintivo si">già presente</span>}</div>
-                    <small>{d.descrizione} · {byte(d.byte)}</small>
+                    <div className="t">{d.nome} {d.turbo && <span className="distintivo">nuovo · 8 passi</span>} {d.consigliato && <span className="distintivo si">consigliato per 8 GB</span>} {d.presente && <span className="distintivo si">già presente</span>}</div>
+                    <small>{d.descrizione} · {d.circa ? 'circa ' : ''}{byte(d.byte)}{d.repo && ' · il file giusto lo trovo su Hugging Face'}</small>
                   </div>
                 </label>
               ))}

@@ -68,5 +68,15 @@ export const I = {
   app: () => <S><rect x="6" y="2" width="12" height="20" rx="2.5" /><path d="M10.5 18.5h3" /><rect x="9" y="6" width="6" height="5" rx="1" /></S>,
   slide: () => <S><rect x="2.5" y="4" width="19" height="12" rx="1.5" /><path d="M12 16v4M8 21h8" /><path d="M6.5 8h6M6.5 11h4" /></S>,
   arte: () => <S><path d="M12 3a9 9 0 100 18c1.2 0 1.8-.8 1.8-1.7 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.8-1.7H17a4 4 0 004-4C21 6.4 17 3 12 3z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10" cy="7" r="1" /><circle cx="15" cy="7.5" r="1" /></S>,
-  testo: () => <S><path d="M5 6V4h14v2M12 4v16M9 20h6" /></S>
+  testo: () => <S><path d="M5 6V4h14v2M12 4v16M9 20h6" /></S>,
+  vestiti: () => <S><path d="M8 3L3 6l2 4 3-1v12h8V9l3 1 2-4-5-3a4 4 0 01-8 0z" /></S>,
+  situazione: () => <S><circle cx="17" cy="7" r="2.2" /><path d="M3 18l5.5-7 4 4.5 3-3.5L21 18z" /></S>,
+  camera: () => <S><rect x="3" y="7" width="13" height="10" rx="2" /><path d="M16 11l5-3v8l-5-3z" /></S>,
+  luce: () => <S><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z" /></S>,
+  laboratorio: () => <S><path d="M9 3h6M10 3v6L4.6 18.6A1.6 1.6 0 006 21h12a1.6 1.6 0 001.4-2.4L14 9V3" /><path d="M7.5 15h9" /></S>,
+  serie: () => <S><rect x="3" y="3" width="8" height="8" rx="1.6" /><rect x="13" y="3" width="8" height="8" rx="1.6" /><rect x="3" y="13" width="8" height="8" rx="1.6" /><rect x="13" y="13" width="8" height="8" rx="1.6" /></S>,
+  catena: () => <S><rect x="2.5" y="8" width="6" height="8" rx="1.5" /><rect x="15.5" y="8" width="6" height="8" rx="1.5" /><path d="M9 12h6M13 9.5l2.5 2.5-2.5 2.5" /></S>,
+  freccia: () => <S><path d="M5 12h14M13 6l6 6-6 6" /></S>,
+  casa: () => <S><path d="M3 11l9-8 9 8" /><path d="M5 10v10h5v-6h4v6h5V10" /></S>,
+  gioca: () => <S><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none" /></S>
 }

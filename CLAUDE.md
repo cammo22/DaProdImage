@@ -46,6 +46,12 @@ interfaccia**, installato e guidato dall'app.
 ## I grafi (src/main/motore/grafi.ts)
 - Pipeline ufficiale: `UnetLoaderGGUF` → LoRA (`LoraLoaderModelOnly`) → `QwenImage21Cache`; `CLIPLoader` tipo `qwen_image`
   (Qwen3-VL 8B); `TextEncodeQwenImage21`; KSampler **euler/simple, CFG 1, 40 passi** (quelli "standard").
+- **Modelli (solo Q4/Q6/Q8)**: `catalogo.ts` ha il denoiser UC (abenzerps, sha256 noti) e il **Turbo di AtomicChat**
+  (`turbo-q4/q6/q8`, `repo` + `cerca`: il nome del file lo chiede `installa/risolvi.ts` all'API di Hugging Face al primo
+  download e lo ricorda in `risolti.json`, con lo sha256 dal `lfs.oid`). Un modello con "turbo" nel nome (`modelloTurbo`)
+  è già distillato: 8 passi, niente LoRA Turbo8 né `ModelSamplingFlux`. Gli **encoder GGUF** (AtomicChat, mradermacher)
+  usano `CLIPLoaderGGUF` (senza `device`) e vogliono nella stessa cartella un `.gguf` con "mmproj" e il nome dell'encoder
+  senza quantizzazione: `risolvi.ts` lo scarica con quel nome. L'encoder di default resta il safetensors int8 (provato).
 - **Turbo** (`q.turbo`): il LoRA `imp.loraTurbo` (Turbo8 di chriswritescode, `turbo8_lora_step2500.safetensors`) a forza 1 prima
   degli altri, 8 passi, CFG 1, euler/simple; in Crea anche `ModelSamplingFlux` (max_shift 0.6935, base_shift 0.5, come il
   suo workflow). Con denoise < 1 bastano 4 passi (presi dalla fine della scaletta da 8). Non compare fra i LoRA da accendere.
@@ -68,6 +74,9 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
+- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **nuova dalle foto** (`modalita: 'crea'` con tutte le foto come
+  `images.image_N`); `★ base` scambia base e riferimento. **Laboratorio** (`workflow.ts`, 47 ricette) accoda catene di
+  lavori; la **barra di stato** (`BarraStato`) mostra il lavoro in corso; **Camera** e azioni rapide (`rapide.ts`) accendono i LoRA.
 - Stato in `stato.ts` (zustand); le scelte di Crea/Modifica e i LoRA accesi restano in localStorage.
 - Crea: **risoluzione = lato corto** (`RISOLUZIONI`, `dimensioniRis`: multipli di 16, al massimo 4,2 MP e 2688 px di lato);
   **preset** in `preset.ts` (campi in italiano → prompt in inglese, i testi da disegnare fra virgolette e identici).

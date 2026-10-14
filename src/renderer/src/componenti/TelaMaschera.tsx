@@ -38,6 +38,8 @@ interface Props {
   cambiaMaschera?: (c: boolean) => void
   cambiaDimensione?: (d: number) => void
   anteprima?: AnteprimaTela
+  /** confronto prima/dopo sulla tela: la foto di prima sta a sinistra della linea, quella di adesso a destra */
+  confronto?: { prima: string }
   children?: ReactNode
   ref?: Ref<ComandiTela>
 }
@@ -54,6 +56,9 @@ export function TelaMaschera(p: Props): JSX.Element {
   const [rett, setRett] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
   const [lazo, setLazo] = useState<{ x: number; y: number }[]>([])
   const [spazio, setSpazio] = useState(false)
+  // la linea del confronto, come frazione della larghezza della foto
+  const [linea, setLinea] = useState(0.5)
+  const trascinaLinea = useRef(false)
   const [trascina, setTrascina] = useState(false)
   const storia = useRef<ImageData[]>([])
   const futuro = useRef<ImageData[]>([])
@@ -91,6 +96,11 @@ export function TelaMaschera(p: Props): JSX.Element {
   useEffect(() => {
     adatta()
   }, [adatta])
+
+  // ogni confronto nuovo riparte dal mezzo
+  useEffect(() => {
+    setLinea(0.5)
+  }, [p.confronto?.prima])
 
   useEffect(() => {
     const ro = new ResizeObserver(() => adatta())
@@ -374,7 +384,39 @@ export function TelaMaschera(p: Props): JSX.Element {
         ))}
         <canvas ref={tela} className="maschera" style={{ width: p.larghezza, height: p.altezza, display: p.disegna ? 'block' : 'none' }} />
         {an && <div className="area-lavoro" style={{ ...posto, borderWidth: 2 / vista.s }} />}
+        {p.confronto && (
+          <div className="strato-prima" style={{ width: p.larghezza, height: p.altezza, clipPath: `inset(0 ${(1 - linea) * 100}% 0 0)` }}>
+            <img src={p.confronto.prima} width={p.larghezza} height={p.altezza} draggable={false} alt="" style={{ objectFit: 'contain' }} />
+          </div>
+        )}
       </div>
+      {p.confronto && (
+        <>
+          <span className="et-confronto" style={{ left: vista.x + 10, top: vista.y + 10 }}>PRIMA</span>
+          <span className="et-confronto" style={{ left: vista.x + p.larghezza * vista.s - 10, top: vista.y + 10, transform: 'translateX(-100%)' }}>DOPO</span>
+          <div
+            className="linea-confronto"
+            style={{ left: vista.x + linea * p.larghezza * vista.s, top: vista.y, height: p.altezza * vista.s }}
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+              trascinaLinea.current = true
+            }}
+            onPointerMove={(e) => {
+              if (!trascinaLinea.current) return
+              e.stopPropagation()
+              const r = contenitore.current!.getBoundingClientRect()
+              setLinea(Math.max(0, Math.min(1, (e.clientX - r.left - vista.x) / (p.larghezza * vista.s))))
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation()
+              trascinaLinea.current = false
+            }}
+          >
+            <span className="manico">⇆</span>
+          </div>
+        </>
+      )}
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
         {rett && (
           <rect

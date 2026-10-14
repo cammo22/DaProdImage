@@ -2,46 +2,72 @@
 import type { VoceCatalogo } from '@shared/tipi'
 
 const UC = 'https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-GGUF/resolve/main/'
+const TURBO = 'AtomicChat/Qwen-Image-2.1-Turbo-GGUF'
+const ENC_AC = 'AtomicChat/Qwen-Image-2.1-Turbo-Uncensored-GGUF'
+const ENC_MR = 'mradermacher/Qwen3-VL-8B-Instruct-Uncensored-V2-GGUF'
 
 export const CATALOGO: VoceCatalogo[] = [
-  // --- modello di diffusione (uno solo serve) ---
+  // --- modello di diffusione (uno solo serve; solo Q4, Q6 e Q8) ---
   {
-    id: 'q4km', tipo: 'diffusione', nome: 'Qwen-Image-2.1 Uncensored Q4_K_M',
-    descrizione: 'Il migliore equilibrio per 8 GB: sta tutto nella scheda video.',
+    id: 'q4km', tipo: 'diffusione', quant: 'Q4', nome: 'Qwen-Image-2.1 Uncensored · Q4',
+    descrizione: 'Il migliore equilibrio per 6-8 GB: sta tutto nella scheda video. 40 passi.',
     file: 'qwen-image-2.1-UC-Q4_K_M.gguf', cartella: 'diffusion_models', url: UC + 'qwen-image-2.1-UC-Q4_K_M.gguf',
     byte: 4604558112, sha256: 'e79c8a009f2ecbdb6c70fd663d9aea9ee304a0d91f347e4169a756b8ad141b41', consigliato: true
   },
   {
-    id: 'q5km', tipo: 'diffusione', nome: 'Qwen-Image-2.1 Uncensored Q5_K_M',
-    descrizione: 'Un po\' più fedele, ancora comodo su 8 GB.',
-    file: 'qwen-image-2.1-UC-Q5_K_M.gguf', cartella: 'diffusion_models', url: UC + 'qwen-image-2.1-UC-Q5_K_M.gguf',
-    byte: 5221284640, sha256: 'af0bf278cf16d204fb31c384dc82fd41dca82d976b15fe9305a60c726fd6f821'
-  },
-  {
-    id: 'q6k', tipo: 'diffusione', nome: 'Qwen-Image-2.1 Uncensored Q6_K',
+    id: 'q6k', tipo: 'diffusione', quant: 'Q6', nome: 'Qwen-Image-2.1 Uncensored · Q6',
     descrizione: 'Quasi identico all\'originale; su 8 GB una parte va in RAM (un po\' più lento).',
     file: 'qwen-image-2.1-UC-Q6_K.gguf', cartella: 'diffusion_models', url: UC + 'qwen-image-2.1-UC-Q6_K.gguf',
     byte: 5876556576, sha256: 'e14bb312109333b3d73b92ad9b9ac8b29b51f2edca1e7b86d1af1981bf1c4ee3'
   },
   {
-    id: 'q8', tipo: 'diffusione', nome: 'Qwen-Image-2.1 Uncensored Q8_0',
+    id: 'q8', tipo: 'diffusione', quant: 'Q8', nome: 'Qwen-Image-2.1 Uncensored · Q8',
     descrizione: 'Il massimo della fedeltà in GGUF; su 8 GB lavora in parte dalla RAM.',
     file: 'qwen-image-2.1-UC-Q8_0.gguf', cartella: 'diffusion_models', url: UC + 'qwen-image-2.1-UC-Q8_0.gguf',
     byte: 7591557920, sha256: 'cde456c72ea3ecebfc1be783300e972711d875e0c5f1bed33d42b66b156affa8'
   },
+  // --- il Turbo ufficiale di AtomicChat: già distillato a 8 passi, niente LoRA. Il nome del file si trova al primo download ---
+  {
+    id: 'turbo-q4', tipo: 'diffusione', quant: 'Q4', turbo: true, nome: 'Qwen-Image-2.1 Turbo · Q4',
+    descrizione: 'Il nuovo Turbo: 8 passi, circa 5 volte più veloce, per 6-8 GB.',
+    file: '', cartella: 'diffusion_models', url: '', byte: 4_600_000_000, circa: true,
+    repo: TURBO, cerca: ['Q4_K_M', 'Q4_K', 'Q4_0', 'Q4']
+  },
+  {
+    id: 'turbo-q6', tipo: 'diffusione', quant: 'Q6', turbo: true, nome: 'Qwen-Image-2.1 Turbo · Q6',
+    descrizione: 'Il Turbo con più fedeltà; su 8 GB una parte va in RAM.',
+    file: '', cartella: 'diffusion_models', url: '', byte: 5_900_000_000, circa: true,
+    repo: TURBO, cerca: ['Q6_K', 'Q6']
+  },
+  {
+    id: 'turbo-q8', tipo: 'diffusione', quant: 'Q8', turbo: true, nome: 'Qwen-Image-2.1 Turbo · Q8',
+    descrizione: 'Il Turbo al massimo della fedeltà in GGUF; lavora in parte dalla RAM.',
+    file: '', cartella: 'diffusion_models', url: '', byte: 7_600_000_000, circa: true,
+    repo: TURBO, cerca: ['Q8_0', 'Q8']
+  },
   // --- text encoder (Qwen3-VL 8B: legge il prompt e guarda le foto) ---
   {
-    id: 'te-int8', tipo: 'encoder', nome: 'Qwen3-VL 8B (int8)',
-    descrizione: 'Legge il prompt e le foto. Lavora dalla RAM: non ruba spazio al modello.',
+    id: 'te-int8', tipo: 'encoder', famiglia: 'Originale', nome: 'Qwen3-VL 8B (int8)',
+    descrizione: 'Quello di sempre, provato e sicuro. Lavora dalla RAM: non ruba spazio al modello.',
     file: 'qwen3vl_8b_int8_convrot.safetensors', cartella: 'text_encoders', url: UC + 'text_encoders/qwen3vl_8b_int8_convrot.safetensors',
     byte: 9350798360, sha256: '8bfd0f6e12abf2d2d697ecc888e5e90b0d6741d6708f05799f53afa560452e8f', consigliato: true, necessario: true
   },
-  {
-    id: 'te-bf16', tipo: 'encoder', nome: 'Qwen3-VL 8B (bf16, originale)',
-    descrizione: 'Precisione piena. Serve tanta RAM (almeno 32 GB); differenza minima.',
-    file: 'qwen3vl_8b_bf16.safetensors', cartella: 'text_encoders', url: UC + 'text_encoders/qwen3vl_8b_bf16.safetensors',
-    byte: 17534334616, sha256: '68bdc82bc1b66851162ae656225e7e2068166b603db19bd5d5a3b90eb12669a9'
-  },
+  // AtomicChat: l'encoder del Turbo con il rifiuto "tolto" dai pesi (abliterated), in GGUF
+  ...(['Q4', 'Q6', 'Q8'] as const).map((q): VoceCatalogo => ({
+    id: 'te-ac-' + q.toLowerCase(), tipo: 'encoder', quant: q, famiglia: 'AtomicChat · uncensored', nome: `Qwen3-VL 8B AtomicChat · ${q}`,
+    descrizione: `L'encoder uncensored fatto apposta per Qwen-Image 2.1 (con la parte che guarda le foto). ${q === 'Q4' ? 'Il più leggero.' : q === 'Q6' ? 'Equilibrato.' : 'Il più fedele.'}`,
+    file: '', cartella: 'text_encoders', url: '', byte: q === 'Q4' ? 5_290_000_000 : q === 'Q6' ? 7_490_000_000 : 8_710_000_000, circa: true,
+    repo: ENC_AC, cerca: q === 'Q4' ? ['AD-Q4_K', 'Q4_K', 'Q4'] : q === 'Q6' ? ['AD-Q6_K', 'Q6_K', 'Q6'] : ['Q8_0', 'Q8'],
+    cercaMmproj: ['mmproj.*Q8_0', 'mmproj.*f16', 'mmproj']
+  })),
+  // mradermacher: Qwen3-VL 8B Instruct Uncensored V2 (non fatto per Qwen-Image: da provare)
+  ...(['Q4', 'Q6', 'Q8'] as const).map((q): VoceCatalogo => ({
+    id: 'te-mr-' + q.toLowerCase(), tipo: 'encoder', quant: q, famiglia: 'mradermacher · Uncensored V2', nome: `Qwen3-VL 8B Uncensored V2 · ${q}`,
+    descrizione: 'Un Qwen3-VL 8B senza filtri fatto da altri, non per Qwen-Image: può capire un po\' diversamente il prompt. Da provare.',
+    file: '', cartella: 'text_encoders', url: '', byte: q === 'Q4' ? 5_100_000_000 : q === 'Q6' ? 6_800_000_000 : 8_800_000_000, circa: true,
+    repo: ENC_MR, cerca: q === 'Q4' ? ['Q4_K_M', 'Q4_K_S', 'Q4'] : q === 'Q6' ? ['Q6_K', 'Q6'] : ['Q8_0', 'Q8'],
+    cercaMmproj: ['mmproj.*Q8_0', 'mmproj.*f16', 'mmproj']
+  })),
   // --- VAE ---
   {
     id: 'vae-fix', tipo: 'vae', nome: 'Texture-Fix VAE (madebyollin)',
@@ -80,6 +106,29 @@ export const CATALOGO: VoceCatalogo[] = [
     file: 'turbo8_lora_step2500.safetensors', cartella: 'loras',
     url: 'https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1/resolve/main/turbo8_lora_step2500.safetensors',
     byte: 1_360_000_000, circa: true, consigliato: true
+  },
+  {
+    // ausboss: tiene le modifiche "ferme" (luce, colori, stile, testi) senza spostare niente; non fa muovere i soggetti
+    id: 'lora-coerenza', tipo: 'lora', nome: 'Coerenza delle modifiche (ausboss)', uso: 'Modifiche che non spostano niente',
+    descrizione: 'Le modifiche restano sul fotogramma: luce, colori, testi e stili cambiano, i contorni no. Si accende da solo nelle azioni giuste. Non serve per cambiare pose.',
+    file: 'qwen-image-2.1-consistency.safetensors', cartella: 'loras',
+    url: 'https://huggingface.co/ausboss/Qwen-Image-2.1-Consistency-LoRA/resolve/main/qwen-image-2.1-consistency.safetensors',
+    byte: 159_000_000, circa: true, consigliato: true
+  },
+  {
+    // ausboss: persona nell'image_1, vestito nell'image_2
+    id: 'lora-vestiti', tipo: 'lora', nome: 'Cambio vestito (ausboss)', uso: 'Prova vestito',
+    descrizione: 'Mette alla persona il vestito di un\'altra foto, tenendo volto, pose e sfondo. Si accende da solo in "Prova vestito".',
+    file: 'qwen-image-2.1-outfit-swap.safetensors', cartella: 'loras',
+    url: 'https://huggingface.co/ausboss/Qwen-Image-2.1-Outfit-Swap-Consistency-LoRA/resolve/main/qwen-image-2.1-outfit-swap.safetensors',
+    byte: 159_000_000, circa: true, consigliato: true
+  },
+  {
+    // akhaliq: 36 pose di camera (12 azimut × 4 elevazioni) più il primo piano; parola chiave <mva>
+    id: 'lora-camera', tipo: 'lora', nome: 'Camera: angolazioni (akhaliq)', uso: 'Sposta la camera',
+    descrizione: 'Rifà la foto da un\'altra posizione della camera: ruoti attorno al soggetto, dall\'alto, dal basso, primo piano. È quello che usa il comando "Camera" di Modifica.',
+    file: '', cartella: 'loras', url: '', link: 'https://huggingface.co/akhaliq/Qwen-Image-2.1-Multiple-Angles-LoRA#file=v2,1500,1000',
+    byte: 160_000_000, consigliato: true
   },
   {
     id: 'lora-uc', tipo: 'lora', nome: 'Uncensored (abenzerps)',

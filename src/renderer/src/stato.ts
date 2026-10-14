@@ -3,9 +3,9 @@ import { create } from 'zustand'
 import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
 
-export type Pagina = 'crea' | 'modifica' | 'galleria' | 'lora' | 'impostazioni'
+export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'galleria' | 'lora' | 'impostazioni'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi'
+export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'nuova'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
 
@@ -31,6 +31,8 @@ export interface StatoCrea {
   cfg: number
   sampler: string
   scheduler: string
+  /** foto di riferimento (<image1>…): persone, vestiti, oggetti, stili. Non si salvano fra un avvio e l'altro */
+  riferimenti: FotoBase[]
   /** il preset scelto a sinistra ('' = libero) e i suoi campi */
   preset: string
   stile: string
@@ -82,6 +84,8 @@ interface Stato {
   agg: StatoAggiornamento
   /** RAM, VRAM e GPU (dalla barra in alto) */
   risorse: Risorse | null
+  /** il selettore di foto aperto (galleria o PC): chi lo apre aspetta la scelta */
+  selettore: { multi: boolean; ok: (f: FotoBase[]) => void } | null
   vai(p: Pagina): void
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
@@ -110,7 +114,7 @@ const leggiLista = <T,>(k: string): T[] => {
 
 const CREA0: StatoCrea = {
   prompt: '', negativo: '', formato: '1:1', ris: 1024, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
-  cfg: 1, sampler: 'euler', scheduler: 'simple', preset: '', stile: '', campi: {}
+  cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
@@ -133,20 +137,22 @@ export const usaStato = create<Stato>((set, get) => ({
   lavori: [],
   lore: [],
   loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
-  crea: daVecchio(leggiLocale('dpi-crea', CREA0)),
+  crea: { ...daVecchio(leggiLocale('dpi-crea', CREA0)), riferimenti: [] },
   modifica: { ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [] },
   codaAperta: false,
   avvisi: [],
   visore: null,
   agg: { stato: 'nessuno', attuale: '' },
   risorse: null,
+  selettore: null,
   vai: (pagina) => set({ pagina }),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
     const crea = { ...get().crea, ...m }
     set({ crea })
     try {
-      localStorage.setItem('dpi-crea', JSON.stringify(crea))
+      const { riferimenti: _r, ...resto } = crea
+      localStorage.setItem('dpi-crea', JSON.stringify(resto))
     } catch {
       /* niente */
     }
@@ -183,6 +189,23 @@ export const usaStato = create<Stato>((set, get) => ({
   apriVisore: (visore) => set({ visore })
 }))
 
+/** apre il selettore (galleria o PC) e aspetta: le foto scelte, o niente se si chiude */
+export const scegliFoto = (multi = false): Promise<FotoBase[]> =>
+  new Promise((ok) => {
+    usaStato.setState({
+      selettore: {
+        multi,
+        ok: (f) => {
+          usaStato.setState({ selettore: null })
+          ok(f)
+        }
+      }
+    })
+  })
+
+/** chi vuole sapere quando un lavoro cambia stato (i workflow del Laboratorio) */
+export const ascoltatoriLavoro: ((uno: Lavoro, prima: Lavoro | null) => void)[] = []
+
 /** i lavori partiti da Modifica: quando finiscono, il risultato diventa una nuova versione della foto */
 export const attesiModifica = new Set<string>()
 
@@ -214,6 +237,7 @@ export async function collegaEventi(): Promise<void> {
     else lavori.push(uno)
     usaStato.setState({ lavori })
     if (!prima || prima.stato !== uno.stato) {
+      for (const f of ascoltatoriLavoro) f(uno, prima)
       if (uno.stato === 'errore') usaStato.getState().avvisa(uno.errore || 'Errore', 'errore')
       if (uno.stato === 'fatto' && attesiModifica.has(uno.id)) {
         attesiModifica.delete(uno.id)

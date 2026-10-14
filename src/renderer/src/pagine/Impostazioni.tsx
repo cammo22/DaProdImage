@@ -47,7 +47,10 @@ export function Impostazioni(): JSX.Element {
     await ricarica()
     if (d.stato === 'fatto') {
       avvisa(`${v.nome} scaricato`, 'ok')
-      if (v.tipo === 'diffusione' && confirm(`Usare ${v.nome} da ora?`)) await salva({ modello: v.file })
+      // il nome vero del file lo conosciamo solo adesso (Turbo ed encoder GGUF di terzi)
+      const n = (await api.modelli.stato()).find((x) => x.id === v.id) || v
+      if (v.tipo === 'diffusione' && confirm(`Usare ${v.nome} da ora?`)) await salva({ modello: n.file })
+      if (v.tipo === 'encoder' && confirm(`Usare ${v.nome} come text encoder da ora?`)) await salva({ encoder: n.file })
     } else if (d.stato === 'errore') avvisa(d.errore || 'Download non riuscito', 'errore')
   }
 
@@ -71,7 +74,7 @@ export function Impostazioni(): JSX.Element {
           <h2>MODELLI IN USO</h2>
           <div className="pannello">
             {voceScelta('Modello di diffusione', 'Il cuore: Qwen-Image 2.1 (GGUF o safetensors)', imp.modello, file.diffusione, (modello) => salva({ modello }))}
-            {voceScelta('Text encoder', 'Qwen3-VL 8B: legge il prompt e guarda le foto', imp.encoder, file.encoder, (encoder) => salva({ encoder }))}
+            {voceScelta('Text encoder (l\'LLM)', 'Qwen3-VL 8B: legge il prompt, guarda le foto e traduce dall\'italiano. Gli .gguf (Q4/Q6/Q8) si scaricano qui sotto', imp.encoder, file.encoder, (encoder) => salva({ encoder }))}
             {voceScelta('VAE', 'Texture-Fix = trame più pulite', imp.vae, file.vae, (vae) => salva({ vae }))}
             {voceScelta('Ingranditore', 'Per "2×" e "Rifinisci"', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
           </div>
@@ -86,7 +89,7 @@ export function Impostazioni(): JSX.Element {
               return (
                 <div className="modello" key={v.id}>
                   <div>
-                    <span className="t">{v.nome}</span> {v.consigliato && <span className="distintivo si">consigliato</span>} <span className="piccolo spento">· {byte(v.byte)}</span>
+                    <span className="t">{v.nome}</span> {v.turbo && <span className="distintivo">8 passi</span>} {(v.file === imp.modello || v.file === imp.encoder) && v.file && <span className="distintivo si">in uso</span>} {v.consigliato && <span className="distintivo si">consigliato</span>} <span className="piccolo spento">· {v.circa ? 'circa ' : ''}{byte(v.byte)}</span>
                   </div>
                   <div className="riga">
                     {v.presente ? (
