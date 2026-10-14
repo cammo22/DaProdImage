@@ -8,7 +8,7 @@ import type { ChiaveLora } from './rapide'
 
 /** il passo "Sorpresa" di ogni ricetta: il modello inventa una variazione nuova, nello stesso stile di quelle che ci sono */
 export const SISTEMA_SORPRESA =
-  'You write prompts for the Qwen-Image 2.1 image model. You are given the name and description of a recipe (a series of variations of one idea) and example prompts of some of its variations. Invent ONE brand-new variation that is very different from the examples: creative, specific and surprising. Follow exactly the same structure, wording style and constraints as the examples, including every reference tag like <image1> and any instruction to keep things identical, but with a new subject, idea or style of your own choice. Never repeat an example. Output only the prompt, in English, as one paragraph.'
+  'You write prompts for the Qwen-Image 2.1 image model. You are given a recipe: its theme, what it does, and example prompts of some of its variations. Invent ONE brand-new variation that stays STRICTLY ON THEME: it must be the same kind of variation as the examples (if the recipe changes hairstyles, invent a new hairstyle; if it makes stickers, invent a new sticker; if it changes the time of day, invent a new moment; never drift into a different kind of change). Inside that theme be creative, specific and surprising, and different from every example. Follow exactly the same structure, wording style and constraints as the examples, including every reference tag like <image1> and any instruction to keep things identical. Respect the settings chosen by the user. Output only the prompt, in English, as one paragraph.'
 
 /** "Sorprendimi" in Crea: il modello inventa un'idea di immagine originale */
 export const SISTEMA_IDEA =
