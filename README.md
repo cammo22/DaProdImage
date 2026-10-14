@@ -88,7 +88,7 @@ luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di
 ## I modelli
 
 Per tutti solo **Q4, Q6, Q8**. Denoiser: Qwen-Image 2.1 Uncensored (40 passi) o il **Turbo di AtomicChat** (8 passi,
-senza LoRA). LLM (legge il prompt, guarda le foto, traduce): Qwen3-VL 8B int8 di sempre, oppure GGUF uncensored di
+senza LoRA). LLM (legge il prompt e guarda le foto; i prompt li traduce Opus-MT): Qwen3-VL 8B int8 di sempre, oppure GGUF uncensored di
 AtomicChat o di mradermacher. Si cambiano e si scaricano da Opzioni.
 
 ## E poi
@@ -119,8 +119,8 @@ se la scheda è da 6 GB, il profilo **6 GB** in Opzioni. L'app ti avvisa da sola
 - **ComfyUI-GGUF** viaggia dentro l'app: il fork di leejet, l'unico che conosce `qwen_image21`, con una nostra
   correzione per ComfyUI 0.39 (`engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`). I **DaProd-Nodi** riempiono la zona
   prima di "rimuovi" e accordano i colori dopo il VAE, così l'incollaggio non si vede.
-- Anteprime dal vivo con **TAEQI 2.1** di madebyollin; traduzione dei prompt con lo stesso Qwen3-VL che legge il
-  prompt, quindi senza modelli in più; foto convertite con WIC di Windows, come in [DaP Convertitore](https://github.com/cammo22/DaP-Convertitore).
+- Anteprime dal vivo con **TAEQI 2.1** di madebyollin; traduzione dei prompt con **Opus-MT** (un modello di sola
+  traduzione, sul processore, ~300 MB, scaricato da solo); foto convertite con WIC di Windows, come in [DaP Convertitore](https://github.com/cammo22/DaP-Convertitore).
 - Su una RTX 4060: circa 3 secondi per passo a 1 MP, un'immagine da 40 passi in circa 2 minuti, col Turbo in circa 30 secondi.
 
 ## Sviluppare

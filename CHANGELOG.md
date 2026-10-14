@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1 — 2026-10-14
+
+- **Traduzione con un modello fatto apposta**: il prompt italiano lo traduce **Opus-MT it→en** (Helsinki-NLP, ~300 MB),
+  un modello di sola traduzione che gira sul **processore**: niente Qwen, niente VRAM, nessun rifiuto sui prompt espliciti
+  e molto più veloce. I testi fra virgolette e i `<imageN>` restano identici (si traducono solo i pezzi in mezzo). Si scarica
+  da solo la prima volta che serve. In Opzioni → *Chi traduce* si può tornare a Qwen3-VL. Se il traduttore non si scarica,
+  l'app traduce con Qwen3-VL come prima. Nuovo nodo `DaProdTraduci` (alzato `motore` a 4: l'app aggiorna il motore da sola).
+
 ## 0.4.0 — 2026-10-14
 
 Un laboratorio di ricette, più foto insieme, il Turbo nuovo e la scelta dell'LLM.

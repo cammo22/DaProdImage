@@ -68,6 +68,14 @@ export const CATALOGO: VoceCatalogo[] = [
     repo: ENC_MR, cerca: q === 'Q4' ? ['Q4_K_M', 'Q4_K_S', 'Q4'] : q === 'Q6' ? ['Q6_K', 'Q6'] : ['Q8_0', 'Q8'],
     cercaMmproj: ['mmproj.*Q8_0', 'mmproj.*f16', 'mmproj']
   })),
+  // --- traduttore: un modello di sola traduzione italiano → inglese (~300 MB, sul processore). Si scarica da solo al primo uso ---
+  {
+    id: 'trad-it-en', tipo: 'traduttore', nome: 'Traduttore italiano → inglese (Opus-MT)',
+    descrizione: 'Un modello fatto solo per tradurre: traduce il prompt prima di disegnare, sul processore, senza Qwen e senza VRAM. I testi fra virgolette restano identici.',
+    file: '', cartella: 'translate/opus-mt-it-en', url: '', byte: 310_000_000, circa: true, consigliato: true,
+    repo: 'Helsinki-NLP/opus-mt-it-en', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
+    accanto: ['^config\\.json$', '^generation_config\\.json$', '^tokenizer_config\\.json$', '^source\\.spm$', '^target\\.spm$', '^vocab\\.json$']
+  },
   // --- VAE ---
   {
     id: 'vae-fix', tipo: 'vae', nome: 'Texture-Fix VAE (madebyollin)',

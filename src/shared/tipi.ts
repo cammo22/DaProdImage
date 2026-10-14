@@ -10,6 +10,7 @@ export type Modalita =
   | 'varia' // variazioni che tengono la composizione
   | 'ingrandisci' // ingrandimento col modello di upscaling, senza ridisegnare
   | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
+  | 'traduci' // il prompt dall'italiano all'inglese con il traduttore dedicato (sul processore, senza Qwen)
   | 'importa' // (solo in galleria) una foto portata dentro da fuori
 
 export interface LoraAttiva {
@@ -201,6 +202,8 @@ export interface Impostazioni {
   veloce: boolean
   /** i prompt in italiano (o in altre lingue) si traducono in inglese prima di disegnare */
   traduci: boolean
+  /** chi traduce: 'dedicato' = un modello di sola traduzione (Opus-MT, sul processore); 'llm' = lo stesso Qwen3-VL */
+  traduttore: 'dedicato' | 'llm'
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
@@ -229,7 +232,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore'
   nome: string
   descrizione: string
   file: string
@@ -250,6 +253,8 @@ export interface VoceCatalogo {
   /** per le voci di terzi: il repo Hugging Face e le espressioni (in ordine) per trovare il file giusto; `file` e `url` si scoprono scaricando */
   repo?: string
   cerca?: string[]
+  /** altri file dello stesso repo da scaricare accanto (espressioni sul nome): config e tokenizer del traduttore */
+  accanto?: string[]
   /** per gli encoder GGUF: come trovare l'mmproj (e dove, se sta in un altro repo) */
   cercaMmproj?: string[]
   mmprojRepo?: string

@@ -30,7 +30,8 @@ const PREDEFINITE: Impostazioni = {
   memoria: 'auto',
   vramMB: 0,
   veloce: false,
-  traduci: true
+  traduci: true,
+  traduttore: 'dedicato'
 }
 
 let attuali: Impostazioni | null = null

@@ -12,6 +12,7 @@ import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './trad
 import { accoda, caricaImmagine, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
+import { scaricaVoce, statoModelli } from '../installa/installatore'
 
 const lavori: Lavoro[] = []
 let corrente: Lavoro | null = null
@@ -200,19 +201,45 @@ async function lancia(grafo: GrafoPronto): Promise<Uscita> {
 const tradotti = new Map<string, string>()
 const CON_PROMPT = new Set(['crea', 'modifica', 'zona', 'espandi', 'varia', 'rifinisci'])
 
-/** il prompt in inglese per il modello: se è in italiano lo traduce Qwen3-VL (già caricato), se no resta com'è */
+/** il traduttore dedicato è sul disco? se manca lo scarica (una volta sola, ~300 MB); false se non ci riesce */
+async function traduttorePronto(l: Lavoro): Promise<boolean> {
+  const stato = () => statoModelli().find((v) => v.id === 'trad-it-en')?.presente
+  if (stato()) return true
+  try {
+    l.fase = 'Scarico il traduttore (una volta sola)'
+    avvisa(l)
+    await scaricaVoce('trad-it-en', (r, t) => {
+      l.fase = `Scarico il traduttore (una volta sola)${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      avvisa(l, false)
+    })
+    return !!stato()
+  } catch {
+    return false
+  }
+}
+
+/** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
 async function inInglese(l: Lavoro): Promise<string> {
   const q = l.richiesta
   const p = q.prompt.trim()
-  if (!impostazioni().traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return q.prompt
+  const imp = impostazioni()
+  if (!imp.traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return q.prompt
   const gia = tradotti.get(p)
   if (gia) return gia
   l.fase = 'Traduco il prompt in inglese'
   avvisa(l)
-  const g = costruisci({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, impostazioni(), { immagini: [] }, 'traduci')
-  g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
-  const u = await lancia(g)
-  const t = pulisciTraduzione(u.testo || '', p)
+  const dedicato = imp.traduttore === 'dedicato' && (await traduttorePronto(l))
+  let t: string
+  if (dedicato) {
+    const g = costruisci({ ...q, modalita: 'traduci', prompt: p, immagini: [] }, imp, { immagini: [] }, 'traduci')
+    const u = await lancia(g)
+    t = (u.testo || '').trim() || p
+  } else {
+    const g = costruisci({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, imp, { immagini: [] }, 'traduci')
+    g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
+    const u = await lancia(g)
+    t = pulisciTraduzione(u.testo || '', p)
+  }
   tradotti.set(p, t)
   if (tradotti.size > 200) tradotti.delete(tradotti.keys().next().value as string)
   l.passo = 0

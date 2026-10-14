@@ -17,6 +17,8 @@ export interface FileRisolto {
 export interface Risolto extends FileRisolto {
   /** l'mmproj del Qwen3-VL (serve alla vista): sta nella stessa cartella, col nome che il nodo GGUF si aspetta */
   mmproj?: FileRisolto
+  /** gli altri file accanto (config e tokenizer del traduttore) */
+  altri?: FileRisolto[]
 }
 
 const FILE = join(DATI, 'risolti.json')
@@ -56,11 +58,11 @@ async function elenco(repo: string): Promise<VoceHF[]> {
   if (imp.tokenHF) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
   const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/main?recursive=true`, { headers: intestazioni })
   if (!r.ok) throw new Error(`Hugging Face non risponde per ${repo} (${r.status})`)
-  return ((await r.json()) as VoceHF[]).filter((f) => f.type === 'file' && f.path.toLowerCase().endsWith('.gguf'))
+  return ((await r.json()) as VoceHF[]).filter((f) => f.type === 'file')
 }
 
-function scegli(files: VoceHF[], cerca: string[], escludiMmproj: boolean): VoceHF | undefined {
-  const candidati = files.filter((f) => (/mmproj/i.test(f.path) ? !escludiMmproj : escludiMmproj))
+function scegli(files: VoceHF[], cerca: string[], escludiMmproj: boolean, ext = /\.gguf$/i): VoceHF | undefined {
+  const candidati = files.filter((f) => ext.test(f.path) && (/mmproj/i.test(f.path) ? !escludiMmproj : escludiMmproj))
   for (const re of cerca) {
     const r = new RegExp(re, 'i')
     const trovato = candidati.find((f) => r.test(tronco(f.path)))
@@ -80,7 +82,9 @@ const aFile = (repo: string, f: VoceHF, nome: string): FileRisolto => ({
 export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
   if (!v.repo || !v.cerca) throw new Error(`${v.nome}: non è una voce da cercare`)
   const files = await elenco(v.repo)
-  const principale = scegli(files, v.cerca, true)
+  // i pesi sono un .gguf (denoiser, encoder) o, per il traduttore, un .safetensors / .bin
+  const pesi = v.tipo === 'traduttore' ? /\.(safetensors|bin)$/i : /\.gguf$/i
+  const principale = scegli(files, v.cerca, true, pesi)
   if (!principale) throw new Error(`Nel repo ${v.repo} non trovo il file ${v.quant || ''} (${v.cerca.join(' / ')})`)
   const nome = tronco(principale.path)
   const r: Risolto = aFile(v.repo, principale, nome)
@@ -90,6 +94,12 @@ export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
     // il nodo cerca nella cartella un .gguf con "mmproj" e il nome dell'encoder senza quantizzazione: gli diamo proprio quello
     const b = senzaQuant(nome)
     r.mmproj = aFile(v.mmprojRepo || v.repo, m, `${b}${/[-_.]$/.test(b) ? '' : '.'}mmproj.gguf`)
+  }
+  if (v.accanto) {
+    r.altri = v.accanto.flatMap((re) => {
+      const f = files.find((x) => new RegExp(re, 'i').test(tronco(x.path)))
+      return f ? [aFile(v.repo!, f, tronco(f.path))] : []
+    })
   }
   ricorda(v.id, r)
   return r
@@ -115,5 +125,5 @@ export function presenteRisolto(v: VoceCatalogo, cartella: string): boolean {
       return false
     }
   }
-  return ok(r) && (!r.mmproj || ok(r.mmproj))
+  return ok(r) && (!r.mmproj || ok(r.mmproj)) && (r.altri || []).every(ok)
 }
