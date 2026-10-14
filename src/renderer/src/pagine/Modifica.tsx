@@ -11,6 +11,7 @@ import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } fr
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { Riferimenti } from '../componenti/Riferimenti'
+import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { SISTEMA_MIGLIORA_MODIFICA, fileLoraCamera, loraPer, perQualita, richiestaBase } from '../azioni'
@@ -115,7 +116,7 @@ export function Modifica(): JSX.Element {
   }
   /** la pagina torna com'era appena aperta, senza chiudere il programma */
   const togliFoto = (): void => {
-    setModifica({ base: null, versioni: [], riferimenti: [], prompt: '', modo: 'tutta', bordi: { ...NIENTE } })
+    setModifica({ base: null, versioni: [], riferimenti: [], prompt: '', modo: 'tutta', bordi: { ...NIENTE }, misura: MISURA0 })
     setConfronto(false)
     setRapida(null)
     setHaMaschera(false)
@@ -247,6 +248,7 @@ export function Modifica(): JSX.Element {
       origine: s.base.operaId,
       etichetta: (rapida && rapida.id !== 'camera' ? rapida.nome + ' · ' : rapida ? 'Camera · ' : '') + (s.prompt.trim().slice(0, 50) || 'Espandi')
     }
+    if (s.modo !== 'espandi') Object.assign(q, conMisura(s.misura, s.base))
     if (s.modo === 'tutta') Object.assign(q, { trasparente: !!rapida?.trasparente })
     if (s.modo === 'nuova') {
       // un'immagine nuova che prende dalle foto (persone, oggetti, stile…): stesse proporzioni della foto principale
@@ -555,6 +557,13 @@ export function Modifica(): JSX.Element {
                 <I.occhio /> Il modello guarda <b>tutta la foto</b> con la tua zona evidenziata e cambia <b>solo lì</b>: fuori dalla zona la foto resta identica al pixel.
                 Per togliere qualcosa scrivi "rimuovi…": la zona si ripulisce da sola prima di ridisegnarla.
               </div>
+            </div>
+          )}
+
+          {m.modo !== 'espandi' && (
+            <div className="sezione">
+              <h3>Dimensioni <span className="dx">{(m.misura ?? MISURA0).tipo === 'auto' ? 'come i megapixel' : (m.misura ?? MISURA0).tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
+              <SceltaMisura valore={m.misura ?? MISURA0} cambia={(misura) => setModifica({ misura })} base={base} mp={m.mp} />
             </div>
           )}
 

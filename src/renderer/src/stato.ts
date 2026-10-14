@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
+import type { Misura } from './componenti/Misura'
 
 export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'galleria' | 'lora' | 'impostazioni'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
@@ -59,6 +60,8 @@ export interface StatoModifica {
   allarga: number
   bordi: Bordi
   trasparente: boolean
+  /** le dimensioni dell'immagine che esce: auto, come l'originale, o una misura scelta */
+  misura: Misura
 }
 
 export interface Avviso {
@@ -118,7 +121,7 @@ const CREA0: StatoCrea = {
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
-  ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false
+  ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
