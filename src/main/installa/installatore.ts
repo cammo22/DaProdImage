@@ -448,5 +448,5 @@ export async function scaricaVoce(id: string, avanz: (r: number, t: number, v: n
 export async function fileDaScaricare(v: VoceCatalogo): Promise<FileRisolto[]> {
   if (!v.repo) return [{ file: v.file, url: v.url, byte: v.byte, sha256: v.sha256 }]
   const r = risoltoSalvato(v.id) ?? (await risolviVoce(v))
-  return [r, ...(r.mmproj ? [r.mmproj] : [])]
+  return [r, ...(r.mmproj ? [r.mmproj] : []), ...(r.altri || [])]
 }

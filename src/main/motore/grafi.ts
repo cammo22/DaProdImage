@@ -196,6 +196,12 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const neg = q.negativo || ''
   const minimo = conTurbo(q, imp) ? 4 : 8
 
+  // il traduttore dedicato: un nodo solo, sul processore; il motore non carica né Qwen né il VAE
+  if (q.modalita === 'traduci') {
+    const uscita = g.add('DaProdTraduci', { testo: q.prompt, modello: 'opus-mt-it-en' }, 'Traduco il prompt in inglese')
+    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: 1 }
+  }
+
   if (q.modalita === 'descrivi') {
     const clip = caricaClip(g, imp)
     const inputs: Record<string, unknown> = {

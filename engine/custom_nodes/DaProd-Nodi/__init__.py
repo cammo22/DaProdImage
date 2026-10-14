@@ -1,4 +1,4 @@
-# I nodi di DaProd Image per la modifica di una zona (solo torch, niente pacchetti in più).
+# I nodi di DaProd Image: la modifica di una zona (solo torch) e la traduzione del prompt (transformers, già con ComfyUI).
 #
 #  - DaProdRiempiZona: riempie la zona con i colori che ha attorno (push-pull: medie a scale sempre
 #    più piccole e poi si risale). Serve per "rimuovi": se il modello vede ancora l'oggetto nella foto
@@ -8,6 +8,8 @@
 #    Così l'incollaggio non lascia la "macchia" di colore diverso attorno alla zona.
 import torch
 import torch.nn.functional as F
+
+from .traduzione import DaProdTraduci
 
 
 def _maschera_come(maschera, h, w):
@@ -112,8 +114,10 @@ class DaProdAccordaColori:
 NODE_CLASS_MAPPINGS = {
     "DaProdRiempiZona": DaProdRiempiZona,
     "DaProdAccordaColori": DaProdAccordaColori,
+    "DaProdTraduci": DaProdTraduci,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DaProdRiempiZona": "DaProd · Riempi la zona",
     "DaProdAccordaColori": "DaProd · Accorda i colori",
+    "DaProdTraduci": "DaProd · Traduci il prompt",
 }

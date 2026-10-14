@@ -37,9 +37,13 @@ interfaccia**, installato e guidato dall'app.
 - `processo.ts` lancia `main.py` con `--models-directory`, `--output-directory` ecc. sulla porta 8818 (o la prima libera)
   e lo chiude con `taskkill /T`. `cliente.ts`: HTTP + WebSocket; il `prompt_id` lo sceglie l'app, così i messaggi che
   arrivano prima della risposta non si perdono. Anteprime binarie tipo 1 e 4.
-- **Traduzione** (`motore/traduci.ts`, `impostazioni.traduci`): se il prompt sembra italiano, prima del disegno un
-  `TextGenerate` con lo stesso Qwen3-VL lo porta in inglese (testi fra virgolette e `<imageN>` identici); in cache per
-  prompt. Il grafo riceve l'inglese, in galleria resta il prompt originale più `promptInglese`.
+- **Traduzione** (`motore/traduci.ts`, `impostazioni.traduci` e `impostazioni.traduttore`): se il prompt sembra italiano
+  (`daTradurre`, parole chiave) lo porta in inglese, prima del disegno, il **traduttore dedicato** Opus-MT it→en
+  (`models/translate/opus-mt-it-en`, voce `trad-it-en` con `repo` + `accanto`: pesi e tokenizer; si scarica da solo al primo
+  uso in `lavori.ts`) col nodo `DaProdTraduci` (`engine/custom_nodes/DaProd-Nodi/traduzione.py`, transformers sul processore,
+  una frase alla volta; testi fra virgolette e `<imageN>` passano intatti). Con `traduttore: 'llm'`, o se il download fallisce,
+  si usa un `TextGenerate` con lo stesso Qwen3-VL. In cache per prompt. Il grafo riceve l'inglese, in galleria resta il prompt
+  originale più `promptInglese`.
 - `lavori.ts` è **la coda**: un lavoro alla volta al motore, fasi dai nodi (`fasi` del grafo), stima dai secondi per
   passo misurati (`impostazioni.tempi`), risultato spostato in galleria.
 

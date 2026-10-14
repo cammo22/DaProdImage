@@ -142,9 +142,22 @@ export function Impostazioni(): JSX.Element {
               </div>
             </div>
             <div className="voce">
-              <div className="et"><b>Traduci in inglese da solo</b><small>Qwen-Image capisce meglio l'inglese: i prompt in italiano li traduce Qwen3-VL (già caricato, niente modelli in più) prima di disegnare. I testi fra virgolette restano identici</small></div>
+              <div className="et"><b>Traduci in inglese da solo</b><small>Qwen-Image capisce meglio l'inglese: i prompt in italiano si traducono prima di disegnare. I testi fra virgolette restano identici</small></div>
               <Interruttore acceso={imp.traduci} cambia={(traduci) => salva({ traduci })}>{imp.traduci ? 'Accesa' : 'Spenta'}</Interruttore>
             </div>
+            {imp.traduci && (
+              <div className="voce">
+                <div className="et">
+                  <b>Chi traduce</b>
+                  <small>
+                    {imp.traduttore === 'dedicato'
+                      ? 'Un modello fatto solo per tradurre (Opus-MT, ~300 MB): sul processore, senza VRAM e senza rifiuti. Si scarica da solo la prima volta'
+                      : 'Lo stesso Qwen3-VL che legge il prompt (già caricato, niente da scaricare): più lento e può ammorbidire prompt espliciti'}
+                  </small>
+                </div>
+                <Segmenti valore={imp.traduttore} cambia={(traduttore) => salva({ traduttore })} voci={[{ id: 'dedicato', nome: 'Traduttore' }, { id: 'llm', nome: 'Qwen3-VL' }]} />
+              </div>
+            )}
             <div className="voce">
               <div className="et"><b>Accelerazione fp16</b><small>--fast fp16_accumulation: qualche secondo in meno sulle RTX, qualità quasi uguale</small></div>
               <Interruttore acceso={imp.veloce} cambia={(veloce) => salva({ veloce })}>{imp.veloce ? 'Accesa' : 'Spenta'}</Interruttore>
