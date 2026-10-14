@@ -94,6 +94,13 @@ interfaccia**, installato e guidato dall'app.
   qualunque pagina la mandi (il `conParoleLora` del renderer fa la stessa cosa, non raddoppia). **Esempio** (`fusion.ts`): `pianificaEsempio` fa un foglio con l'esempio (image 1) e i riferimenti numerati e lo dà al Qwen3-VL (`descrivi`, `SISTEMA_PIANO`), che scrive l'istruzione di modifica decidendo da solo cosa sostituire con cosa (niente regole per persone o altro); il piano sta in `pianoEsempio` (con `chiaveEsempio`: foto + nota), si corregge nell'interfaccia, e `richiestaEsempio` lo manda come prompt con l'esempio come `image_1`. **Galleria**: tasto destro
   (`MenuContestuale`), `galleria:elimina` con `definitivo`, `galleria:copia` con più id = file negli appunti con PowerShell `Set-Clipboard`. **Laboratorio**:
   un `Ingresso` di tipo `camera` mostra il comando Camera (valore JSON, `leggiCamera`) e le ricette aggiungono il passo `VISTA_TUA`.
+- **Omino** (`omino.ts` puro + `componenti/Omino.tsx`, `ominoImmagine.ts`): scheletro di 15 giunti in un riquadro 280×300 (`Dx`/`Sx` sono della persona: la destra sta a sinistra dello schermo);
+  `trascina()` ruota l'osso attorno al genitore (lunghezze fisse, si porta dietro i discendenti; il bacino sposta tutto); mani = 5 dita con piegamento 0–1 + divaricazione + polso
+  (`geometriaMano`); `disegnaOpenPose()` fa la mappa di posa (colori OpenPose, dita ad arcobaleno) e `descriviPosa()` la posa in inglese. In **Personaggio** posa `omino` (crop + scheletro come
+  `<image2>`); nel **Laboratorio** un `Ingresso` di tipo `posa` (JSON) e il passo `POSA_TUA` con `PassoWf.posa`: `richiestaPasso` (async) mette lo scheletro ultima immagine e sostituisce `{posa}` con il suo `<imageN>`.
+  **Idee** (`regista.ts`): le azioni rapide di Modifica sono idee a toggle (`idee`); `pianificaIdee` (Qwen3-VL, `SISTEMA_IDEE`, foto + eventuale foglio con i riferimenti) le mescola in un'istruzione sola
+  (`fantasia`: temperatura), piano in `pianoIdee` (con chiave). **Esempio**: il piano è JSON `{instruction, crops}` (attributi a parole + riquadri 0–1000 sul foglio, `leggiPiano`, `riquadroNellaFoto`,
+  `ritagliaFoto` in `foglio.ts`); `pianoEsempio.ritagli` sostituiscono i riferimenti.
 - **Idle** (`src/main/idle.ts`): dopo 60 s senza lavori scarica i file `consigliato` mancanti (non denoiser né encoder); `fileInutilizzati()`
   elenca i file dei modelli che non servono (Opzioni → File inutilizzati, Cestino).
 - Stato in `stato.ts` (zustand); le scelte di Crea/Modifica e i LoRA accesi restano in localStorage.

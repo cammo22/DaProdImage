@@ -21,7 +21,7 @@ export function EditorRicetta(p: { ricetta: RicettaUtente; chiudi: () => void; s
   const [r, setR] = useState<RicettaUtente>(p.ricetta)
   const [errore, setErrore] = useState('')
   const caselle = useRef<Record<number, HTMLTextAreaElement | null>>({})
-  const campi = r.ingressi.filter((i): i is Extract<Ingresso, { tipo: 'testo' | 'righe' }> => i.tipo !== 'scelta' && i.tipo !== 'camera')
+  const campi = r.ingressi.filter((i): i is Extract<Ingresso, { tipo: 'testo' | 'righe' }> => i.tipo !== 'scelta' && i.tipo !== 'camera' && i.tipo !== 'posa')
 
   const cambiaPasso = (i: number, m: Partial<PassoUtente>): void => setR({ ...r, passi: r.passi.map((x, j) => (j === i ? { ...x, ...m } : x)) })
   /** mette nel prompt del passo i (dove sta il cursore) una foto <imageN> o un {campo} */

@@ -1,7 +1,7 @@
 // Modifica: tutta la foto, solo una zona (la segni col pennello) o allargarla oltre i bordi.
 // Le azioni rapide (persone, vestiti, situazioni, camera, luce, stili, testi) mettono l'istruzione giusta;
 // dopo ogni modifica la nuova versione resta sulla tela, col confronto prima/dopo e il tasto "Continua da qui".
-import { useEffect, useRef, useState, type JSX } from 'react'
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
@@ -14,6 +14,7 @@ import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
 import { ControlliPersonaggio, PalcoPersonaggio } from '../componenti/Personaggio'
+import { FANTASIE, pianificaIdee, unisciRapide } from '../regista'
 import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
@@ -37,8 +38,14 @@ export function Modifica(): JSX.Element {
   const [haMaschera, setHaMaschera] = useState(false)
   const [confronto, setConfronto] = useState(false)
   const [avanzate, setAvanzate] = useState(false)
-  // l'azione rapida scelta: porta con sé forza, trasparenza, riferimenti e i LoRA da accendere
-  const [rapida, setRapida] = useState<Rapida | null>(null)
+  // le idee scelte (azioni rapide, si sommano) e la posizione della camera: insieme portano forza, trasparenza, riferimenti e i LoRA da accendere
+  const [idee, setIdee] = useState<Rapida[]>([])
+  const [cameraRapida, setCameraRapida] = useState<Rapida | null>(null)
+  const rapida = useMemo(() => unisciRapide([...idee, ...(cameraRapida ? [cameraRapida] : [])]), [idee, cameraRapida])
+  const setRapida = (_: null): void => {
+    setIdee([])
+    setCameraRapida(null)
+  }
   const [categoria, setCategoria] = useState('persone')
   const [camera, setCamera] = useState<PosizioneCamera>(CAMERA0)
   const [scrivendo, setScrivendo] = useState(false)
@@ -240,22 +247,17 @@ export function Modifica(): JSX.Element {
     return () => window.removeEventListener('keydown', t)
   })
 
+  /** le azioni rapide sono idee: un clic le accende, un altro le spegne, e se ne possono sommare quante si vuole */
   const usaRapida = async (r: Rapida): Promise<void> => {
-    setModifica({ prompt: r.prompt })
-    setRapida(r)
-    // le azioni con una foto di riferimento la chiedono subito (dalla galleria o dal PC)
+    if (idee.some((x) => x.id === r.id)) {
+      setIdee(idee.filter((x) => x.id !== r.id))
+      return
+    }
+    setIdee([...idee, r])
+    // le idee con una foto di riferimento la chiedono subito (dalla galleria o dal PC)
     if (r.rif && usaStato.getState().modifica.riferimenti.length < r.rif) {
       const nuove = await scegliFoto(r.rif > 1)
       if (nuove.length) setModifica({ riferimenti: [...usaStato.getState().modifica.riferimenti, ...nuove].slice(0, 9) })
-    }
-    if (r.completa) {
-      setTimeout(() => {
-        const t = prompt.current
-        if (!t) return
-        t.focus()
-        const i = r.prompt.indexOf('…')
-        if (i >= 0) t.setSelectionRange(i, i + 1)
-      }, 30)
     }
   }
 
@@ -265,7 +267,7 @@ export function Modifica(): JSX.Element {
     const lora = !!fileLoraCamera()
     const p = componiCamera(c, lora)
     setModifica({ prompt: p })
-    setRapida(p ? { id: 'camera', nome: 'Camera', prompt: p, lora: lora && conLora(c) ? ['camera'] : [] } : null)
+    setCameraRapida(p ? { id: 'camera', nome: 'Camera', prompt: p, lora: lora && conLora(c) ? ['camera'] : [] } : null)
   }
 
   const migliora = async (): Promise<void> => {
@@ -286,8 +288,8 @@ export function Modifica(): JSX.Element {
     const s = usaStato.getState().modifica
     if (s.modo === 'fusion' || s.modo === 'esempio') return mandaGriglia()
     if (!s.base) return
-    if (s.modo !== 'espandi' && !s.prompt.trim()) {
-      avvisa('Scrivi cosa cambiare (o scegli un\'azione rapida)', 'errore')
+    if (s.modo !== 'espandi' && !s.prompt.trim() && !idee.length) {
+      avvisa('Scrivi cosa cambiare (o scegli una o più idee)', 'errore')
       return
     }
     if (rapida?.rif && s.riferimenti.length < rapida.rif) {
@@ -298,6 +300,26 @@ export function Modifica(): JSX.Element {
       avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
       return
     }
+    // le idee scelte: il modello guarda la foto e le mescola in una sola istruzione, inventando i dettagli
+    let testo = s.prompt.trim()
+    if (s.modo !== 'espandi' && idee.length) {
+      if (s.fantasia === 'fedele' && idee.length === 1 && !testo) testo = idee[0].prompt
+      else {
+        const chiave = JSON.stringify([s.base.percorso, idee.map((r) => r.id), testo, s.riferimenti.map((r) => r.percorso), s.fantasia, s.modo])
+        let piano = s.pianoIdee?.chiave === chiave ? s.pianoIdee.testo : ''
+        if (!piano) {
+          avvisa('Il modello guarda la foto e mescola le idee…', 'info')
+          try {
+            piano = await pianificaIdee({ base: s.base, idee, nota: testo, riferimenti: s.riferimenti, fantasia: s.fantasia, zona: s.modo === 'zona' })
+          } catch (er) {
+            avvisa((er as Error).message, 'errore')
+            return
+          }
+          setModifica({ pianoIdee: { chiave, testo: piano } })
+        }
+        testo = piano
+      }
+    }
     const base0 = richiestaBase()
     // i LoRA che l'azione accende da sola (coerenza, cambio vestito, camera) si aggiungono a quelli che hai acceso
     const extra = loraPer(rapida?.lora).filter((x) => !base0.lora.some((l) => l.file === x.file))
@@ -305,13 +327,13 @@ export function Modifica(): JSX.Element {
       ...base0,
       lora: [...base0.lora, ...extra],
       modalita: (s.modo === 'tutta' ? 'modifica' : s.modo) as 'modifica' | 'zona' | 'espandi',
-      prompt: conParoleLora(s.prompt.trim()),
+      prompt: conParoleLora(testo),
       immagini: [s.base.percorso, ...s.riferimenti.map((r) => r.percorso)],
       megapixel: s.mp,
       ...perQualita(s.qualita),
       quante: s.quante,
       origine: s.base.operaId,
-      etichetta: (rapida && rapida.id !== 'camera' ? rapida.nome + ' · ' : rapida ? 'Camera · ' : '') + (s.prompt.trim().slice(0, 50) || 'Espandi')
+      etichetta: (rapida && rapida.id !== 'camera' ? rapida.nome + ' · ' : rapida ? 'Camera · ' : '') + (testo.slice(0, 50) || 'Espandi')
     }
     if (s.modo !== 'espandi') Object.assign(q, conMisura(s.misura, s.base))
     if (s.modo === 'tutta') Object.assign(q, { trasparente: !!rapida?.trasparente })
@@ -345,8 +367,8 @@ export function Modifica(): JSX.Element {
     if (s.modo === 'esempio') {
       // il modello guarda l'esempio e le tue foto e scrive lui cosa sostituire con cosa; il piano resta qui sotto, correggibile
       const chiave = chiaveEsempio(s)
-      let piano = s.pianoEsempio?.chiave === chiave ? s.pianoEsempio.testo : ''
-      if (!piano && s.esempio && s.riferimenti.length) {
+      let piano: { testo: string; ritagli?: (string | null)[] } = s.pianoEsempio?.chiave === chiave ? s.pianoEsempio : { testo: '' }
+      if (!piano.testo && s.esempio && s.riferimenti.length) {
         avvisa('Il modello guarda l\'esempio e le tue foto…', 'info')
         try {
           piano = await pianificaEsempio(s)
@@ -354,7 +376,7 @@ export function Modifica(): JSX.Element {
           avvisa((er as Error).message, 'errore')
           return
         }
-        setModifica({ pianoEsempio: { chiave, testo: piano } })
+        setModifica({ pianoEsempio: { chiave, ...piano } })
       }
       e = richiestaEsempio(s, turbo.presente, piano)
     } else e = richiestaFusion(s, turbo.presente)
@@ -399,6 +421,8 @@ export function Modifica(): JSX.Element {
   const disegna = m.modo === 'zona'
   const confrontoAttivo = confronto && !!precedente && !inCorso
   const mancaRif = !!rapida?.rif && m.riferimenti.length < rapida.rif
+  /** per quali foto, idee e note vale il piano delle idee (come in manda()) */
+  const chiaveIdee = base ? JSON.stringify([base.percorso, idee.map((r) => r.id), m.prompt.trim(), m.riferimenti.map((r) => r.percorso), m.fantasia, m.modo]) : ''
 
   return (
     <div className="pagina">
@@ -591,7 +615,7 @@ export function Modifica(): JSX.Element {
               value={m.prompt}
               onChange={(e) => {
                 setModifica({ prompt: e.target.value })
-                if (!e.target.value.trim()) setRapida(null)
+                if (!e.target.value.trim()) setCameraRapida(null)
               }}
               placeholder={esempioMode ? 'Facoltativo, es. "sostituisci le iridi con quelle delle mie foto". Se lasci vuoto il modello capisce da solo cosa fare' : fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
               style={{ minHeight: 96 }}
@@ -617,12 +641,25 @@ export function Modifica(): JSX.Element {
             )}
           </div>
 
+          {esempioMode && m.qualita === 'turbo' && (
+            <div className="avviso-box" style={{ margin: '10px 16px 0', padding: '8px 10px', fontSize: 13.5 }}>
+              Il Turbo è velocissimo ma segue meno i <b>colori e i dettagli</b> delle tue foto: per le iridi, i vestiti, i loghi… prova <b>Alta</b>.
+            </div>
+          )}
           {esempioMode && (
             <div className="sezione">
               <h3>Il piano del modello {m.pianoEsempio && <button className="btn piccolo fantasma" style={{ marginLeft: 'auto' }} onClick={() => setModifica({ pianoEsempio: null })} title="Al prossimo lavoro il modello guarda di nuovo le foto e rifà il piano">Rifai</button>}</h3>
               {m.pianoEsempio && m.pianoEsempio.chiave === chiaveEsempio(m) ? (
                 <>
-                  <textarea value={m.pianoEsempio.testo} rows={6} onChange={(e) => setModifica({ pianoEsempio: { chiave: m.pianoEsempio!.chiave, testo: e.target.value } })} />
+                  <textarea value={m.pianoEsempio.testo} rows={6} onChange={(e) => setModifica({ pianoEsempio: { ...m.pianoEsempio!, testo: e.target.value } })} />
+                  {m.pianoEsempio.ritagli?.some(Boolean) && (
+                    <div style={{ marginTop: 8 }}>
+                      <span className="piccolo tenue">Le parti delle tue foto che contano (ritagliate dal modello)</span>
+                      <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
+                        {m.pianoEsempio.ritagli.map((r, i) => r && <img key={i} src={urlFile(r)} alt="" style={{ height: 56, borderRadius: 6, border: '1px solid var(--bordo2)' }} title={`<image${i + 2}>`} />)}
+                      </div>
+                    </div>
+                  )}
                   <div className="piccolo spento" style={{ marginTop: 4 }}>L'ha scritto il modello guardando le foto: puoi correggerlo. Si usa così com'è finché non cambi le foto o le note.</div>
                 </>
               ) : (
@@ -633,7 +670,7 @@ export function Modifica(): JSX.Element {
 
           {m.modo !== 'espandi' && !griglia && (
             <div className="sezione">
-              <h3>Azioni rapide <span className="dx">un clic = istruzione pronta</span></h3>
+              <h3>Idee <span className="dx">sommale: il modello le mescola</span></h3>
               <div className="cat-rapide">
                 {categorie.map((c) => {
                   const Ic = (I as Record<string, () => JSX.Element>)[c.icona] || I.crea
@@ -654,11 +691,29 @@ export function Modifica(): JSX.Element {
               {cat && cat.id === 'vestiti' && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-vestiti" perche="Tiene volto, pose e sfondo mentre cambia il vestito. Si accende da solo qui." /></div>}
               <div className="riga a-capo" style={{ marginTop: 10, gap: 6 }}>
                 {cat?.voci.map((r) => (
-                  <button key={r.id} className={`chip ${rapida?.id === r.id ? 'su' : ''}`} onClick={() => void usaRapida(r)} title={r.rif ? `Serve ${r.rifNome || 'una foto di riferimento'}` : r.prompt}>
+                  <button key={r.id} className={`chip ${idee.some((x) => x.id === r.id) ? 'su' : ''}`} onClick={() => void usaRapida(r)} title={r.rif ? `Serve ${r.rifNome || 'una foto di riferimento'}` : 'Un clic la accende, un altro la spegne: puoi sommarne quante vuoi'}>
                     {r.rif ? '＋ ' : ''}{r.nome}
                   </button>
                 ))}
               </div>
+              {idee.length > 0 && (
+                <div className="idee-scelte">
+                  <div className="riga spazia">
+                    <b className="oro piccolo">{idee.length} {idee.length === 1 ? 'idea' : 'idee'}: {idee.map((r) => r.nome.replace('…', '')).join(' + ')}</b>
+                    <button className="btn piccolo fantasma" onClick={() => setIdee([])}>Togli tutte</button>
+                  </div>
+                  <span className="piccolo tenue">Fantasia del modello</span>
+                  <Segmenti valore={m.fantasia} cambia={(fantasia) => setModifica({ fantasia })} voci={FANTASIE.map((f) => ({ id: f.id, nome: f.nome, sotto: f.sotto }))} />
+                  {m.pianoIdee && m.pianoIdee.chiave === chiaveIdee ? (
+                    <div style={{ marginTop: 8 }}>
+                      <div className="riga spazia"><span className="piccolo tenue">Il piano del modello (puoi correggerlo)</span><button className="btn piccolo fantasma" onClick={() => setModifica({ pianoIdee: null })} title="Al prossimo lavoro il modello rimescola le idee, con dettagli nuovi">Rifai</button></div>
+                      <textarea rows={5} value={m.pianoIdee.testo} onChange={(e) => setModifica({ pianoIdee: { chiave: m.pianoIdee!.chiave, testo: e.target.value } })} />
+                    </div>
+                  ) : (
+                    <div className="piccolo spento" style={{ marginTop: 6 }}>Quando premi «Modifica» il modello guarda la foto, mescola le idee e inventa i dettagli. Qui vedrai cosa ha deciso.</div>
+                  )}
+                </div>
+              )}
               {cat && ['luce', 'ritocco', 'situazioni'].includes(cat.id) && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-coerenza" perche="Le modifiche restano sul fotogramma: luce, colori e stili cambiano, i contorni no. Si accende da solo in queste azioni." /></div>}
             </div>
           )}

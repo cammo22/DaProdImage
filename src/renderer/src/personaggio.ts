@@ -8,6 +8,8 @@ import { fileLoraCamera, loraPer, perQualita, richiestaBase } from './azioni'
 import { componiCamera, conLora, type PosizioneCamera } from './componenti/Camera'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { leggiPersone, type Persona } from './riquadri'
+import { descriviPosa, posaDi, type Posa } from './omino'
+import { immagineOmino } from './ominoImmagine'
 
 export type { Persona }
 
@@ -31,11 +33,13 @@ interface StatoPersonaggio {
   formato: FormatoId
   nota: string
   camera: PosizioneCamera
+  /** la posa disegnata con l'omino */
+  omino: Posa
 }
 
 export const usaPersonaggio = create<StatoPersonaggio>(() => ({
   foto: null, persone: [], scelta: null, cercando: false, ris: [], sorgente: null,
-  posa: 'tpose', sfondo: 'bianco', formato: 'verticale', nota: '', camera: { az: 45, el: 0, dist: 0 }
+  posa: 'tpose', sfondo: 'bianco', formato: 'verticale', nota: '', camera: { az: 45, el: 0, dist: 0 }, omino: posaDi('t')
 }))
 
 export const impostaPersonaggio = (p: Partial<StatoPersonaggio>): void => usaPersonaggio.setState(p)
@@ -43,11 +47,12 @@ export const impostaPersonaggio = (p: Partial<StatoPersonaggio>): void => usaPer
 // ---------------------------------------------------------------------------------------------------------------
 // le scelte
 // ---------------------------------------------------------------------------------------------------------------
-export type PosaId = 'tpose' | 'apose' | 'piedi' | 'come'
+export type PosaId = 'tpose' | 'apose' | 'piedi' | 'come' | 'omino'
 export const POSE_ESTRAI: { id: PosaId; nome: string; sotto: string; testo: string }[] = [
   { id: 'tpose', nome: 'T-pose', sotto: 'braccia aperte', testo: 'Pose: a perfect T-pose, standing straight and facing the camera, legs slightly apart, arms stretched out horizontally to the sides at shoulder height, palms down.' },
   { id: 'apose', nome: 'A-pose', sotto: 'braccia un po\' scostate', testo: 'Pose: an A-pose, standing straight and facing the camera, arms relaxed and slightly away from the body, legs slightly apart.' },
   { id: 'piedi', nome: 'In piedi', sotto: 'dritto, a riposo', testo: 'Pose: standing straight and facing the camera in a neutral relaxed stance, arms along the body.' },
+  { id: 'omino', nome: 'Disegnata', sotto: 'con l\'omino', testo: '' },
   { id: 'come', nome: 'Come nella foto', sotto: 'completa il corpo', testo: 'Pose: keep the pose of the person in <image1> as it is, and complete the body if some part is cut off or hidden, so the whole figure is visible.' }
 ]
 
@@ -152,10 +157,16 @@ export async function richiestaEstrai(foto: FotoBase, p: Persona, o: { qualita: 
   const h = m32(Math.sqrt(px / (a / b)))
   const ritaglio = await ritaglia(foto, p.box)
   const chi = p.nome ? ` (${p.nome.replace(/["<>]/g, '')})` : ''
+  // con l'omino la posa si dà come immagine (mappa di posa) più la descrizione a parole
+  const conOmino = s.posa === 'omino'
+  const scheletro = conOmino ? await immagineOmino(s.omino, w, h) : null
+  const testoPosa = conOmino
+    ? `Pose: make the person take EXACTLY the pose shown by the pose guide in <image2> (colored lines are the limbs, dots are the joints, the thin colored lines are the fingers of each hand). Copy the position of every arm, leg, hand and finger exactly. The guide is only a reference for the pose: never draw its lines or dots. ${descriviPosa(s.omino)}`
+    : posa.testo
   const prompt = [
     `Full-body character reference of the person shown in <image1>${chi}: only that one person, the one at the center of <image1>; ignore anyone else visible at the edges.`,
     'Keep exactly the same identity, face, hair, skin tone, body build and clothes, with every detail, pattern and color.',
-    posa.testo,
+    testoPosa,
     'Show the entire body from head to feet, centered, with nothing cropped.',
     sfondo.testo,
     s.nota.trim()
@@ -167,7 +178,7 @@ export async function richiestaEstrai(foto: FotoBase, p: Persona, o: { qualita: 
     larghezza: w,
     altezza: h,
     megapixel: (w * h) / 1048576,
-    immagini: [ritaglio],
+    immagini: scheletro ? [ritaglio, scheletro] : [ritaglio],
     ...perQualita(o.qualita),
     quante: o.quante,
     trasparente: s.sfondo === 'trasparente',

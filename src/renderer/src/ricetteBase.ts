@@ -1,8 +1,9 @@
 // Le ricette del Laboratorio che ci sono di serie: pose, espressioni, vestiti, camera, luce, stili, prodotto, grafica, casa,
 // restauro, sticker. Sono funzioni dei campi che compili (vedi `Workflow` in workflow.ts); le tue stanno in ricette.ts.
 import { PRESET, campiCon, componiPreset } from './preset'
+import { descriviPosa, leggiPosa } from './omino'
 import { componiCamera, conLora } from './componenti/Camera'
-import { VISTA_TUA, leggiCamera, type Ctx, type Ingresso, type PassoWf, type Workflow } from './workflow'
+import { POSA_TUA, VISTA_TUA, leggiCamera, type Ctx, type Ingresso, type PassoWf, type Workflow } from './workflow'
 
 export const E = (etichetta: string, prompt: string, extra: Partial<PassoWf> = {}): PassoWf => ({ etichetta, prompt, ...extra })
 const FOTO = 'the photo <image1>'
@@ -14,6 +15,13 @@ const vistaTua = (c: Ctx, intorno: string): PassoWf[] => {
   const cam = pos && componiCamera(pos, c.camera)
   if (!pos || !cam) return []
   return [E(VISTA_TUA, `${cam} ${intorno}`, { lora: c.camera && conLora(pos) ? ['camera'] : [] })]
+}
+/** l'omino dentro la ricetta: lo muovi e ottieni il passo "La tua posa" (la posa è un'immagine in più, `{posa}` nel prompt) */
+const POSA_TUA_IN: Ingresso = { id: 'posa', tipo: 'posa', nome: 'Muovi l\'omino: una posa tua (anche mani e dita), oltre a quelle della ricetta' }
+const posaTua = (c: Ctx, intorno: string): PassoWf[] => {
+  const po = leggiPosa(c.v.posa)
+  if (!po) return []
+  return [E(POSA_TUA, `Show the same character from ${FOTO} in exactly the pose shown by the pose guide in {posa} (colored lines are the limbs, dots are the joints, thin colored lines are the fingers of each hand): copy the position of every arm, leg, hand and finger exactly, and never draw the guide itself. ${descriviPosa(po)} ${intorno}`, { posa: c.v.posa })]
 }
 const SFONDO: Ingresso = {
   id: 'sfondo', tipo: 'scelta', nome: 'Sfondo', predefinita: 'orig',
@@ -137,6 +145,9 @@ const RITRATTI: [string, string][] = [
   ['Bianco e nero', 'a timeless black and white fine-art portrait with rich tones']
 ]
 
+/** a una ricetta si aggiunge l'omino: un campo per muoverlo e il passo "La tua posa" in fondo */
+const conPosa = (w: Workflow, intorno: (c: Ctx) => string): Workflow => ({ ...w, ingressi: [...w.ingressi, POSA_TUA_IN], passi: (c) => [...w.passi(c), ...posaTua(c, intorno(c))] })
+
 const SERIE = (id: string, nome: string, categoria: string, icona: string, descrizione: string, voci: [string, string][], promptDi: (d: string, c: Ctx) => string, extra: Partial<Workflow> = {}, passoExtra: Partial<PassoWf> = {}): Workflow => ({
   id, nome, categoria, icona, descrizione, modo: 'serie', foto: true, rif: 'no', ingressi: [],
   passi: (c) => voci.map(([e, d]) => E(e, promptDi(d, c), passoExtra)),
@@ -145,10 +156,10 @@ const SERIE = (id: string, nome: string, categoria: string, icona: string, descr
 
 export const WORKFLOW_BASE: Workflow[] = [
   // ---- personaggio
-  SERIE('pose', 'Il personaggio in 9 pose', 'personaggio', 'ritratto', 'Una foto del personaggio e lo vedi in piedi, seduto, mentre cammina, corre, salta… sempre lo stesso volto e lo stesso vestito.', POSE,
-    (d, c) => `Show the same character from ${FOTO} ${d}. Keep exactly the same face, hairstyle, outfit, colors and art style, with the full body visible. ${sfondoDi(c.v)}`, { ingressi: [SFONDO] }),
+  conPosa(SERIE('pose', 'Il personaggio in 9 pose', 'personaggio', 'ritratto', 'Una foto del personaggio e lo vedi in piedi, seduto, mentre cammina, corre, salta… sempre lo stesso volto e lo stesso vestito.', POSE,
+    (d, c) => `Show the same character from ${FOTO} ${d}. Keep exactly the same face, hairstyle, outfit, colors and art style, with the full body visible. ${sfondoDi(c.v)}`, { ingressi: [SFONDO] }), (c) => `Keep exactly the same face, hairstyle, outfit, colors and art style, with the full body visible. ${sfondoDi(c.v)}`),
   {
-    id: 'turnaround', nome: 'Foglio personaggio (turnaround)', categoria: 'personaggio', icona: 'serie', modo: 'serie', foto: true, rif: 'no', ingressi: [CAMERA_TUA],
+    id: 'turnaround', nome: 'Foglio personaggio (turnaround)', categoria: 'personaggio', icona: 'serie', modo: 'serie', foto: true, rif: 'no', ingressi: [CAMERA_TUA, POSA_TUA_IN],
     descrizione: 'Il personaggio da davanti, di tre quarti, di lato, da dietro e in primo piano: il foglio che serve a disegnatori e modellatori 3D. Con il comando Camera aggiungi una vista tua, dove vuoi.',
     passi: (c) => [
       E('Davanti', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen from the front. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`),
@@ -157,7 +168,8 @@ export const WORKFLOW_BASE: Workflow[] = [
       E('Tre quarti dietro', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen from behind and 45 degrees to the left. Keep exactly the same hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Dietro', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen directly from behind. Keep exactly the same hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Volto', `Show a close-up portrait of the face of the same character from ${FOTO}, looking at the camera. Keep exactly the same face, hair and colors. Plain white background.`),
-      ...vistaTua(c, `Show the same character from ${FOTO} in a neutral standing A-pose, full body. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`)
+      ...vistaTua(c, `Show the same character from ${FOTO} in a neutral standing A-pose, full body. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`),
+      ...posaTua(c, 'Plain white background, flat even lighting, full body visible.')
     ]
   },
   SERIE('espressioni', 'Tutte le espressioni', 'personaggio', 'ritratto', 'Felice, ride, triste, arrabbiato, sorpreso, spaventato, pensieroso, occhiolino: lo stesso volto con 8 espressioni.', ESPRESSIONI,

@@ -12,8 +12,10 @@ import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { perQualita } from '../azioni'
 import { CAMERA0, ControlloCamera } from '../componenti/Camera'
+import { Omino } from '../componenti/Omino'
+import { leggiPosa, posaDi, posaInTesto } from '../omino'
 import { fileLoraCamera } from '../azioni'
-import { VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
+import { POSA_TUA, VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
 import { usaRicette, type RicettaUtente } from '../ricette'
 import { EditorRicetta } from '../componenti/EditorRicetta'
 import { Catalogo, Dettaglio, Risultati, icona } from '../componenti/LabVista'
@@ -240,7 +242,20 @@ export function Laboratorio(): JSX.Element {
               {w.ingressi.length > 0 && (
                 <div className="sezione col" style={{ gap: 10 }}>
                   {w.ingressi.map((g) =>
-                    g.tipo === 'camera' ? (
+                    g.tipo === 'posa' ? (
+                      <div key={g.id} className="col" style={{ gap: 6 }}>
+                        <span className="piccolo tenue">{g.nome}</span>
+                        <Omino
+                          valore={leggiPosa(valori[g.id]) ?? posaDi('t')}
+                          cambia={(po) => {
+                            setValori({ ...valori, [g.id]: posaInTesto(po) })
+                            // muovendo l'omino il passo "La tua posa" si segna da solo
+                            if (!fai.includes(POSA_TUA)) setFai([...fai, POSA_TUA])
+                          }}
+                        />
+                        <button className="btn piccolo fantasma" style={{ alignSelf: 'flex-start' }} onClick={() => { setValori({ ...valori, [g.id]: '' }); setFai(fai.filter((x) => x !== POSA_TUA)) }}>Non usare l'omino</button>
+                      </div>
+                    ) : g.tipo === 'camera' ? (
                       <div key={g.id} className="col" style={{ gap: 6 }}>
                         <span className="piccolo tenue">{g.nome}</span>
                         <ControlloCamera

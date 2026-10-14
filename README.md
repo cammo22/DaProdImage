@@ -95,6 +95,11 @@ copertina e pagine intere per le preferite. Clicchi uno spread e **le sue foto s
 (visti con le tue foto), **12 stili** (Polaroid, Blu notte, Crema…) e aggiungi **testi e forme** da trascinare. Esporti in **PDF o JPEG**
 a 300 dpi con l'abbondanza.
 
+## L'omino
+
+Un manichino con le ossa che muovi come vuoi (anche **mani e dita**, una per una) per dare una posa al personaggio: in Modifica →
+Personaggio e nelle ricette del Laboratorio. Diventa una mappa di posa che il modello segue.
+
 ## Personaggio
 
 In Modifica: una foto con più persone, clic su quella che vuoi (si illumina), **estraila a figura intera** (T-pose, A-pose…) e **muovi la

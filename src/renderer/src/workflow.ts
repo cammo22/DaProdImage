@@ -13,6 +13,8 @@ import { usaRicette, type RicettaUtente } from './ricette'
 import { SISTEMA_SORPRESA } from './azioni'
 import type { ChiaveLora } from './rapide'
 import type { PosizioneCamera } from './componenti/Camera'
+import { immagineOmino } from './ominoImmagine'
+import { leggiPosa } from './omino'
 import type { Richiesta } from '@shared/tipi'
 
 export type Ingresso =
@@ -20,6 +22,8 @@ export type Ingresso =
   | { id: string; tipo: 'scelta'; nome: string; opzioni: { id: string; nome: string }[]; predefinita: string }
   /** il comando Camera: la posizione si muove con i cerchi; il valore è un JSON {az, el, dist} (vuoto = camera ferma) */
   | { id: string; tipo: 'camera'; nome: string }
+  /** l'omino: la posa che il personaggio deve prendere (il valore è un JSON della posa; vuoto = non scelta) */
+  | { id: string; tipo: 'posa'; nome: string }
 
 export interface Ctx {
   v: Record<string, string>
@@ -39,6 +43,8 @@ export interface PassoWf {
   soloRif?: number
   /** il prompt lo inventa il modello al momento di partire (il passo "Sorpresa") */
   sorpresa?: boolean
+  /** la posa dell'omino (JSON): si disegna come mappa di posa e va fra le immagini; nel prompt `{posa}` diventa il suo <imageN> */
+  posa?: string
 }
 
 export interface Workflow {
@@ -80,6 +86,8 @@ import { E, righe, WORKFLOW_BASE } from './ricetteBase'
 
 /** il passo che nasce dal comando Camera di una ricetta (la posizione che hai scelto muovendo i cerchi) */
 export const VISTA_TUA = 'La tua vista'
+/** il passo che nasce dall'omino di una ricetta */
+export const POSA_TUA = 'La tua posa'
 
 /** la posizione della camera scritta in un campo della ricetta (vuota o storta = camera ferma) */
 export function leggiCamera(s: string | undefined): PosizioneCamera | null {
@@ -116,11 +124,11 @@ export function daUtente(r: RicettaUtente): Workflow {
 /** una ricetta che c'è già, come ricetta tua (si può cambiare): i campi di testo diventano {segnaposto} nei prompt */
 export function inUtente(w: Workflow, id = 'u-' + crypto.randomUUID().slice(0, 8)): RicettaUtente {
   const v: Record<string, string> = {}
-  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' ? '' : `{${i.id}}`
+  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' || i.tipo === 'posa' ? '' : `{${i.id}}`
   const passi = w.passi({ v, nRif: w.rif === 'ognuno' ? 3 : 1, camera: !!fileLoraCamera() })
   return {
     id, nome: w.nome + ' (mia)', categoria: w.categoria, descrizione: w.descrizione, modo: w.modo, foto: w.foto, rif: w.rif, rifNome: w.rifNome,
-    ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta' && i.tipo !== 'camera'),
+    ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta' && i.tipo !== 'camera' && i.tipo !== 'posa'),
     passi: passi.map((p) => ({ etichetta: p.etichetta, prompt: p.prompt, crea: p.crea, trasparente: p.trasparente, lora: p.lora })),
     da: w.id
   }
@@ -137,7 +145,7 @@ export const workflowDa = (id: string): Workflow | undefined => elencoWorkflow()
 /** il valore di partenza di ogni campo (gli esempi si scrivono da soli, si ritoccano) */
 export function valoriIniziali(w: Workflow): Record<string, string> {
   const v: Record<string, string> = {}
-  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' ? '' : i.esempio
+  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' || i.tipo === 'posa' ? '' : i.esempio
   return v
 }
 
@@ -226,7 +234,7 @@ async function inventaPrompt(run: Run, wf: Workflow | undefined): Promise<string
 }
 
 /** il lavoro per un passo: modifica la foto (o disegna da zero con i riferimenti) */
-function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null): Richiesta {
+async function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null): Promise<Richiesta> {
   const passo = run.definizione[i]
   const wf = workflowDa(run.wfId)!
   const b = richiestaBase()
@@ -240,17 +248,27 @@ function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null): Ric
     etichetta: `${run.nome} · ${passo.etichetta}`,
     trasparente: !!passo.trasparente
   }
+  const base = baseCorrente || run.base
+  const immagini = passo.crea ? rif.map((r) => r.percorso) : [base!.percorso, ...rif.map((r) => r.percorso)]
+  let prompt = passo.prompt
+  // l'omino: la posa diventa una mappa di posa, un'immagine in più (la ultima), e {posa} nel prompt è il suo <imageN>
+  const posa = leggiPosa(passo.posa)
+  if (posa) {
+    const w = passo.crea ? 768 : base!.larghezza
+    const h = passo.crea ? 1024 : base!.altezza
+    immagini.push(await immagineOmino(posa, w, h))
+    prompt = prompt.replace(/\{posa\}/g, `<image${immagini.length}>`)
+  }
   if (passo.crea) {
     const d = dimensioniRis(passo.crea.formato, Math.round((passo.crea.ris || 1024) * Math.sqrt(run.opzioni.mp)))
     return {
-      ...comune, modalita: 'crea', prompt: passo.prompt, larghezza: d.w, altezza: d.h, megapixel: (d.w * d.h) / 1048576,
-      immagini: rif.map((r) => r.percorso), seed: wf.id === 'formati' ? run.seed : -1
+      ...comune, modalita: 'crea', prompt, larghezza: d.w, altezza: d.h, megapixel: (d.w * d.h) / 1048576,
+      immagini, seed: wf.id === 'formati' ? run.seed : -1
     }
   }
-  const base = baseCorrente || run.base
   return {
-    ...comune, modalita: 'modifica', prompt: passo.prompt, megapixel: run.opzioni.mp,
-    immagini: [base!.percorso, ...rif.map((r) => r.percorso)], origine: base?.operaId,
+    ...comune, modalita: 'modifica', prompt, megapixel: run.opzioni.mp,
+    immagini, origine: base?.operaId,
     ...conMisura(run.opzioni.misura, run.base)
   }
 }
@@ -268,7 +286,7 @@ async function accodaPasso(runId: string, i: number, base: FotoBase | null): Pro
     }
     const corrente = usaLab.getState().runs.find((r) => r.id === runId)
     if (!corrente || corrente.fermata) return
-    const ids = await api.lavori.accoda(richiestaPasso(corrente, i, base))
+    const ids = await api.lavori.accoda(await richiestaPasso(corrente, i, base))
     aggiorna(runId, (r) => {
       r.passi[i].lavoroId = ids[0]
       r.passi[i].stato = 'in coda'
