@@ -7,16 +7,9 @@ import { ascoltatoriLavoro, usaStato, type FotoBase, type Qualita } from './stat
 import { fileLoraCamera, loraPer, perQualita, richiestaBase } from './azioni'
 import { componiCamera, conLora, type PosizioneCamera } from './componenti/Camera'
 import type { Opera, Richiesta } from '@shared/tipi'
+import { leggiPersone, type Persona } from './riquadri'
 
-/** una persona nella foto: il riquadro in frazioni della foto (0–1) */
-export interface Persona {
-  id: string
-  /** x1, y1, x2, y2 */
-  box: [number, number, number, number]
-  /** descrizione breve dal modello (inglese: serve anche al prompt) */
-  nome: string
-  manuale?: boolean
-}
+export type { Persona }
 
 export interface Risultato {
   opera: Opera
@@ -92,35 +85,6 @@ export const VISTE_CLASSICHE = ['Davanti', '¾ destra', 'Lato destro', 'Dietro']
 // ---------------------------------------------------------------------------------------------------------------
 const SISTEMA_PERSONE =
   'You are an object detector. Find EVERY real person visible in the image (full or partial, including small ones in the background; ignore people printed on posters or screens). Output ONLY a JSON array, one item per person, ordered from left to right: [{"bbox_2d":[x1,y1,x2,y2],"label":"short English description: man/woman/child, clothes and colors, position"}]. Coordinates are integers from 0 to 1000, relative to the image width and height (x1,y1 = top-left corner, x2,y2 = bottom-right corner); the box must contain the whole visible body of that person. No other text.'
-
-/** legge la risposta del modello (anche se ha scritto altro attorno al JSON) */
-export function leggiPersone(testo: string, w: number, h: number): Persona[] {
-  const grezzi: { box: number[]; nome: string }[] = []
-  try {
-    const m = testo.match(/\[[\s\S]*\]/)
-    const arr = m ? (JSON.parse(m[0]) as { bbox_2d?: number[]; label?: string }[]) : []
-    for (const x of arr) if (Array.isArray(x.bbox_2d) && x.bbox_2d.length === 4) grezzi.push({ box: x.bbox_2d.map(Number), nome: String(x.label || '') })
-  } catch {
-    for (const r of testo.matchAll(/"bbox_2d"\s*:\s*\[\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\]/g)) {
-      grezzi.push({ box: [Number(r[1]), Number(r[2]), Number(r[3]), Number(r[4])], nome: '' })
-    }
-  }
-  const tetto = Math.max(0, ...grezzi.flatMap((g) => g.box))
-  // di solito 0–1000; se sono più grandi, sono pixel veri
-  const dx = tetto > 1000 ? w : 1000
-  const dy = tetto > 1000 ? h : 1000
-  return grezzi
-    .map((g, i): Persona => {
-      const [a, b, c, d] = g.box
-      const x1 = Math.min(a, c) / dx
-      const x2 = Math.max(a, c) / dx
-      const y1 = Math.min(b, d) / dy
-      const y2 = Math.max(b, d) / dy
-      return { id: `p${i + 1}-${Math.round(x1 * 1000)}`, box: [clamp(x1), clamp(y1), clamp(x2), clamp(y2)], nome: g.nome.trim() }
-    })
-    .filter((p) => p.box[2] - p.box[0] > 0.02 && p.box[3] - p.box[1] > 0.04)
-}
-const clamp = (v: number): number => Math.max(0, Math.min(1, v))
 
 export async function trovaPersone(foto: FotoBase): Promise<void> {
   impostaPersonaggio({ cercando: true, foto: foto.percorso, persone: [], scelta: null })

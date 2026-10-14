@@ -425,7 +425,7 @@ export function Modifica(): JSX.Element {
         }}
       >
         <div className="attrezzi">
-          <div style={{ width: 640 }}>
+          <div style={{ width: 600 }}>
             <Segmenti<ModoModifica>
               valore={m.modo}
               cambia={(modo) => setModifica({ modo })}
@@ -469,7 +469,7 @@ export function Modifica(): JSX.Element {
           <button className="btn piccolo" onClick={daPc} title={griglia ? 'Aggiungi foto dal PC (anche tante insieme)' : 'Apri una foto dal PC'}><I.immagine /> Dal PC</button>
           {base && !griglia && (
             <button className="btn piccolo pericolo" onClick={togliFoto} title="Toglie la foto e rimette la pagina com'era appena aperta (le versioni restano in galleria)">
-              <I.x /> Togli foto
+              <I.x /> Togli
             </button>
           )}
         </div>

@@ -84,10 +84,15 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
 
 ## Album
 
-Impaginazione automatica per la stampa, come SmartAlbums: scegli le foto (dalla galleria o dal PC, **anche i RAW** di tutte le
-fotocamere), il formato, e **Impagina tutto**. Le foto vanno nell'ordine di scatto, divise in spread con layout che tagliano il meno
-possibile, copertina e pagine intere per le preferite. Poi ritocchi (altro layout, inquadratura, zoom, testi, sfondo anche fatto
-dall'AI) ed **esporti in PDF o JPEG** a 300 dpi con l'abbondanza.
+Dal formato alle foto, e l'album si impagina da solo: le foto vanno nell'ordine di scatto (anche i **RAW**), divise in spread, con
+copertina e pagine intere per le preferite. Clicchi uno spread e **le sue foto si illuminano**; scegli fra quasi **100 layout**
+(visti con le tue foto), **12 stili** (Polaroid, Blu notte, Crema…) e aggiungi **testi e forme** da trascinare. Esporti in **PDF o JPEG**
+a 300 dpi con l'abbondanza.
+
+## Personaggio
+
+In Modifica: una foto con più persone, clic su quella che vuoi (si illumina), **estraila a figura intera** (T-pose, A-pose…) e **muovi la
+camera** attorno a lei: una vista o il giro completo.
 
 ## Laboratorio
 
