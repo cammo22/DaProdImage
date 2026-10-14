@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
-import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
+import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
@@ -14,7 +14,7 @@ import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
 import { ControlliPersonaggio, PalcoPersonaggio } from '../componenti/Personaggio'
-import { FORMATI_FUSION, TIENI_ESEMPIO, richiestaEsempio, richiestaFusion } from '../fusion'
+import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
@@ -341,8 +341,23 @@ export function Modifica(): JSX.Element {
   /** Fusion / Esempio: la richiesta la costruisce fusion.ts; qui si accoda e si aspetta il risultato */
   async function mandaGriglia(): Promise<void> {
     const s = usaStato.getState().modifica
-    if (s.modo === 'esempio' && s.esempioDescrivi) avvisa('Guardo l\'esempio…', 'info')
-    const e = s.modo === 'esempio' ? await richiestaEsempio(s, turbo.presente) : richiestaFusion(s, turbo.presente)
+    let e
+    if (s.modo === 'esempio') {
+      // il modello guarda l'esempio e le tue foto e scrive lui cosa sostituire con cosa; il piano resta qui sotto, correggibile
+      const chiave = chiaveEsempio(s)
+      let piano = s.pianoEsempio?.chiave === chiave ? s.pianoEsempio.testo : ''
+      if (!piano && s.esempio && s.riferimenti.length) {
+        avvisa('Il modello guarda l\'esempio e le tue foto…', 'info')
+        try {
+          piano = await pianificaEsempio(s)
+        } catch (er) {
+          avvisa((er as Error).message, 'errore')
+          return
+        }
+        setModifica({ pianoEsempio: { chiave, testo: piano } })
+      }
+      e = richiestaEsempio(s, turbo.presente, piano)
+    } else e = richiestaFusion(s, turbo.presente)
     if ('errore' in e) {
       avvisa(e.errore, 'errore')
       return
@@ -568,7 +583,7 @@ export function Modifica(): JSX.Element {
         <div className="scorri">
           <div className="sezione">
             <h3>
-              {fusion ? 'Cosa creare con le foto' : esempioMode ? 'Note (facoltative)' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
+              {fusion ? 'Cosa creare con le foto' : esempioMode ? 'Cosa vuoi (facoltativo)' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
               {m.modo === 'zona' && <span className="dx">{haMaschera ? <span className="oro">zona segnata ✓</span> : 'segnala col pennello'}</span>}
             </h3>
             <textarea
@@ -578,7 +593,7 @@ export function Modifica(): JSX.Element {
                 setModifica({ prompt: e.target.value })
                 if (!e.target.value.trim()) setRapida(null)
               }}
-              placeholder={esempioMode ? 'es. "tieni lo sfondo dell\'esempio", "vestito rosso". Se lasci vuoto, rifà l\'esempio con le tue foto' : fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
+              placeholder={esempioMode ? 'Facoltativo, es. "sostituisci le iridi con quelle delle mie foto". Se lasci vuoto il modello capisce da solo cosa fare' : fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
               style={{ minHeight: 96 }}
               disabled={scrivendo}
             />
@@ -604,15 +619,15 @@ export function Modifica(): JSX.Element {
 
           {esempioMode && (
             <div className="sezione">
-              <h3>Cosa tenere dell'esempio <span className="dx">il resto cambia con le tue foto</span></h3>
-              <div className="opzioni-esempio">
-                {TIENI_ESEMPIO.map((t) => (
-                  <button key={t.id} className={`chip ${m.esempioTieni.includes(t.id) ? 'su' : ''}`} onClick={() => setModifica({ esempioTieni: m.esempioTieni.includes(t.id) ? m.esempioTieni.filter((x) => x !== t.id) : [...m.esempioTieni, t.id] })}>{t.nome}</button>
-                ))}
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Interruttore acceso={m.esempioDescrivi} cambia={(esempioDescrivi) => setModifica({ esempioDescrivi })} sotto="Il modello guarda l'esempio e lo descrive: lo segue meglio (qualche secondo in più)">Descrivi l'esempio prima</Interruttore>
-              </div>
+              <h3>Il piano del modello {m.pianoEsempio && <button className="btn piccolo fantasma" style={{ marginLeft: 'auto' }} onClick={() => setModifica({ pianoEsempio: null })} title="Al prossimo lavoro il modello guarda di nuovo le foto e rifà il piano">Rifai</button>}</h3>
+              {m.pianoEsempio && m.pianoEsempio.chiave === chiaveEsempio(m) ? (
+                <>
+                  <textarea value={m.pianoEsempio.testo} rows={6} onChange={(e) => setModifica({ pianoEsempio: { chiave: m.pianoEsempio!.chiave, testo: e.target.value } })} />
+                  <div className="piccolo spento" style={{ marginTop: 4 }}>L'ha scritto il modello guardando le foto: puoi correggerlo. Si usa così com'è finché non cambi le foto o le note.</div>
+                </>
+              ) : (
+                <div className="piccolo spento">Quando premi il pulsante il modello guarda l'esempio e le tue foto insieme e decide da solo cosa sostituire con cosa, e cosa lasciare com'è. Qui vedrai cosa ha deciso, e potrai correggerlo.</div>
+              )}
             </div>
           )}
 

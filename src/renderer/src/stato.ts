@@ -68,10 +68,8 @@ export interface StatoModifica {
   misura: Misura
   /** Fusion: le proporzioni della foto nuova ('prima' = come la prima foto) */
   formatoFusion: string
-  /** modo Esempio: cosa dell'esempio deve restare (posa, inquadratura, sfondo, luce, vestiti) */
-  esempioTieni: string[]
-  /** modo Esempio: il modello guarda l'esempio e lo descrive, la descrizione entra nel prompt */
-  esempioDescrivi: boolean
+  /** modo Esempio: il piano scritto dal modello guardando l'esempio e le tue foto (si può correggere); `chiave` dice per quali foto e note vale */
+  pianoEsempio: { chiave: string; testo: string } | null
 }
 
 export interface Avviso {
@@ -134,7 +132,7 @@ const CREA0: StatoCrea = {
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima',
-  esempioTieni: ['posa', 'inquadratura', 'sfondo', 'luce'], esempioDescrivi: true
+  pianoEsempio: null
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
