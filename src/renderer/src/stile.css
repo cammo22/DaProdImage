@@ -222,10 +222,11 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .vuoto p { margin: 6px 0; }
 .vuoto kbd { background: var(--pannello2); border: 1px solid var(--bordo2); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-family: var(--font); font-size: 13px; color: var(--tenue); }
 
-.in-corso { position: relative; display: grid; place-items: center; }
-.in-corso img { max-width: 100%; max-height: 100%; border-radius: 8px; filter: saturate(1.1); }
+.vista > .in-corso { position: absolute; inset: 22px; display: grid; place-items: center; container-type: size; }
+.vista > .in-corso .adatta { width: min(100cqw, calc(100cqh * var(--arn, 1))); aspect-ratio: var(--arn, 1); position: relative; }
+.vista > .in-corso img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 8px; filter: saturate(1.1); }
 .in-corso .sopra { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(13, 9, 23, .82); backdrop-filter: blur(8px); border: 1px solid var(--bordo2); border-radius: 12px; padding: 10px 16px; min-width: 320px; display: flex; flex-direction: column; gap: 7px; }
-.attesa-grande { width: min(70%, 560px); aspect-ratio: var(--ar, 1); border-radius: 12px; border: 1px dashed var(--bordo2); display: grid; place-items: center; background: linear-gradient(120deg, #18122b, #211a3c, #18122b); background-size: 200% 100%; animation: luccica 2.2s infinite linear; }
+.attesa-grande { width: 100%; height: 100%; border-radius: 12px; border: 1px dashed var(--bordo2); display: grid; place-items: center; background: linear-gradient(120deg, #18122b, #211a3c, #18122b); background-size: 200% 100%; animation: luccica 2.2s infinite linear; }
 @keyframes luccica { to { background-position: -200% 0; } }
 
 .striscia { height: 112px; flex: none; display: flex; gap: 8px; padding: 10px 16px; overflow-x: auto; border-top: 1px solid #1d1636; background: var(--fondo2); align-items: center; }
@@ -620,3 +621,7 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .scheda-wf .x-wf { position: absolute; right: 6px; top: 6px; width: 24px; height: 24px; border-radius: 7px; border: 0; background: rgba(13,9,23,.85); color: var(--tenue); cursor: pointer; display: grid; place-items: center; opacity: 0; transition: opacity .12s; }
 .scheda-wf:hover .x-wf { opacity: 1; }
 .scheda-wf .x-wf:hover { color: var(--rosso); }
+
+/* la barra in basso: il testo lungo non esce mai */
+.barra-stato .bs-sinistra .col { min-width: 0; }
+.barra-stato .bs-sinistra b, .barra-stato .bs-sinistra .piccolo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

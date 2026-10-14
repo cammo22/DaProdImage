@@ -206,10 +206,10 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
   const stato = () => statoModelli().find((v) => v.id === 'trad-it-en')?.presente
   if (stato()) return true
   try {
-    l.fase = 'Scarico il traduttore (una volta sola)'
+    l.fase = 'Scarico il traduttore'
     avvisa(l)
     await scaricaVoce('trad-it-en', (r, t) => {
-      l.fase = `Scarico il traduttore (una volta sola)${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      l.fase = `Scarico il traduttore${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
       avvisa(l, false)
     })
     return !!stato()

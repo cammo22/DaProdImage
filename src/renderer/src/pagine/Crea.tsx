@@ -368,11 +368,21 @@ export function Crea(): JSX.Element {
   )
 }
 
-/** la foto che nasce (anteprima nitida a ogni passo); fase, passi e tempo stanno nella barra in basso */
+/** la foto che nasce (anteprima nitida a ogni passo); fase, passi e tempo stanno nella barra in basso.
+ *  Sta sempre dentro l'area (come la foto finita con lo zoom): la scatola si adatta alle proporzioni, mai oltre i bordi. */
 export function InCorso({ l, ar }: { l: Lavoro; ar: string }): JSX.Element {
+  const [nat, setNat] = useState<number | null>(null)
+  const [a, b] = ar.split('/').map((x) => Number(x.trim()) || 1)
+  const arn = nat ?? a / b
   return (
-    <div className="in-corso" style={{ width: '100%', height: '100%' }}>
-      {l.anteprima ? <img src={l.anteprima} alt="" style={{ width: 'auto', height: 'auto', maxHeight: '100%' }} /> : <div className="attesa-grande" style={{ ['--ar' as string]: ar }} />}
+    <div className="in-corso">
+      <div className="adatta" style={{ ['--arn' as string]: arn }}>
+        {l.anteprima ? (
+          <img src={l.anteprima} alt="" onLoad={(e) => setNat(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)} />
+        ) : (
+          <div className="attesa-grande" />
+        )}
+      </div>
     </div>
   )
 }
