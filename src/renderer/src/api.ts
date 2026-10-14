@@ -68,7 +68,7 @@ export interface Api {
   testo: { scrivi(q: Richiesta): Promise<string> }
   galleria: {
     elenco(f: FiltroGalleria): Promise<Opera[]>; opera(id: string): Promise<Opera | undefined>; preferita(id: string, si: boolean): Promise<void>
-    elimina(ids: string[]): Promise<void>; mostra(id: string): Promise<void>; apriCartella(): Promise<void>; copia(id: string): Promise<void>
+    elimina(ids: string[], definitivo?: boolean): Promise<void>; mostra(id: string): Promise<void>; apriCartella(): Promise<void>; copia(ids: string | string[]): Promise<void>
     esporta(id: string): Promise<void>; importa(p: string[]): Promise<{ importate: Opera[]; altre: string[] }>; meta(p: string): Promise<Partial<Opera> | null>
     importaFoto(png: string, nome: string): Promise<Opera>
   }

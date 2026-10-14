@@ -164,14 +164,16 @@ export function preferita(id: string, si: boolean): void {
   avvisa()
 }
 
-export async function elimina(ids: string[]): Promise<void> {
+/** `definitivo`: il file sparisce davvero (non va nel Cestino) */
+export async function elimina(ids: string[], definitivo = false): Promise<void> {
   const lista = carica()
   for (const id of ids) {
     const i = lista.findIndex((o) => o.id === id)
     if (i < 0) continue
     const o = lista[i]
     try {
-      await shell.trashItem(o.file) // nel cestino: si può recuperare
+      if (definitivo) unlinkSync(o.file)
+      else await shell.trashItem(o.file) // nel cestino: si può recuperare
     } catch {
       /* già sparito */
     }

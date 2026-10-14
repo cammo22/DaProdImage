@@ -1,11 +1,20 @@
 // Le ricette del Laboratorio che ci sono di serie: pose, espressioni, vestiti, camera, luce, stili, prodotto, grafica, casa,
 // restauro, sticker. Sono funzioni dei campi che compili (vedi `Workflow` in workflow.ts); le tue stanno in ricette.ts.
 import { PRESET, campiCon, componiPreset } from './preset'
-import { componiCamera } from './componenti/Camera'
-import type { Ctx, Ingresso, PassoWf, Workflow } from './workflow'
+import { componiCamera, conLora } from './componenti/Camera'
+import { VISTA_TUA, leggiCamera, type Ctx, type Ingresso, type PassoWf, type Workflow } from './workflow'
 
 export const E = (etichetta: string, prompt: string, extra: Partial<PassoWf> = {}): PassoWf => ({ etichetta, prompt, ...extra })
 const FOTO = 'the photo <image1>'
+/** il comando Camera dentro la ricetta: muovi i cerchi e ottieni il passo "La tua vista" */
+const CAMERA_TUA: Ingresso = { id: 'vista', tipo: 'camera', nome: 'Muovi la camera: una vista tua, oltre a quelle della ricetta' }
+/** il passo della camera scelta (se l'hai mossa); `intorno` è quello che resta uguale in ogni vista della ricetta */
+const vistaTua = (c: Ctx, intorno: string): PassoWf[] => {
+  const pos = leggiCamera(c.v.vista)
+  const cam = pos && componiCamera(pos, c.camera)
+  if (!pos || !cam) return []
+  return [E(VISTA_TUA, `${cam} ${intorno}`, { lora: c.camera && conLora(pos) ? ['camera'] : [] })]
+}
 const SFONDO: Ingresso = {
   id: 'sfondo', tipo: 'scelta', nome: 'Sfondo', predefinita: 'orig',
   opzioni: [{ id: 'orig', nome: 'Come la foto' }, { id: 'bianco', nome: 'Bianco' }, { id: 'grigio', nome: 'Grigio studio' }]
@@ -139,15 +148,16 @@ export const WORKFLOW_BASE: Workflow[] = [
   SERIE('pose', 'Il personaggio in 9 pose', 'personaggio', 'ritratto', 'Una foto del personaggio e lo vedi in piedi, seduto, mentre cammina, corre, salta… sempre lo stesso volto e lo stesso vestito.', POSE,
     (d, c) => `Show the same character from ${FOTO} ${d}. Keep exactly the same face, hairstyle, outfit, colors and art style, with the full body visible. ${sfondoDi(c.v)}`, { ingressi: [SFONDO] }),
   {
-    id: 'turnaround', nome: 'Foglio personaggio (turnaround)', categoria: 'personaggio', icona: 'serie', modo: 'serie', foto: true, rif: 'no', ingressi: [],
-    descrizione: 'Il personaggio da davanti, di tre quarti, di lato, da dietro e in primo piano: il foglio che serve a disegnatori e modellatori 3D.',
-    passi: () => [
+    id: 'turnaround', nome: 'Foglio personaggio (turnaround)', categoria: 'personaggio', icona: 'serie', modo: 'serie', foto: true, rif: 'no', ingressi: [CAMERA_TUA],
+    descrizione: 'Il personaggio da davanti, di tre quarti, di lato, da dietro e in primo piano: il foglio che serve a disegnatori e modellatori 3D. Con il comando Camera aggiungi una vista tua, dove vuoi.',
+    passi: (c) => [
       E('Davanti', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen from the front. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Tre quarti', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, rotated 45 degrees to the right (three-quarter view). Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Di lato', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, in a perfect side profile view. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Tre quarti dietro', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen from behind and 45 degrees to the left. Keep exactly the same hair, outfit and colors. Plain white background, flat even lighting.`),
       E('Dietro', `Show the same character from ${FOTO} in a neutral standing A-pose, full body, seen directly from behind. Keep exactly the same hair, outfit and colors. Plain white background, flat even lighting.`),
-      E('Volto', `Show a close-up portrait of the face of the same character from ${FOTO}, looking at the camera. Keep exactly the same face, hair and colors. Plain white background.`)
+      E('Volto', `Show a close-up portrait of the face of the same character from ${FOTO}, looking at the camera. Keep exactly the same face, hair and colors. Plain white background.`),
+      ...vistaTua(c, `Show the same character from ${FOTO} in a neutral standing A-pose, full body. Keep exactly the same face, hair, outfit and colors. Plain white background, flat even lighting.`)
     ]
   },
   SERIE('espressioni', 'Tutte le espressioni', 'personaggio', 'ritratto', 'Felice, ride, triste, arrabbiato, sorpreso, spaventato, pensieroso, occhiolino: lo stesso volto con 8 espressioni.', ESPRESSIONI,
@@ -178,11 +188,14 @@ export const WORKFLOW_BASE: Workflow[] = [
     (d) => `Show the person from ${FOTO} as ${d}. Keep the face and identity clearly recognizable, with a natural pose, cinematic lighting and a realistic photographic look.`),
   // ---- camera
   {
-    id: 'giro', nome: 'Giro intorno al soggetto', categoria: 'camera', icona: 'camera', modo: 'serie', foto: true, rif: 'no', ingressi: [],
+    id: 'giro', nome: 'Giro intorno al soggetto', categoria: 'camera', icona: 'camera', modo: 'serie', foto: true, rif: 'no', ingressi: [CAMERA_TUA],
     descrizione: 'La camera gira di 45° alla volta attorno al soggetto: 7 nuove viste, fino a vederlo da dietro. Ottimo per oggetti e personaggi.',
     nota: 'Con il LoRA "Camera: angolazioni" le viste sono molto più fedeli.',
-    passi: (c) => [45, 90, 135, 180, -135, -90, -45].map((az) =>
-      E(az === 180 ? 'Dietro' : `${Math.abs(az)}° ${az > 0 ? 'destra' : 'sinistra'}`, componiCamera({ az, el: 0, dist: 0 }, c.camera), { lora: c.camera ? ['camera'] : [] }))
+    passi: (c) => [
+      ...[45, 90, 135, 180, -135, -90, -45].map((az) =>
+        E(az === 180 ? 'Dietro' : `${Math.abs(az)}° ${az > 0 ? 'destra' : 'sinistra'}`, componiCamera({ az, el: 0, dist: 0 }, c.camera), { lora: c.camera ? ['camera'] : [] })),
+      ...vistaTua(c, 'Keep the same subject, outfit, colors, lighting and scene.')
+    ]
   },
   SERIE('inquadrature', 'Tutte le inquadrature', 'camera', 'camera', 'Primo piano, mezzo busto, figura intera, grandangolo, dall\'alto, dal basso.', INQUADRATURE,
     (d) => `${d} of ${FOTO}. Keep the same subject, outfit, colors and lighting.`),

@@ -1,4 +1,5 @@
 // Fusion ed Esempio: come si costruisce la richiesta dalle foto e dal testo. Sta qui (e non in Modifica.tsx) per tenere la pagina leggera.
+import { api } from './api'
 import { perQualita, richiestaBase } from './azioni'
 import { conMisura } from './componenti/Misura'
 import { conParoleLora } from './componenti/SceltaLora'
@@ -46,21 +47,61 @@ export function richiestaFusion(s: StatoModifica, turboPronto: boolean): Esito {
   }
 }
 
-/** Esempio: il modello rifà la foto d'esempio (<image1>) con le persone/oggetti dei riferimenti (<image2>…) */
-export function richiestaEsempio(s: StatoModifica, turboPronto: boolean): Esito {
+/** cosa si può tenere dell'esempio: l'etichetta per te, la frase per il modello */
+export const TIENI_ESEMPIO: { id: string; nome: string; en: string }[] = [
+  { id: 'posa', nome: 'Posa', en: 'the exact pose, gesture and body position of the people' },
+  { id: 'inquadratura', nome: 'Inquadratura', en: 'the framing, crop, distance and camera angle' },
+  { id: 'sfondo', nome: 'Sfondo', en: 'the background and the place' },
+  { id: 'luce', nome: 'Luce e colori', en: 'the lighting, the color grading and the mood' },
+  { id: 'vestiti', nome: 'Vestiti', en: 'the clothes and accessories' }
+]
+
+const SISTEMA_ESEMPIO =
+  'You look at a photo that will be used as a template. Describe it in one English paragraph of at most 80 words: how many people or subjects, what each one does (pose, gesture, where they look), the framing and camera angle, the background and place, the light and colors. Facts only, no opinions, no names.'
+
+/** la descrizione dell'esempio si fa una volta sola per foto */
+const descrizioni = new Map<string, string>()
+
+async function descriviEsempio(percorso: string): Promise<string> {
+  const gia = descrizioni.get(percorso)
+  if (gia) return gia
+  const t = (await api.testo.scrivi({ ...richiestaBase(), modalita: 'descrivi', prompt: 'Describe this photo.', immagini: [percorso], sistema: SISTEMA_ESEMPIO, maxToken: 200, temperatura: 0.2, seed: 3, etichetta: 'Guardo l\'esempio' })).trim()
+  if (t) descrizioni.set(percorso, t)
+  return t
+}
+
+/** Esempio: il modello rifà la foto d'esempio (<image1>) con le persone/oggetti dei riferimenti (<image2>…).
+ *  L'esempio è il bersaglio: resta com'è (a parte quello che scegli di non tenere) e cambiano solo i soggetti. */
+export async function richiestaEsempio(s: StatoModifica, turboPronto: boolean): Promise<Esito> {
   if (!s.esempio) return { errore: 'Metti la foto di esempio: com\'è il risultato che vuoi' }
   if (!s.riferimenti.length) return { errore: 'Aggiungi almeno una foto di riferimento (la persona o l\'oggetto da usare)' }
   if (s.qualita === 'turbo' && !turboPronto) return { errore: 'Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta' }
   const tag = s.riferimenti.map((_, i) => `<image${i + 2}>`)
   const lista = tag.length > 1 ? `${tag.slice(0, -1).join(', ')} and ${tag[tag.length - 1]}` : tag[0]
-  // istruzione di modifica: l'esempio resta com'è (posa, inquadratura, luce), cambiano i soggetti
-  const guida = `Recreate the photo <image1> exactly as the target: keep its composition, pose, framing, camera angle, lighting, colors and mood, but replace its people and main subjects with those from ${lista} (keep their identity, face, hair, clothes and details).`
+  const tieni = TIENI_ESEMPIO.filter((t) => s.esempioTieni.includes(t.id))
+  const tieniVestiti = s.esempioTieni.includes('vestiti')
+  let descr = ''
+  if (s.esempioDescrivi) {
+    try {
+      descr = await descriviEsempio(s.esempio.percorso)
+    } catch {
+      /* senza descrizione si va avanti lo stesso */
+    }
+  }
   const note = s.prompt.trim()
+  const parti = [
+    'Edit the photo <image1>: it is the TARGET and it stays the same, except for who is in it.',
+    tieni.length ? `Keep EXACTLY from <image1>: ${tieni.map((t) => t.en).join('; ')}. Do not change them.` : '',
+    `Replace the person (or the main subject) of <image1> with the person (or subject) shown in ${lista}: reproduce their face, hair, skin tone and body faithfully, so that they are clearly recognizable, and never keep the face of the original person.`,
+    tieniVestiti ? 'They wear the clothes of <image1>.' : `They wear the clothes shown in ${lista}.`,
+    descr ? `For reference, <image1> shows: ${descr}` : '',
+    note
+  ]
   return {
     q: {
       ...richiestaBase(),
       modalita: 'modifica',
-      prompt: conParoleLora(note ? `${guida} ${note}` : guida),
+      prompt: conParoleLora(parti.filter(Boolean).join(' ')),
       immagini: [s.esempio.percorso, ...s.riferimenti.map((r) => r.percorso)],
       megapixel: s.mp,
       ...perQualita(s.qualita),

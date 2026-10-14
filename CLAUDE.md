@@ -90,6 +90,11 @@ interfaccia**, installato e guidato dall'app.
   `versioni.json`, pacchetto `nvidia-vfx`, installati dal passo 4b di `installatore.ts` in modo facoltativo); le chiavi del nodo si leggono da
   `object_info` (`chiaviRtx` in `cliente.ts`) e `ingrandisciImg()` in `grafi.ts` ripiega su 4x-UltraSharp. DLSS 5 (`ComfyUI-DLSS5-NR`) è
   una cosa diversa (rendering neurale, interfaccia NVIDIA non documentata, serve una DLL tua): non c'è.
+- **LoRA e parole chiave**: `accodaRichiesta` (`motore/lavori.ts`, `conParoleLora`) aggiunge al prompt la parola chiave di ogni LoRA acceso nella richiesta,
+  qualunque pagina la mandi (il `conParoleLora` del renderer fa la stessa cosa, non raddoppia). **Esempio** (`fusion.ts`, `richiestaEsempio` è async): l'esempio è
+  l'`image_1` da tenere, `esempioTieni` dice cosa, `esempioDescrivi` fa descrivere l'esempio al Qwen3-VL (in cache per foto). **Galleria**: tasto destro
+  (`MenuContestuale`), `galleria:elimina` con `definitivo`, `galleria:copia` con più id = file negli appunti con PowerShell `Set-Clipboard`. **Laboratorio**:
+  un `Ingresso` di tipo `camera` mostra il comando Camera (valore JSON, `leggiCamera`) e le ricette aggiungono il passo `VISTA_TUA`.
 - **Idle** (`src/main/idle.ts`): dopo 60 s senza lavori scarica i file `consigliato` mancanti (non denoiser né encoder); `fileInutilizzati()`
   elenca i file dei modelli che non servono (Opzioni → File inutilizzati, Cestino).
 - Stato in `stato.ts` (zustand); le scelte di Crea/Modifica e i LoRA accesi restano in localStorage.

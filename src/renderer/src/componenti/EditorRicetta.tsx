@@ -1,6 +1,6 @@
 // L'editor di una ricetta del Laboratorio: nome, tipo, campi da compilare e passi con il loro prompt. Si usa per farne di nuove
 // e per cambiare una copia di quelle che ci sono ({campo} nei prompt prende quello che scrivi, {riga} una riga alla volta).
-import { useState, type JSX } from 'react'
+import { useRef, useState, type JSX } from 'react'
 import { I } from './Icone'
 import { Interruttore, Segmenti } from './Controlli'
 import { CATEGORIE_WF } from '../workflow'
@@ -20,9 +20,22 @@ const idDa = (nome: string, usati: string[]): string => {
 export function EditorRicetta(p: { ricetta: RicettaUtente; chiudi: () => void; salvata: (r: RicettaUtente) => void }): JSX.Element {
   const [r, setR] = useState<RicettaUtente>(p.ricetta)
   const [errore, setErrore] = useState('')
-  const campi = r.ingressi.filter((i): i is Extract<Ingresso, { tipo: 'testo' | 'righe' }> => i.tipo !== 'scelta')
+  const caselle = useRef<Record<number, HTMLTextAreaElement | null>>({})
+  const campi = r.ingressi.filter((i): i is Extract<Ingresso, { tipo: 'testo' | 'righe' }> => i.tipo !== 'scelta' && i.tipo !== 'camera')
 
   const cambiaPasso = (i: number, m: Partial<PassoUtente>): void => setR({ ...r, passi: r.passi.map((x, j) => (j === i ? { ...x, ...m } : x)) })
+  /** mette nel prompt del passo i (dove sta il cursore) una foto <imageN> o un {campo} */
+  const inserisci = (i: number, testo: string): void => {
+    const t = caselle.current[i]
+    const v = r.passi[i].prompt
+    const a = t ? t.selectionStart : v.length
+    const b = t ? t.selectionEnd : v.length
+    cambiaPasso(i, { prompt: v.slice(0, a) + testo + v.slice(b) })
+    setTimeout(() => {
+      t?.focus()
+      t?.setSelectionRange(a + testo.length, a + testo.length)
+    }, 0)
+  }
   const sposta = (i: number, d: number): void => {
     const l = [...r.passi]
     const j = i + d
@@ -97,7 +110,14 @@ export function EditorRicetta(p: { ricetta: RicettaUtente; chiudi: () => void; s
                   <button className="btn piccolo icona fantasma" onClick={() => setR({ ...r, passi: [...r.passi.slice(0, i + 1), { ...x, etichetta: x.etichetta + ' (copia)' }, ...r.passi.slice(i + 1)] })} title="Duplica"><I.copia /></button>
                   <button className="btn piccolo icona fantasma pericolo" onClick={() => setR({ ...r, passi: r.passi.filter((_, j) => j !== i) })} title="Togli"><I.x /></button>
                 </div>
-                <textarea value={x.prompt} onChange={(e) => cambiaPasso(i, { prompt: e.target.value })} placeholder="Il prompt di questo passo" style={{ minHeight: 70, marginTop: 6 }} />
+                <textarea ref={(el) => { caselle.current[i] = el }} value={x.prompt} onChange={(e) => cambiaPasso(i, { prompt: e.target.value })} placeholder="Il prompt di questo passo" style={{ minHeight: 70, marginTop: 6 }} />
+                <div className="riga a-capo" style={{ gap: 5, marginTop: 6 }}>
+                  <span className="piccolo tenue">Nel testo:</span>
+                  {r.foto && <button className="chip principale" onClick={() => inserisci(i, '<image1>')} title="La foto principale, quella che la ricetta cambia">&lt;image1&gt; · principale</button>}
+                  {r.rif !== 'no' && [2, 3, 4].map((n) => <button key={n} className="chip" onClick={() => inserisci(i, `<image${r.foto ? n : n - 1}>`)} title="Una foto di riferimento">&lt;image{r.foto ? n : n - 1}&gt;</button>)}
+                  {campi.map((c) => <button key={c.id} className="chip" onClick={() => inserisci(i, `{${c.id}}`)} title={`Quello che scrivi in «${c.nome}»`}>{`{${c.id}}`}</button>)}
+                  {campi.some((c) => c.tipo === 'righe') && <button className="chip" onClick={() => inserisci(i, '{riga}')} title="La riga di questo passo">{'{riga}'}</button>}
+                </div>
                 <div className="riga a-capo" style={{ gap: 10, marginTop: 6 }}>
                   {campi.some((c) => c.tipo === 'righe') && (
                     <label className="piccolo tenue">Uno per ogni riga di{' '}

@@ -7,6 +7,7 @@ import { Segmenti } from '../componenti/Controlli'
 import { PrimaDopo } from '../componenti/PrimaDopo'
 import { durata, ETICHETTE_MODALITA, normalizza } from '../util'
 import { VistaZoom } from '../componenti/VistaZoom'
+import { MenuContestuale, type VoceMenu } from '../componenti/MenuContestuale'
 import { apriInModifica, fotoDaOpera, ingrandisci, rifinisci, riusa, varia } from '../azioni'
 import type { FiltroGalleria, Opera } from '@shared/tipi'
 
@@ -26,6 +27,9 @@ export function Galleria(): JSX.Element {
   const [lato, setLato] = useState(() => Number(localStorage.getItem('dpi-lato') || 220))
   const [scelte, setScelte] = useState<Set<string>>(new Set())
   const [importo, setImporto] = useState(0)
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  /** l'ultima scelta con un clic: da lì parte la scelta a intervallo con Maiusc */
+  const ancora = useRef<string | null>(null)
   const griglia = useRef<HTMLDivElement>(null)
   const [larghezza, setLarghezza] = useState(0)
 
@@ -95,20 +99,90 @@ export function Galleria(): JSX.Element {
     return g
   }, [opere])
 
-  const elimina = async (ids: string[]): Promise<void> => {
-    if (!confirm(ids.length > 1 ? `Spostare ${ids.length} immagini nel Cestino?` : 'Spostare l\'immagine nel Cestino?')) return
-    await api.galleria.elimina(ids)
+  const elimina = async (ids: string[], definitivo = false): Promise<void> => {
+    const n = ids.length
+    const domanda = definitivo
+      ? n > 1 ? `Eliminare ${n} immagini per sempre?\nNon vanno nel Cestino: non si possono recuperare.` : 'Eliminare l\'immagine per sempre?\nNon va nel Cestino: non si può recuperare.'
+      : n > 1 ? `Spostare ${n} immagini nel Cestino?` : 'Spostare l\'immagine nel Cestino?'
+    if (!confirm(domanda)) return
+    await api.galleria.elimina(ids, definitivo)
     setScelte(new Set())
-    avvisa('Nel Cestino (si possono recuperare da lì)', 'ok')
+    avvisa(definitivo ? (n > 1 ? `${n} immagini eliminate` : 'Immagine eliminata') : 'Nel Cestino (si possono recuperare da lì)', 'ok')
+  }
+
+  /** copia le scelte: una sola = l'immagine negli appunti; più di una = i file (si incollano in una cartella o in una chat) */
+  const copia = async (ids: string[]): Promise<void> => {
+    if (!ids.length) return
+    try {
+      await api.galleria.copia(ids.length === 1 ? ids[0] : ids)
+      avvisa(ids.length === 1 ? 'Immagine copiata negli appunti' : `${ids.length} file copiati: incollali dove vuoi`, 'ok')
+    } catch (e) {
+      avvisa('Non riesco a copiare: ' + (e as Error).message, 'errore')
+    }
   }
 
   const clic = (o: Opera, e: React.MouseEvent): void => {
-    if (e.ctrlKey || e.shiftKey || scelte.size) {
+    if (e.shiftKey && ancora.current) {
+      // intervallo: dall'ultima scelta a questa, nell'ordine in cui le vedi
+      const i0 = opere.findIndex((x) => x.id === ancora.current)
+      const i1 = opere.findIndex((x) => x.id === o.id)
+      if (i0 >= 0 && i1 >= 0) {
+        const n = new Set(e.ctrlKey ? scelte : [])
+        for (const x of opere.slice(Math.min(i0, i1), Math.max(i0, i1) + 1)) n.add(x.id)
+        setScelte(n)
+        return
+      }
+    }
+    if (e.ctrlKey || e.metaKey || e.shiftKey || scelte.size) {
       const n = new Set(scelte)
       if (n.has(o.id)) n.delete(o.id)
       else n.add(o.id)
+      ancora.current = o.id
       setScelte(n)
     } else apriVisore(o)
+  }
+
+  /** il tasto destro: se la foto non è fra le scelte diventa l'unica scelta (come in Esplora risorse) */
+  const tastoDestro = (o: Opera, e: React.MouseEvent): void => {
+    e.preventDefault()
+    if (!scelte.has(o.id)) {
+      setScelte(new Set([o.id]))
+      ancora.current = o.id
+    }
+    setMenu({ x: e.clientX, y: e.clientY })
+  }
+
+  // tasti: Ctrl+A tutte, Ctrl+C copia, Canc elimina per sempre, Esc toglie la scelta
+  useEffect(() => {
+    const t = (e: KeyboardEvent): void => {
+      const s = usaStato.getState()
+      if (s.pagina !== 'galleria' || s.visore) return
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      if (e.ctrlKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault()
+        setScelte(new Set(opere.map((o) => o.id)))
+      } else if (e.ctrlKey && e.key.toLowerCase() === 'c' && scelte.size) {
+        e.preventDefault()
+        void copia([...scelte])
+      } else if (e.key === 'Delete' && scelte.size) {
+        void elimina([...scelte], true)
+      } else if (e.key === 'Escape' && scelte.size) setScelte(new Set())
+    }
+    window.addEventListener('keydown', t)
+    return () => window.removeEventListener('keydown', t)
+  })
+
+  const voci = (): VoceMenu[] => {
+    const ids = [...scelte]
+    const una = ids.length === 1 ? opere.find((x) => x.id === ids[0]) : undefined
+    return [
+      { nome: 'Apri', disabilitata: !una, azione: () => una && apriVisore(una) },
+      { nome: 'Modifica', disabilitata: !una, azione: () => una && apriInModifica(fotoDaOpera(una)) },
+      { nome: ids.length > 1 ? `Copia ${ids.length} immagini` : 'Copia', tasto: 'Ctrl+C', sopra: true, azione: () => void copia(ids) },
+      { nome: 'Mostra nella cartella', disabilitata: !una, azione: () => una && void api.galleria.mostra(una.id) },
+      { nome: 'Seleziona tutte', tasto: 'Ctrl+A', sopra: true, azione: () => setScelte(new Set(opere.map((o) => o.id))) },
+      { nome: ids.length > 1 ? `Elimina ${ids.length} immagini` : 'Elimina', tasto: 'Canc', pericolo: true, sopra: true, azione: () => void elimina(ids, true) }
+    ]
   }
 
   return (
@@ -141,17 +215,19 @@ export function Galleria(): JSX.Element {
           {scelte.size > 0 ? (
             <>
               <span className="oro">{scelte.size} scelte</span>
-              <button className="btn piccolo pericolo" onClick={() => elimina([...scelte])}><I.cestino /> Nel Cestino</button>
+              <button className="btn piccolo" onClick={() => void copia([...scelte])} title="Ctrl+C"><I.copia /> Copia</button>
+              <button className="btn piccolo" onClick={() => void elimina([...scelte])}><I.cestino /> Nel Cestino</button>
+              <button className="btn piccolo pericolo" onClick={() => void elimina([...scelte], true)} title="Canc"><I.cestino /> Elimina</button>
               <button className="btn piccolo" onClick={() => setScelte(new Set())}>Annulla scelta</button>
             </>
           ) : (
-            <span className="spento piccolo" title="Ctrl+clic per sceglierne più · Ctrl+rotella per la grandezza delle miniature">{importo ? `Importo ${importo} file…` : `${opere.length} immagini`}</span>
+            <span className="spento piccolo" title="Ctrl+clic per sceglierne più · Maiusc+clic per un intervallo · tasto destro per copiare o eliminare · Ctrl+rotella per la grandezza delle miniature">{importo ? `Importo ${importo} file…` : `${opere.length} immagini`}</span>
           )}
           <input type="range" min={110} max={460} value={lato} style={{ width: 110, ['--p' as string]: `${((lato - 110) / 350) * 100}%` }} onChange={(e) => cambiaLato(Number(e.target.value))} title="Grandezza delle miniature (anche Ctrl+rotella)" />
           <button className="btn piccolo" onClick={async () => { const ps = await api.file.scegliImmagini(true); if (ps.length) await importaFile(ps) }} title="Porta dentro foto dal PC (diventano PNG)"><I.piu /> Importa</button>
           <button className="btn piccolo" onClick={() => api.galleria.apriCartella()}><I.cartella /> Cartella</button>
         </div>
-        <div className="griglia" ref={griglia}>
+        <div className="griglia" ref={griglia} onClick={(e) => { if (scelte.size && !(e.target as HTMLElement).closest('.tessera')) setScelte(new Set()) }}>
           {opere.length === 0 && (
             <div className="vuoto" style={{ gridColumn: '1 / -1', margin: '80px auto' }}>
               <div className="grosso">LA GALLERIA È <b>VUOTA</b></div>
@@ -160,11 +236,12 @@ export function Galleria(): JSX.Element {
             </div>
           )}
           {gruppi.map((g) => (
-            <GruppoGiorno key={g.titolo} titolo={g.titolo} opere={g.opere} scelte={scelte} clic={clic} lato={lato} larghezza={larghezza} />
+            <GruppoGiorno key={g.titolo} titolo={g.titolo} opere={g.opere} scelte={scelte} clic={clic} destro={tastoDestro} lato={lato} larghezza={larghezza} />
           ))}
         </div>
       </div>
       {visore && <Visore opere={opere} />}
+      {menu && scelte.size > 0 && <MenuContestuale x={menu.x} y={menu.y} voci={voci()} chiudi={() => setMenu(null)} />}
     </div>
   )
 }
@@ -192,7 +269,7 @@ function righe(opere: Opera[], lato: number, larghezza: number): { h: number; op
   return out
 }
 
-function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; clic: (o: Opera, e: React.MouseEvent) => void; lato: number; larghezza: number }): JSX.Element {
+function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; clic: (o: Opera, e: React.MouseEvent) => void; destro: (o: Opera, e: React.MouseEvent) => void; lato: number; larghezza: number }): JSX.Element {
   const r = useMemo(() => righe(p.opere, p.lato, p.larghezza), [p.opere, p.lato, p.larghezza])
   return (
     <>
@@ -207,6 +284,7 @@ function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; 
                 className={`tessera ${p.scelte.has(o.id) ? 'scelta' : ''} ${o.trasparente ? 'scacchi' : ''}`}
                 style={{ width: Math.floor(a * riga.h) }}
                 onClick={(e) => p.clic(o, e)}
+                onContextMenu={(e) => p.destro(o, e)}
                 draggable
                 onDragStart={(e) => {
                   e.preventDefault()
@@ -214,6 +292,7 @@ function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; 
                 }}
               >
                 <img src={urlFile(o.miniatura || o.file)} alt="" loading="lazy" />
+                {p.scelte.has(o.id) && <span className="spunta">✓</span>}
                 <span className="tipo">{o.etichetta === 'Bozza' ? 'BOZZA' : ETICHETTE_MODALITA[o.modalita]?.toUpperCase()}</span>
                 <div className="stelle">
                   <button
