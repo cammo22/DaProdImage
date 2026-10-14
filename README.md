@@ -17,6 +17,7 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 [![ComfyUI](https://img.shields.io/badge/motore-ComfyUI-ff3df2?labelColor=1a1428)](#come-funziona-dentro)
 [![licenza](https://img.shields.io/badge/licenza-MIT-a19db0?labelColor=1a1428)](LICENSE)
 ![locale](https://img.shields.io/badge/100%25-locale-5dffb4?labelColor=1a1428)
+[![Discord](https://img.shields.io/badge/Discord-DaProd-5865F2?logo=discord&logoColor=white)](https://discord.gg/Njs52aacwq)
 
 **[⬇ Scarica per Windows](https://github.com/cammo22/DaProdImage/releases/latest)** ·
 [Tutte le versioni](https://github.com/cammo22/DaProdImage/releases) ·
@@ -153,3 +154,9 @@ quando su `main` arriva un `version` nuovo in `package.json`. Le regole del prog
 App: MIT. Qwen-Image 2.1 e Texture-Fix VAE: Qwen Research License. ComfyUI: GPL-3.0. ComfyUI-GGUF: Apache-2.0.
 4x-UltraSharp: CC-BY-NC-SA 4.0. TAESD/TAEQI: MIT. Turbo8: vedi la sua [pagina](https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1).
 Il modello "Uncensored" non ha filtri: quello che generi è responsabilità tua.
+
+---
+
+## 💬 Community
+
+Domande, idee, bug o solo voglia di chiacchierare? Entra nel **[Discord di DaProd](https://discord.gg/Njs52aacwq)**: ogni app ha la sua stanza e le nuove versioni arrivano in automatico.
