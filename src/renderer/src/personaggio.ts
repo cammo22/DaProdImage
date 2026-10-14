@@ -8,8 +8,9 @@ import { fileLoraCamera, loraPer, perQualita, richiestaBase } from './azioni'
 import { componiCamera, conLora, type PosizioneCamera } from './componenti/Camera'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { leggiPersone, type Persona } from './riquadri'
-import { descriviPosa, posaDi, type Posa } from './omino'
+import { istruzionePosa, posaDi, type Posa } from './omino'
 import { immagineOmino } from './ominoImmagine'
+import { SENZA_SCHELETRO, controllaScheletro } from './pulisciOmino'
 
 export type { Persona }
 
@@ -160,15 +161,16 @@ export async function richiestaEstrai(foto: FotoBase, p: Persona, o: { qualita: 
   // con l'omino la posa si dà come immagine (mappa di posa) più la descrizione a parole
   const conOmino = s.posa === 'omino'
   const scheletro = conOmino ? await immagineOmino(s.omino, w, h) : null
-  const testoPosa = conOmino
-    ? `Pose: make the person take EXACTLY the pose shown by the pose guide in <image2> (colored lines are the limbs, dots are the joints, the thin colored lines are the fingers of each hand). Copy the position of every arm, leg, hand and finger exactly. The guide is only a reference for the pose: never draw its lines or dots. ${descriviPosa(s.omino)}`
-    : posa.testo
+  // con l'omino la mappa di posa è la PRIMA immagine (un controllo, non da disegnare) e il ritaglio della persona la seconda
+  const testoPosa = conOmino ? istruzionePosa(s.omino, '<image1>', `the person shown in <image2>${chi}`) : posa.testo
   const prompt = [
-    `Full-body character reference of the person shown in <image1>${chi}: only that one person, the one at the center of <image1>; ignore anyone else visible at the edges.`,
+    conOmino
+      ? 'Full-body character reference of the one person at the center of <image2>; ignore anyone else visible at the edges of <image2>.'
+      : `Full-body character reference of the person shown in <image1>${chi}: only that one person, the one at the center of <image1>; ignore anyone else visible at the edges.`,
     'Keep exactly the same identity, face, hair, skin tone, body build and clothes, with every detail, pattern and color.',
     testoPosa,
     'Show the entire body from head to feet, centered, with nothing cropped.',
-    sfondo.testo,
+    conOmino ? sfondo.testo.replace('<image1>', '<image2>') : sfondo.testo,
     s.nota.trim()
   ].filter(Boolean).join(' ')
   return {
@@ -178,7 +180,7 @@ export async function richiestaEstrai(foto: FotoBase, p: Persona, o: { qualita: 
     larghezza: w,
     altezza: h,
     megapixel: (w * h) / 1048576,
-    immagini: scheletro ? [ritaglio, scheletro] : [ritaglio],
+    immagini: scheletro ? [scheletro, ritaglio] : [ritaglio],
     ...perQualita(o.qualita),
     quante: o.quante,
     trasparente: s.sfondo === 'trasparente',

@@ -391,3 +391,13 @@ export function disegnaOpenPose(g: CanvasRenderingContext2D, p: Posa, W: number,
     g.fill()
   }
 }
+
+/** l'istruzione per il modello: la mappa di posa è solo un controllo (come una mappa di punti chiave), mai da disegnare nel risultato.
+ *  `mappa` e `chi` sono i pezzi di testo che la indicano (es. `<image1>` e "the same character from <image2>") */
+export function istruzionePosa(p: Posa, mappa: string, chi: string): string {
+  return (
+    `Generate an image that conforms to the keypoint map ${mappa}: it is only a pose control (the colored lines are the limbs, the dots are the joints, the thin colored lines are the fingers of each hand), showing ${chi} in exactly that pose. ` +
+    'Copy the position of every arm, leg, hand and finger exactly. The result must be a clean, natural image of the person: never draw the skeleton, the colored lines or the dots, and never leave any overlay or trace of the map. ' +
+    descriviPosa(p)
+  )
+}

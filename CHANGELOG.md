@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.1 — 2026-10-15
+
+Lo scheletro dell'omino non resta più nella foto.
+
+- **Controllo automatico**: ogni foto fatta con l'omino (in Personaggio e nelle ricette) viene guardata dal Qwen3-VL a lavoro finito; se
+  vede lo scheletro (linee colorate, puntini, omino accanto alla persona) parte da sola una modifica che lo **toglie** e ridisegna
+  quello che c'è sotto (pelle, vestiti, mani, sfondo). La foto ripulita prende il posto di quella sporca nei risultati (in galleria
+  restano tutte e due). Se la foto è pulita non succede niente.
+- **Prompt più chiari**: la mappa di posa è «solo un foglio di riferimento» e il prompt dice che nella foto finale non ci sono
+  scheletri, linee né puntini (prima descriveva le linee colorate, e il modello le disegnava).
+
 ## 0.9.0 — 2026-10-15
 
 L'omino con le ossa e le mani, idee da sommare al posto delle azioni rapide, Esempio con i colori giusti.

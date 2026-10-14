@@ -12,6 +12,7 @@ import { AvvisoTurbo, useTurbo } from './Turbo'
 import { CAMERA0, ControlloCamera, descriviCamera, type PosizioneCamera } from './Camera'
 import { fileLoraCamera } from '../azioni'
 import { Omino } from './Omino'
+import { controllaScheletro } from '../pulisciOmino'
 import { durata, stimaSecondi } from '../util'
 import {
   FORMATI_PERSONAGGIO, POSE_ESTRAI, SFONDI_ESTRAI, VISTE_CLASSICHE, VISTE_GIRO, attesiPersonaggio, impostaPersonaggio, richiestaEstrai, richiestaVista,
@@ -166,7 +167,20 @@ export function ControlliPersonaggio(p: { base: FotoBase | null }): JSX.Element 
       return
     }
     try {
-      for (const x of await f()) x.ids.forEach((id) => attesiPersonaggio.set(id, { tipo: x.tipo, etichetta: x.etichetta }))
+      for (const x of await f()) {
+        x.ids.forEach((id) => {
+          attesiPersonaggio.set(id, { tipo: x.tipo, etichetta: x.etichetta })
+          // con l'omino, a lavoro finito si controlla che non sia rimasto lo scheletro; se c'è, la foto ripulita prende il posto
+          if (x.tipo === 'estratto' && usaPersonaggio.getState().posa === 'omino') {
+            controllaScheletro(id, m.qualita, (pulita, originale) =>
+              usaPersonaggio.setState((st) => ({
+                ris: st.ris.map((r) => (r.opera.id === originale.id ? { ...r, opera: pulita } : r)),
+                sorgente: st.sorgente === originale.id ? pulita.id : st.sorgente
+              }))
+            )
+          }
+        })
+      }
     } catch (e) {
       avvisa((e as Error).message, 'errore')
     }

@@ -1,7 +1,7 @@
 // Le ricette del Laboratorio che ci sono di serie: pose, espressioni, vestiti, camera, luce, stili, prodotto, grafica, casa,
 // restauro, sticker. Sono funzioni dei campi che compili (vedi `Workflow` in workflow.ts); le tue stanno in ricette.ts.
 import { PRESET, campiCon, componiPreset } from './preset'
-import { descriviPosa, leggiPosa } from './omino'
+import { istruzionePosa, leggiPosa } from './omino'
 import { componiCamera, conLora } from './componenti/Camera'
 import { POSA_TUA, VISTA_TUA, leggiCamera, type Ctx, type Ingresso, type PassoWf, type Workflow } from './workflow'
 
@@ -21,7 +21,8 @@ const POSA_TUA_IN: Ingresso = { id: 'posa', tipo: 'posa', nome: 'Muovi l\'omino:
 const posaTua = (c: Ctx, intorno: string): PassoWf[] => {
   const po = leggiPosa(c.v.posa)
   if (!po) return []
-  return [E(POSA_TUA, `Show the same character from ${FOTO} in exactly the pose shown by the pose guide in {posa} (colored lines are the limbs, dots are the joints, thin colored lines are the fingers of each hand): copy the position of every arm, leg, hand and finger exactly, and never draw the guide itself. ${descriviPosa(po)} ${intorno}`, { posa: c.v.posa })]
+  // la mappa di posa è la prima immagine ({posa}), la foto del personaggio la seconda ({foto}): vedi richiestaPasso
+  return [E(POSA_TUA, `${istruzionePosa(po, '{posa}', 'the same character from {foto}')} ${intorno}`, { posa: c.v.posa })]
 }
 const SFONDO: Ingresso = {
   id: 'sfondo', tipo: 'scelta', nome: 'Sfondo', predefinita: 'orig',
