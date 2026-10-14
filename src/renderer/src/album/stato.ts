@@ -3,8 +3,10 @@
 import { create } from 'zustand'
 import { api, urlFile, type RiassuntoAlbum } from '../api'
 import { usaStato as usaApp } from '../stato'
-import { ALBUM_VUOTO, type Album, type FotoAlbum } from './tipi'
-import { costruisciSpread, ordina } from './costruisci'
+import { ALBUM_VUOTO, DENSITA, type Album, type FotoAlbum } from './tipi'
+import { costruisciSpread, ordina, piazza } from './costruisci'
+import { proposte } from './proposte'
+import { modelloPer } from './modelli'
 
 const LATO_GRANDE = 6000
 const LATO_MINI = 800
@@ -20,6 +22,8 @@ interface StatoAlbum {
   elenco: RiassuntoAlbum[]
   corrente: number
   cella: number | null
+  /** l'elemento (testo o forma) scelto sullo spread */
+  elemento: string | null
   storia: string[]
   futuro: string[]
   lavoro: Lavoro | null
@@ -34,6 +38,42 @@ interface StatoAlbum {
   importa(percorsi: string[]): Promise<number>
   costruisci(): void
   scegli(spread: number, cella?: number | null): void
+  scegliElemento(id: string | null): void
+  /** mette una foto nello spread aperto: al posto di una cella (si scambiano se c'era già) o in più */
+  metti(id: string, cella?: number, spread?: number): void
+  /** toglie la foto dalla cella dello spread aperto (le altre si impaginano da sole) */
+  togli(cella: number): void
+}
+
+/** un album fatto con una versione vecchia: il titolo della copertina diventa un elemento che si può spostare */
+function vecchioInNuovo(a: Album): Album {
+  for (const sp of a.spreads) {
+    if (!sp.testo) continue
+    const y = sp.posTesto === 'alto' ? 0.08 : sp.posTesto === 'centro' ? 0.5 : 0.9
+    sp.elementi = [...(sp.elementi || []), { id: crypto.randomUUID(), tipo: 'testo', x: 0.5, y, w: 0.6, testo: sp.testo, dim: 14, colore: sp.posTesto === 'centro' || sp.stile === 'pieno' ? '#ffffff' : a.coloreTesto, font: a.font, ombra: sp.posTesto === 'centro' || sp.stile === 'pieno' }]
+    delete sp.testo
+    delete sp.posTesto
+  }
+  return a
+}
+
+/** cambiato il numero di foto di uno spread: prende il miglior layout per quelle che ci sono */
+export function riproponi(a: Album, idx: number): void {
+  const sp = a.spreads[idx]
+  const p = sp && proposte(a, sp, false, 1)[0]
+  if (!sp || !p) return
+  sp.modello = p.sp.modello
+  sp.layout = 0
+  sp.stile = p.sp.stile
+  sp.piazze = p.sp.piazze
+}
+
+/** cambiato il foglio (aperto / pagina singola): i modelli fatti per l'altro foglio si sostituiscono con i migliori per questo */
+export function riadatta(a: Album): void {
+  a.spreads.forEach((sp, i) => {
+    const m = modelloPer(sp.modello)
+    if (m && m.per !== 'tutti' && m.per !== (a.doppie ? 'doppia' : 'singola')) riproponi(a, i)
+  })
 }
 
 const clona = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
@@ -49,6 +89,7 @@ export const usaAlbum = create<StatoAlbum>((set, get) => ({
   elenco: [],
   corrente: 0,
   cella: null,
+  elemento: null,
   storia: [],
   futuro: [],
   lavoro: null,
@@ -57,7 +98,7 @@ export const usaAlbum = create<StatoAlbum>((set, get) => ({
   },
   async apri(id) {
     const a = (await api.album.carica(id)) as Album | null
-    if (a) set({ album: { ...ALBUM_VUOTO(), ...a }, corrente: 0, cella: null, storia: [], futuro: [] })
+    if (a) set({ album: vecchioInNuovo({ ...ALBUM_VUOTO(), ...a }), corrente: 0, cella: null, elemento: null, storia: [], futuro: [] })
   },
   async nuovo(nome) {
     const a = ALBUM_VUOTO(nome || `Album ${new Date().toLocaleDateString('it-IT')}`)
@@ -100,12 +141,43 @@ export const usaAlbum = create<StatoAlbum>((set, get) => ({
   },
   costruisci() {
     get().mod((a) => {
+      a.min = DENSITA[a.densita].min
+      a.max = DENSITA[a.densita].max
       a.spreads = costruisciSpread(a)
     })
-    set({ corrente: 0, cella: null })
+    set({ corrente: 0, cella: null, elemento: null })
   },
   scegli(spread, cella = null) {
-    set({ corrente: spread, cella })
+    set({ corrente: spread, cella, elemento: null })
+  },
+  scegliElemento(id) {
+    set({ elemento: id, cella: null })
+  },
+  metti(id, cella, spread) {
+    const idx = spread ?? get().corrente
+    get().mod((a) => {
+      const sp = a.spreads[idx]
+      if (!sp) return
+      const gia = sp.piazze.findIndex((q) => q.foto === id)
+      if (cella !== undefined && sp.piazze[cella]) {
+        if (gia >= 0) [sp.piazze[gia], sp.piazze[cella]] = [sp.piazze[cella], sp.piazze[gia]]
+        else sp.piazze[cella] = piazza(id)
+      } else if (gia < 0 && sp.piazze.length < 8) {
+        sp.piazze.push(piazza(id))
+        riproponi(a, idx)
+      }
+    })
+  },
+  togli(cella) {
+    const idx = get().corrente
+    get().mod((a) => {
+      const sp = a.spreads[idx]
+      if (!sp) return
+      sp.piazze.splice(cella, 1)
+      if (sp.piazze.length === 0) a.spreads.splice(idx, 1)
+      else riproponi(a, idx)
+    })
+    set({ cella: null })
   },
   async importa(percorsi) {
     const a0 = get().album
@@ -126,7 +198,11 @@ export const usaAlbum = create<StatoAlbum>((set, get) => ({
     get().mod((a) => {
       a.foto.push(...nuove)
       // la prima volta, se non c'è ancora niente, si impagina da sola
-      if (!a.spreads.length) a.spreads = costruisciSpread({ ...a, foto: ordina(a.foto, a.ordine) })
+      if (!a.spreads.length) {
+        a.min = DENSITA[a.densita].min
+        a.max = DENSITA[a.densita].max
+        a.spreads = costruisciSpread({ ...a, foto: ordina(a.foto, a.ordine) })
+      }
     })
     return nuove.length
   }

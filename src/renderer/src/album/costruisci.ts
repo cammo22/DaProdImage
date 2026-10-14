@@ -1,7 +1,8 @@
 // L'impaginazione automatica: mette le foto nell'ordine (per data, nome o come le hai scelte), le divide in spread (da `min`
 // a `max` foto ciascuno, rompendo dove c'è una pausa lunga fra uno scatto e l'altro), dà una pagina intera alle preferite,
 // fa la copertina. Poi ogni spread prende il suo layout (vedi layout.ts).
-import type { Album, FotoAlbum, Piazza, Spread, Stile } from './tipi'
+import { proposte } from './proposte'
+import { spreadDi, type Album, type FotoAlbum, type Piazza, type Spread } from './tipi'
 
 /** un generatore di numeri casuali che si può ripetere (stesso seme = stesso album) */
 export function casuale(seme: number): () => number {
@@ -78,21 +79,28 @@ export function raggruppa(foto: FotoAlbum[], o: OpzioniAuto): { ids: string[]; p
   return gruppi
 }
 
-/** gli spread dell'album da capo (le foto non si toccano) */
+/** gli spread dell'album da capo (le foto non si toccano): ogni gruppo prende un modello della libreria, scelto fra i migliori
+ *  e senza ripetere subito lo stesso */
 export function costruisciSpread(a: Album, seme = Date.now()): Spread[] {
   const rnd = casuale(seme ^ 0x9e3779b9)
   const gruppi = raggruppa(a.foto, { ...a, seme })
-  return gruppi.map((g, n): Spread => {
-    let stile: Stile = 'classico'
-    if (g.pieno || g.ids.length === 1) stile = 'pieno'
-    else if (a.stileAuto === 'dinamico') stile = 'dinamico'
-    else if (a.stileAuto === 'misto') stile = n % 2 === 1 || rnd() > 0.6 ? 'dinamico' : 'classico'
-    return {
-      id: crypto.randomUUID(),
-      piazze: g.ids.map(piazza),
-      layout: 0,
-      stile,
-      ...(g.copertina ? { testo: a.nome, posTesto: 'basso' as const } : {})
+  const spreads: Spread[] = []
+  let prima = ''
+  for (const g of gruppi) {
+    const base: Spread = { id: crypto.randomUUID(), piazze: g.ids.map(piazza), layout: 0, stile: g.pieno || g.ids.length === 1 ? 'pieno' : 'classico' }
+    // la copertina e le preferite a tutto foglio; le altre foto sole a rotazione
+    let scelto: Spread = base
+    if (g.pieno || g.ids.length === 1) scelto = { ...base, modello: g.pieno ? '1-vivo' : ['1-margine', '1-cornice', '1-vivo'][Math.floor(rnd() * 3)], stile: 'pieno' }
+    else {
+      const p = proposte({ ...a, spreads: [] }, base, false, 6).filter((x) => x.id !== prima)
+      const top = p.slice(0, Math.min(4, p.length))
+      if (top.length) scelto = top[Math.floor(rnd() * top.length)].sp
     }
-  })
+    prima = scelto.modello || ''
+    if (g.copertina) {
+      scelto.elementi = [{ id: crypto.randomUUID(), tipo: 'testo', x: 0.5, y: 0.88, w: 0.6, testo: a.nome, dim: Math.max(6, Math.min(spreadDi(a).h * 0.07, 22)), colore: '#ffffff', font: a.font, ombra: true }]
+    }
+    spreads.push(scelto)
+  }
+  return spreads
 }

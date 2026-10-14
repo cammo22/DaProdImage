@@ -78,7 +78,7 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **Fusion** e **Esempio** (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
+- **Modifica** ha 6 modi: tutta la foto, zona, espandi, **Fusion**, **Esempio** e **Personaggio** (vedi sotto) (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
   Fusion = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
   componente, non diventano versioni; il confronto prima/dopo usa sempre `versioni[0]`);
   `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura
@@ -105,12 +105,21 @@ interfaccia**, installato e guidato dall'app.
   e `normalizza` (Chromium + EXIF, se non ce la fa `file:inPng` con WIC; max 24 MP).
 - `VistaZoom`: foto con rotella/trascina/doppio clic (Crea, visore). Galleria a righe giustificate. Barra del titolo
   sempre bianca (`titleBarOverlay` chiaro) con RAM/VRAM/GPU da `src/main/risorse.ts` (nvidia-smi ogni 2 s).
-- **Album** (`pagine/Album.tsx`, `src/renderer/src/album/`, `src/main/album.ts`): progetto JSON in `DATI/album/<id>/album.json` + foto
-  (JPEG 6000 px e miniature 800 px, create dall'interfaccia da qualsiasi formato: `album:prepara` porta dentro il file, i RAW passano da
-  WIC a 6500 px; data di scatto da `exif.ts`, JPEG e RAW basati su TIFF). Tutto in **mm**. `layout.ts` è puro: enumera gli alberi di tagli
-  (fino a 8 foto) e dà i layout migliori (costo = taglio delle foto + celle minuscole + spazio vuoto oltre `taglioMax`); `costruisci.ts`
-  raggruppa le foto in spread; `disegna.ts` disegna su canvas (schermo e stampa); `esporta.ts` fa JPEG/PDF (`pdf.ts` scrive il PDF
-  con le JPEG, senza librerie). Le foto grandi non restano in cache (decine di MP).
+- **Album** (`pagine/Album.tsx` compone `src/renderer/src/album/viste/`: `Foto` (colonna sinistra, foto illuminate = quelle dello spread), `Palco`
+  (canvas: trascina foto ed elementi), `PannelloLayout/Stile/Elementi`, `Esporta`, `Formato`, `Avvio`, `Miniatura`; `src/main/album.ts`): progetto JSON in
+  `DATI/album/<id>/album.json` + foto (JPEG 6000 px e miniature 800 px, create dall'interfaccia da qualsiasi formato: `album:prepara`
+  porta dentro il file, i RAW passano da WIC a 6500 px; data di scatto da `exif.ts`). Tutto in **mm**. Uno spread ha `modello` (un id di
+  `modelli.ts`: ~100 layout a mano in frazioni dell'area, `vivo` = parte dal bordo del foglio; `piazze` è già nell'ordine delle celle: `abbina()`
+  riordina per orientamento con una DP a maschere) oppure, senza modello, i tagli automatici di `layout.ts` (alberi di tagli fino a 8 foto).
+  `proposte.ts` dà i layout di uno spread già pronti (anteprime vere); `riproponi()` in `stato.ts` li rimette quando cambia il numero di foto o il foglio.
+  `temi.ts` = 12 stili (`applicaTema`); `Spread.elementi` = testi e forme (frazioni dello spread, `rettElemento()` per hit-test e maniglia);
+  il vecchio `testo` del titolo si trasforma in elemento in `vecchioInNuovo()`. `costruisci.ts` raggruppa (densità aerea/normale/fitta) e sceglie
+  un modello fra i primi senza ripetere; `disegna.ts` disegna su canvas (schermo e stampa: cornice, ombra, z, elementi); `esporta.ts` JPEG/PDF
+  (`pdf.ts`, senza librerie). Le foto grandi non restano in cache.
+- **Personaggio** (modo di Modifica, `componenti/Personaggio.tsx` + `personaggio.ts` + `riquadri.ts`): `trovaPersone` chiede al Qwen3-VL (`descrivi` con la foto)
+  un JSON `bbox_2d` 0–1000 (`leggiPersone`, tollera fence e JSON troncato); si può riquadrare a mano. `richiestaEstrai` ritaglia la persona (+12%) in un temp
+  e fa una **Crea** con quella come `<image1>` (posa T/A/in piedi, sfondo, proporzioni); `richiestaVista` fa una **Modifica** del risultato con
+  `componiCamera` (come il comando Camera, LoRA camera se c'è). I risultati stanno in `usaPersonaggio` (non nelle versioni).
 - Le impostazioni di ogni immagine stanno **dentro il PNG** (chunk iTXt `daprod`, `src/main/png.ts`): la galleria si
   ricostruisce dai file e un PNG trascinato in Galleria torna con prompt, seed e LoRA.
 - LoRA: dall'intestazione safetensors si capisce se sono per Qwen 2.1 (`transformer_blocks.N.attn.to_q`/`img_mlp`)

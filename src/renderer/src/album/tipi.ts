@@ -24,12 +24,38 @@ export interface Piazza {
 
 export type Stile = 'classico' | 'dinamico' | 'pieno'
 
+/** una cosa messa sopra lo spread: un testo o una forma. Posizione e misure in frazioni dello spread (senza abbondanza) */
+export interface Elemento {
+  id: string
+  tipo: 'testo' | 'forma'
+  /** il centro */
+  x: number
+  y: number
+  /** larghezza (e altezza, per le forme) */
+  w: number
+  h?: number
+  testo?: string
+  /** corpo del testo in mm */
+  dim: number
+  colore: string
+  font?: string
+  allinea?: 'centro' | 'sinistra'
+  grassetto?: boolean
+  ombra?: boolean
+  forma?: 'rett' | 'cerchio' | 'linea' | 'cornice'
+  opacita?: number
+}
+
 export interface Spread {
   id: string
   piazze: Piazza[]
-  /** quale fra i layout possibili (0 = il migliore) */
+  /** quale fra i layout automatici possibili (0 = il migliore) */
   layout: number
   stile: Stile
+  /** se c'è, l'impaginazione è quel modello della libreria (le foto stanno già nell'ordine delle sue celle) */
+  modello?: string
+  elementi?: Elemento[]
+  /** vecchio: il titolo della copertina (si trasforma in un elemento quando si apre l'album) */
   testo?: string
   posTesto?: 'basso' | 'alto' | 'centro'
 }
@@ -57,6 +83,14 @@ export interface Album {
   sfondo: Sfondo
   font: string
   coloreTesto: string
+  /** lo stile scelto (vedi temi.ts) */
+  tema: string
+  /** cornice bianca attorno a ogni foto (mm) e il suo colore */
+  bordoFoto: number
+  coloreBordo: string
+  /** ombra morbida sotto le foto */
+  ombra: boolean
+  densita: 'aerea' | 'normale' | 'fitta'
   /** impaginazione automatica */
   min: number
   max: number
@@ -90,6 +124,13 @@ export const FORMATI: FormatoAlbum[] = [
 ]
 
 export const DPI = [150, 200, 300] as const
+
+/** quante foto per spread, secondo quanto "fitto" vuoi l'album */
+export const DENSITA: Record<Album['densita'], { nome: string; sotto: string; min: number; max: number }> = {
+  aerea: { nome: 'Aerea', sotto: '1–3 per pagina', min: 1, max: 3 },
+  normale: { nome: 'Normale', sotto: '2–5', min: 2, max: 5 },
+  fitta: { nome: 'Fitta', sotto: '4–8', min: 4, max: 8 }
+}
 
 /** la pagina dell'album, in mm */
 export function paginaDi(a: Pick<Album, 'formato' | 'pagina'>): { w: number; h: number } {
@@ -130,6 +171,11 @@ export const ALBUM_VUOTO = (nome = 'Il mio album'): Album => ({
   sfondo: { tipo: 'colore', colore: '#ffffff' },
   font: 'Georgia',
   coloreTesto: '#222222',
+  tema: 'classico',
+  bordoFoto: 0,
+  coloreBordo: '#ffffff',
+  ombra: false,
+  densita: 'normale',
   min: 2,
   max: 5,
   stileAuto: 'misto',

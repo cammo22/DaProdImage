@@ -13,6 +13,7 @@ import { AvvisoLora } from '../componenti/AvvisoLora'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
+import { ControlliPersonaggio, PalcoPersonaggio } from '../componenti/Personaggio'
 import { FORMATI_FUSION, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
@@ -46,6 +47,7 @@ export function Modifica(): JSX.Element {
   const [ris, setRis] = useState<Opera[]>([])
   const fusion = m.modo === 'fusion'
   const esempioMode = m.modo === 'esempio'
+  const personaggio = m.modo === 'personaggio'
   /** i modi con una griglia di foto al posto della tela: Fusion e Esempio */
   const griglia = fusion || esempioMode
 
@@ -423,7 +425,7 @@ export function Modifica(): JSX.Element {
         }}
       >
         <div className="attrezzi">
-          <div style={{ width: 520 }}>
+          <div style={{ width: 600 }}>
             <Segmenti<ModoModifica>
               valore={m.modo}
               cambia={(modo) => setModifica({ modo })}
@@ -432,7 +434,8 @@ export function Modifica(): JSX.Element {
                 { id: 'zona', nome: 'Solo una zona' },
                 { id: 'espandi', nome: 'Espandi' },
                 { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' },
-                { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' }
+                { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' },
+                { id: 'personaggio', nome: 'Personaggio', titolo: 'Estrai una persona da una foto (T-pose…) e muovi la camera attorno a lei' }
               ]}
             />
           </div>
@@ -466,12 +469,13 @@ export function Modifica(): JSX.Element {
           <button className="btn piccolo" onClick={daPc} title={griglia ? 'Aggiungi foto dal PC (anche tante insieme)' : 'Apri una foto dal PC'}><I.immagine /> Dal PC</button>
           {base && !griglia && (
             <button className="btn piccolo pericolo" onClick={togliFoto} title="Toglie la foto e rimette la pagina com'era appena aperta (le versioni restano in galleria)">
-              <I.x /> Togli foto
+              <I.x /> Togli
             </button>
           )}
         </div>
 
-        {griglia ? (
+        {personaggio ? <PalcoPersonaggio base={base} daGalleria={daGalleria} daPc={daPc} /> : null}
+        {personaggio ? null : griglia ? (
           <Fusion
             foto={m.riferimenti}
             cambia={(riferimenti) => setModifica({ riferimenti })}
@@ -487,7 +491,7 @@ export function Modifica(): JSX.Element {
             mostra={(o) => void api.galleria.mostra(o.id)}
           />
         ) : null}
-        {griglia ? null : !base ? (
+        {griglia || personaggio ? null : !base ? (
           <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
             <div className="vuoto">
               <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
@@ -544,7 +548,7 @@ export function Modifica(): JSX.Element {
           </TelaMaschera>
         )}
 
-        {!griglia && m.versioni.length > 0 && (
+        {!griglia && !personaggio && m.versioni.length > 0 && (
           <div className="versioni">
             {m.versioni.map((v, i) => (
               <div key={v.percorso} className={`v ${v.percorso === base?.percorso ? 'su' : ''}`} style={{ ['--ar' as string]: `${v.larghezza} / ${v.altezza}` }} onClick={() => { setModifica({ base: v }); setConfronto(false) }} title={v.prompt}>
@@ -559,7 +563,7 @@ export function Modifica(): JSX.Element {
         )}
       </div>
 
-      <div className="colonna destra">
+      {personaggio ? <ControlliPersonaggio base={base} /> : <div className="colonna destra">
         <div className="scorri">
           <div className="sezione">
             <h3>
@@ -742,7 +746,7 @@ export function Modifica(): JSX.Element {
           </button>
           <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>Ctrl+Invio · ~{durata(stima)}</div>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

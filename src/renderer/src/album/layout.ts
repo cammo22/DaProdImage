@@ -61,6 +61,12 @@ const contiene = (t: Albero, i: number): boolean => (eFoglia(t) ? t.foto === i :
 export interface Cella extends Rett {
   /** quale foto (posizione nell'ordine) */
   foto: number
+  /** cornice attorno alla foto (mm), se il modello la vuole */
+  cornice?: number
+  /** a tutta pagina: niente bordo né ombra */
+  vivo?: boolean
+  /** l'ordine di disegno (più alto = sopra) */
+  z?: number
 }
 
 /** quanto si taglia di una foto di proporzioni `a` in una cella `c` (0 = niente, 1 = tutto) */

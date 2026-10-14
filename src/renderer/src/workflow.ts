@@ -184,11 +184,22 @@ function conSorpresa(passi: PassoWf[]): PassoWf[] {
   return [...passi, { etichetta: SORPRESA, prompt: '', sorpresa: true, crea: primo?.crea, trasparente: primo?.trasparente }]
 }
 
-/** il prompt del passo Sorpresa: lo inventa il Qwen3-VL guardando la ricetta e qualche esempio */
+/** il prompt del passo Sorpresa: lo inventa il Qwen3-VL restando nel tema della ricetta (stessa categoria, stesso tipo di cambiamento) */
 async function inventaPrompt(run: Run, wf: Workflow | undefined): Promise<string> {
-  const esempi = run.definizione.filter((p) => !p.sorpresa && p.prompt).slice(0, 4).map((p) => `- ${p.prompt}`)
+  // esempi sparsi su tutta la ricetta (non solo i primi): così si capisce bene che cosa varia da un passo all'altro
+  const veri = run.definizione.filter((p) => !p.sorpresa && p.prompt)
+  const n = Math.min(5, veri.length)
+  const esempi = Array.from({ length: n }, (_, k) => veri[Math.floor((k * veri.length) / n)]).map((p) => `- (${p.etichetta}) ${p.prompt}`)
+  const cat = CATEGORIE_WF.find((c) => c.id === wf?.categoria)
   const seed = Math.floor(Math.random() * 2 ** 31)
-  const richiesta = `Recipe: ${run.nome}\nDescription: ${wf?.descrizione || run.nome}\nExample prompts:\n${esempi.join('\n') || '- (none)'}\n\nNew variation (random idea ${seed % 9973}):`
+  const richiesta = [
+    `Recipe: ${run.nome}`,
+    `Theme: ${cat ? `${cat.nome} — ${cat.testo}` : 'free'}`,
+    `What this recipe does: ${wf?.descrizione || run.nome}`,
+    run.ctx.v && Object.keys(run.ctx.v).length ? `Settings chosen by the user: ${Object.entries(run.ctx.v).filter(([, v]) => v && v.length < 120).map(([k, v]) => `${k}=${v}`).join('; ')}` : '',
+    `Example variations (the new one must be the same KIND of variation as these):\n${esempi.join('\n') || '- (none)'}`,
+    `\nNew variation (random idea ${seed % 9973}):`
+  ].filter(Boolean).join('\n')
   const t = await api.testo.scrivi({
     ...richiestaBase(), modalita: 'descrivi', prompt: richiesta, sistema: SISTEMA_SORPRESA, maxToken: 220, temperatura: 1.1, seed, immagini: [], etichetta: 'Idea a sorpresa'
   })

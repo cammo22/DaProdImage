@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.7.0 — 2026-10-15
+
+Album rifatto da capo (semplice, con tanti modelli), modo Personaggio, Sorpresa sempre a tema.
+
+- **Album, tutto più semplice**: a sinistra le **foto grandi**, al centro lo spread, a destra tre schede (**Layout**, **Stile**,
+  **Testi e forme**). Si parte da due cose: il formato (con la forma vera disegnata) e le foto: l'album si impagina da solo. Spariti
+  i dieci cursori: «Impagina da capo» ha solo *quante foto per pagina* (aerea / normale / fitta), copertina e preferite a tutto
+  foglio; margini e cornici stanno sotto «Ritocca» nello Stile, l'abbondanza nell'esportazione.
+- **Clic su uno spread = le sue foto si illuminano** nella colonna di sinistra (col numero della loro cella), le altre si
+  abbassano; la colonna scorre da sola fino a loro e c'è il filtro **Qui**. Clic su una cella e poi su un'altra foto: la
+  **sostituisce** (o le scambia, se era già nello spread). Clic su una foto spenta: la aggiunge allo spread.
+- **Libreria di modelli** (`album/modelli.ts`, quasi 100 layout disegnati a mano per 1–8 foto, per l'aperto e per la pagina
+  singola): una grande e tante piccole, pagine uguali, strisce, griglie, tutto il foglio a vivo con gli inserti incorniciati…
+  Le foto si abbinano alle celle per orientamento (le verticali nelle celle alte, la preferita nella più grande) e ogni layout si
+  vede **con le tue foto vere**; più qualche impaginazione «su misura» a tagli. «Un altro» ne prova uno a caso fra i migliori.
+- **12 stili** per tutto l'album con un clic (Classico, Galleria, Crema, Polaroid, A tutto foglio, Minimal, Moderno, Blu notte,
+  Rustico, Rosa antico, Pellicola, Viaggio): colori, margini, angoli, cornice e ombra alle foto, carattere.
+- **Testi e forme** sullo spread: titolo, didascalia, cerchio, riquadro, linea, cornice. Si **trascinano** sulla pagina (si
+  attaccano al centro), il quadratino azzurro li allarga, colore, trasparenza, carattere, ombra. Il titolo della copertina è ora un
+  testo come gli altri (gli album vecchi si aprono lo stesso).
+- **Modo Personaggio** in Modifica: dai una foto con **più persone**, «Trova le persone» (il Qwen3-VL le riquadra; se ne manca
+  una la riquadri tu trascinando), **clic su una persona e si illumina**. «Estrai il personaggio» la porta a **figura intera** su
+  sfondo pulito (bianco, grigio, trasparente o come la foto) in **T-pose**, A-pose, in piedi o com'è nella foto. Poi **muovi la
+  camera**: i due cerchi del comando Camera (gira attorno / alza e abbassa + distanza) per una vista sola, o **il giro completo**
+  (le 4 viste classiche o tutte le 8) in coda con un clic.
+- **Sorpresa a tema**: il modello riceve categoria, descrizione, impostazioni scelte e esempi presi da tutta la ricetta, e deve
+  inventare lo **stesso tipo di variazione** (se la ricetta cambia le acconciature inventa un'acconciatura, non altro).
+- Il selettore di foto ha le miniature più grandi (almeno 168 px, quadrate).
+- Refactoring: l'Album è in pezzi (`album/viste/`: Palco, Foto, PannelloLayout/Stile/Elementi, Esporta, Formato, Avvio, Miniatura),
+  `proposte.ts` (i layout di uno spread), `temi.ts`, `modelli.ts`; il Personaggio in `personaggio.ts` + `componenti/Personaggio.tsx`.
+- Da provare con l'app vera: la qualità dell'estrazione (identità e T-pose) e il rilevamento delle persone con il tuo LLM.
+
 ## 0.6.0 — 2026-10-15
 
 Ricette tue, più foto insieme, ingranditore NVIDIA RTX, modo Esempio e molta pulizia.
@@ -30,7 +62,7 @@ Ricette tue, più foto insieme, ingranditore NVIDIA RTX, modo Esempio e molta pu
   Fusion tagliata. Refactoring: ricette di serie in `ricetteBase.ts`, viste del Laboratorio in `LabVista.tsx`, Fusion/Esempio in
   `fusion.ts`, `AdattaFoto` per le anteprime.
 
-## 0.5.0## 0.5.0 — 2026-10-14
+## 0.5.0 — 2026-10-14
 
 Album per la stampa, Fusion, coda a tessere.
 
