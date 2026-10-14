@@ -67,7 +67,8 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
 - **Tutta la foto** con una frase ("fallo di notte con la neve"), azioni rapide (rimuovi sfondo, restaura, colora
   il bianco e nero, luce da studio, cambia o traduci i testi, stili) e **fino a 9 foto di riferimento** (`<image2>`…).
 - **Più foto**: trascini quante ne vuoi, con **★ base** scegli quale modificare e le altre sono riferimenti; oppure
-  **Fusion**: tutte le foto sono riferimenti e ne esce una foto nuova (persone, vestiti, oggetti, luoghi, stili) in base al prompt.
+  **Fusion**: tutte le foto sono riferimenti e ne esce una foto nuova (persone, vestiti, oggetti, luoghi, stili) in base al prompt;
+  **Esempio**: dai le tue foto e una foto di esempio, il modello rifà l'esempio con le tue foto.
 - **Dimensioni**: come la foto originale, secondo i megapixel, o una misura tua.
 - **Solo una zona**: la segni con pennello, rettangolo o lazo e scrivi cosa farci. Il modello guarda **tutta la foto**
   con la zona evidenziata e cambia **solo lì**: fuori, la foto resta identica al pixel. Niente cursori da regolare:
@@ -90,8 +91,8 @@ dall'AI) ed **esporti in PDF o JPEG** a 300 dpi con l'abbondanza.
 
 ## Laboratorio
 
-47 ricette pronte, in serie o a catena: il personaggio in 9 pose, espressioni, età, armadio, **camera da trascinare**,
-luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di risultati fuori, con prima/dopo. Puoi fare solo i passi che ti servono.
+Oltre 50 ricette pronte (e **quelle che fai tu**: nuove, copie modificate, preset), in serie o a catena, anche su più foto insieme: il personaggio in 9 pose, espressioni, età, armadio, **camera da trascinare**,
+luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di risultati fuori, con prima/dopo. Segni solo i passi che ti servono, e ogni ricetta ha il passo **🎲 Sorpresa**.
 
 ## I modelli
 

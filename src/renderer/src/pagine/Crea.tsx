@@ -4,7 +4,8 @@ import { usaStato, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { AdattaFoto } from '../componenti/AdattaFoto'
-import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
+import { Contatore, Cursore, Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
+import { SceltaMisura, MISURA0 } from '../componenti/Misura'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
 import { BarraPreset, SchedaPreset } from '../componenti/Preset'
@@ -12,20 +13,10 @@ import { VistaZoom } from '../componenti/VistaZoom'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi } from '../util'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SISTEMA_DESCRIVI, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
 import type { Lavoro, Opera } from '@shared/tipi'
 
-const IDEE = [
-  'Una libreria segreta dentro un faro, scale a chiocciola piene di libri, luce calda delle lanterne, pioggia sui vetri',
-  'Ritratto di una donna anziana napoletana che ride, luce di finestra, pellicola Kodak Portra, grana fine',
-  'Un drago di vetro soffiato su un tavolo di legno, riflessi colorati, macro, sfondo sfocato',
-  'Vespa rossa parcheggiata in un vicolo di Positano al tramonto, panni stesi, buganvillea',
-  'Poster minimalista anni 60 con la scritta "DaProd Image", forme geometriche, colori pastello',
-  'Astronauta che pesca su un lago di nebbia sulla luna, stile illustrazione giapponese',
-  'Cucina di nonna con la moka sul fuoco, mattina presto, polvere nei raggi di sole, fotografia realistica',
-  'Città cyberpunk sotto la pioggia vista da un tetto, neon magenta e oro, riflessi sull\'asfalto'
-]
 
 const ar = (f: string): string => {
   const x = FORMATI.find((v) => v.id === f) || FORMATI[0]
@@ -41,6 +32,11 @@ export function Crea(): JSX.Element {
   const [scelto, setScelto] = useState<string | null>(null)
   const [opere, setOpere] = useState<Record<string, Opera>>({})
   const [vedoInCorso, setVedoInCorso] = useState(true)
+  // le ultime opere della galleria, per ripartire da lì quando la pagina è vuota
+  const [recenti, setRecenti] = useState<Opera[]>([])
+  useEffect(() => {
+    void api.galleria.elenco({ modalita: 'tutte' }).then((l) => setRecenti(l.slice(0, 8)))
+  }, [lavori.filter((l) => l.stato === 'fatto').length])
 
   const bozza = crea.qualita === 'bozza'
   // la bozza lavora a metà dei pixel (lato corto / √2)
@@ -82,6 +78,11 @@ export function Crea(): JSX.Element {
       avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
       return
     }
+    // misura precisa: il modello lavora ai megapixel scelti con le proporzioni di quella misura, poi si porta lì
+    const mis = crea.misura?.tipo === 'custom' ? crea.misura : null
+    const px = dim.w * dim.h
+    const m16 = (x: number): number => Math.max(256, Math.round(x / 16) * 16)
+    const lav = mis ? { w: m16(Math.sqrt(px * (mis.w / mis.h))), h: m16(Math.sqrt(px / (mis.w / mis.h))) } : dim
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
@@ -91,9 +92,10 @@ export function Crea(): JSX.Element {
       cfg: crea.cfg,
       sampler: crea.sampler,
       scheduler: crea.scheduler,
-      larghezza: dim.w,
-      altezza: dim.h,
-      megapixel: (dim.w * dim.h) / 1048576,
+      larghezza: lav.w,
+      altezza: lav.h,
+      megapixel: (lav.w * lav.h) / 1048576,
+      ...(mis ? { uscita: { w: mis.w, h: mis.h } } : {}),
       quante: crea.quante,
       immagini: crea.riferimenti.map((r) => r.percorso),
       trasparente: crea.trasparente,
@@ -124,6 +126,23 @@ export function Crea(): JSX.Element {
       if (t) {
         setPrecedente(crea.prompt)
         setCrea({ prompt: t })
+      }
+    } catch (e) {
+      avvisa((e as Error).message, 'errore')
+    } finally {
+      setScrivendo(false)
+    }
+  }
+
+  /** il modello inventa un'idea originale: si parte da lì */
+  const sorprendimi = async (): Promise<void> => {
+    setScrivendo(true)
+    try {
+      const seed = Math.floor(Math.random() * 2 ** 31)
+      const t = await api.testo.scrivi({ ...richiestaBase(), modalita: 'descrivi', prompt: `Invent a new image idea (random seed ${seed % 9973}).`, sistema: SISTEMA_IDEA, maxToken: 260, temperatura: 1.1, seed, immagini: [], etichetta: 'Idea a sorpresa' })
+      if (t) {
+        setPrecedente(crea.prompt)
+        setCrea({ prompt: t.trim() })
       }
     } catch (e) {
       avvisa((e as Error).message, 'errore')
@@ -184,8 +203,8 @@ export function Crea(): JSX.Element {
               <button className="btn piccolo" onClick={daFoto} disabled={scrivendo} title="Scegli una foto: il modello la descrive e diventa il prompt">
                 <I.immagine /> Da foto
               </button>
-              <button className="btn piccolo fantasma" onClick={() => setCrea({ prompt: IDEE[Math.floor(Math.random() * IDEE.length)] })} title="Un'idea a caso">
-                <I.dado />
+              <button className="btn piccolo" onClick={sorprendimi} disabled={scrivendo} title="Il modello inventa un'idea originale e la scrive al posto del prompt">
+                <I.dado /> Sorprendimi
               </button>
               {precedente !== null && (
                 <button className="btn piccolo fantasma" onClick={() => { setCrea({ prompt: precedente }); setPrecedente(null) }}>
@@ -195,8 +214,7 @@ export function Crea(): JSX.Element {
             </div>
           </div>
 
-          <div className="sezione">
-            <h3>Formato <span className="dx">{dim.w} × {dim.h}</span></h3>
+          <SezioneChiudibile id="crea-formato" titolo="Formato e risoluzione" destra={crea.misura?.tipo === 'custom' ? `${crea.misura.w} × ${crea.misura.h}` : `${dim.w} × ${dim.h}`}>
             <div className="formati">
               {FORMATI.map((f) => {
                 const k = 22 / Math.max(f.w, f.h)
@@ -217,10 +235,11 @@ export function Crea(): JSX.Element {
                 </button>
               ))}
             </div>
-          </div>
+            <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
+            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} />
+          </SezioneChiudibile>
 
-          <div className="sezione">
-            <h3>Qualità <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
+          <SezioneChiudibile id="crea-qualita" titolo="Qualità" destra={`${passi} passi · ~${durata(stima)}`}>
             <Segmenti<Qualita>
               valore={crea.qualita}
               cambia={(qualita) => setCrea({ qualita })}
@@ -233,7 +252,7 @@ export function Crea(): JSX.Element {
             />
             {crea.qualita === 'turbo' && <AvvisoTurbo />}
             {bozza && <div className="piccolo tenue" style={{ marginTop: 8 }}>Esplori più idee in poco tempo; sulla bozza che ti piace premi <b className="oro">Rifinisci</b>.</div>}
-          </div>
+          </SezioneChiudibile>
 
           <div className="sezione">
             <Riferimenti
@@ -263,10 +282,9 @@ export function Crea(): JSX.Element {
             </div>
           </div>
 
-          <div className="sezione">
-            <h3>LoRA</h3>
+          <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false}>
             <SceltaLora />
-          </div>
+          </SezioneChiudibile>
 
           <div className="sezione">
             <Interruttore acceso={crea.trasparente} cambia={(trasparente) => setCrea({ trasparente })} sotto="PNG con sfondo trasparente (canale alfa nativo di Qwen-Image 2.1)">
@@ -324,6 +342,18 @@ export function Crea(): JSX.Element {
               <div className="grosso">CREA CON <b>QWEN-IMAGE 2.1</b></div>
               <p>Scrivi a sinistra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
               <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
+              {recenti.length > 0 && (
+                <div className="recenti-crea">
+                  <span className="piccolo tenue">Riparti da una delle ultime (rimette prompt e impostazioni)</span>
+                  <div className="griglia-recenti">
+                    {recenti.map((o) => (
+                      <div key={o.id} role="button" tabIndex={0} className="t" onClick={() => riusa(o)} onKeyDown={(e) => e.key === 'Enter' && riusa(o)} title={o.prompt}>
+                        <img src={urlFile(o.miniatura || o.file)} alt="" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

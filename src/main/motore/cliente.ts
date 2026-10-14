@@ -161,6 +161,38 @@ export async function nodiDisponibili(): Promise<Record<string, unknown>> {
   nodiCache = (await r.json()) as Record<string, unknown>
   return nodiCache
 }
+/** come si chiamano le opzioni del nodo "RTX Video Super Resolution" di NVIDIA (le dice il motore: cambiano da una versione all'altra) */
+export interface ChiaviRtx {
+  scala: string
+  quality: string
+  codifica?: string
+}
+
+/** legge da object_info le opzioni di un ingresso: un elenco (COMBO) o le chiavi di un DynamicCombo */
+export function opzioniIngresso(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const a = v[0]
+  if (Array.isArray(a)) return a.map(String)
+  const o = (v[1] as { options?: unknown[] } | undefined)?.options
+  if (Array.isArray(o)) return o.map((x) => (typeof x === 'object' && x && 'key' in x ? String((x as { key: unknown }).key) : String(x)))
+  return []
+}
+
+/** le chiavi giuste per l'ingranditore RTX, o null se il nodo non c'è */
+export async function chiaviRtx(): Promise<ChiaviRtx | null> {
+  const n = (await nodiDisponibili())['RTXVideoSuperResolution'] as { input?: { required?: Record<string, unknown> } } | undefined
+  if (!n) return null
+  const req = n.input?.required || {}
+  const tipi = opzioniIngresso(req.resize_type)
+  const q = opzioniIngresso(req.quality)
+  const c = opzioniIngresso(req.image_encoding)
+  return {
+    scala: tipi.find((t) => /scale|mult/i.test(t)) || 'scale by multiplier',
+    quality: q.includes('ULTRA') ? 'ULTRA' : q[q.length - 1] || 'ULTRA',
+    codifica: c[0]
+  }
+}
+
 export const dimenticaNodi = (): void => {
   nodiCache = null
 }

@@ -1,6 +1,36 @@
 # Changelog
 
-## 0.5.0 — 2026-10-14
+## 0.6.0 — 2026-10-15
+
+Ricette tue, più foto insieme, ingranditore NVIDIA RTX, modo Esempio e molta pulizia.
+
+- **Fusion al posto di "Nuova dalle foto"** e **modo Esempio**: dai le foto da usare (persone, vestiti, oggetti) e **una foto di
+  esempio** di come vuoi il risultato: il modello rifà l'esempio (posa, inquadratura, luce) con le tue foto. In Fusion e in Esempio
+  scegli anche la **misura precisa** (formati e risoluzioni da cliccare).
+- **Laboratorio**: **più foto insieme** (la ricetta parte per ognuna, tutto in coda); **di partenza non c'è niente di segnato**;
+  in ogni ricetta il passo **🎲 Sorpresa** (il modello inventa una variazione nuova nello stile della ricetta); **vedi i prompt**
+  di ogni passo; **ricette tue**: ne crei di nuove, **duplichi e modifichi** quelle che ci sono (nome, campi, prompt, "uno per ogni
+  riga"), le elimini o le nascondi; **preset** per ricetta (campi e passi segnati con un nome). Nuova categoria **Sticker e icone**:
+  sticker di qualsiasi cosa (non solo persone), tante azioni, una lista (uno per riga), set di icone.
+- **Misura mia** con i **formati** (1:1, 4:5, 3:2…) e le **risoluzioni usuali** (HD, Full HD, 2K, 4K, Instagram, Storia, A4 300 dpi…) da
+  cliccare, anche in Crea (**Misura precisa**) e in Fusion.
+- **Ingranditore NVIDIA RTX** (RTX Video Super Resolution, il nodo di Comfy-Org + `nvidia-vfx`): usa i Tensor core, più nitido e
+  veloce di 4x-UltraSharp, che resta come ripiego. Si installa da solo con l'aggiornamento del motore; se non riesce l'app funziona
+  lo stesso. (DLSS 5 vero e proprio non c'è come ingranditore: vedi sotto.)
+- **Quando l'app è ferma** (un minuto senza lavori) scarica da sola i file consigliati che mancano (LoRA Turbo, traduttore…): lo
+  vedi nella barra in basso; si spegne da Opzioni.
+- **Opzioni**: i gruppi si chiudono (si ricorda come li lasci) e i modelli sono divisi per tipo; nuovo gruppo **File inutilizzati**
+  (vecchi VAE, modelli tolti dal catalogo, scaricati ma non scelti) con **Cestino**.
+- **Modifica**: il confronto **prima/dopo** mostra sempre l'**originale** (anche da v3 o v4).
+- **Galleria**: nelle informazioni c'è **l'effetto** usato (azione, ricetta, Fusion…); **un clic fuori dalla foto chiude** il visore
+  (anche in Lab e nella coda).
+- **Crea** rivisto: sezioni che si chiudono, **Sorprendimi** (il modello inventa un'idea), **Misura precisa**, e quando è vuota
+  ripartire dalle ultime opere.
+- Sistemato: "Tainted canvas" importando foto nell'Album, la griglia della galleria nel selettore (foto schiacciate), l'anteprima di
+  Fusion tagliata. Refactoring: ricette di serie in `ricetteBase.ts`, viste del Laboratorio in `LabVista.tsx`, Fusion/Esempio in
+  `fusion.ts`, `AdattaFoto` per le anteprime.
+
+## 0.5.0## 0.5.0 — 2026-10-14
 
 Album per la stampa, Fusion, coda a tessere.
 

@@ -78,12 +78,20 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **Fusion** (`componenti/Fusion.tsx`: nessuna base, `m.riferimenti` sono tutte
-  le foto, `modalita: 'crea'` con `images.image_N`, formato `formatoFusion`; i risultati stanno in `Fusion`, non diventano versioni);
+- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **Fusion** e **Esempio** (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
+  Fusion = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
+  componente, non diventano versioni; il confronto prima/dopo usa sempre `versioni[0]`);
   `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura
-  tua; `allaMisura()` in `grafi.ts` porta il risultato alla misura esatta (ingranditore se serve > 1,5×, taglio al centro). **Laboratorio** (`workflow.ts`, 47 ricette) accoda catene di
-  lavori; la **barra di stato** (`BarraStato`, clic = apre la coda) mostra il lavoro in corso; la **coda** (`Coda.tsx`) è un menu a tessere con anteprime;
+  tua; `allaMisura()` in `grafi.ts` porta il risultato alla misura esatta (ingranditore se serve > 1,5×, taglio al centro). **Laboratorio** (`workflow.ts` = esecuzione, `ricetteBase.ts` = le ricette di serie, `ricette.ts` = le tue e i preset in localStorage,
+  `EditorRicetta.tsx`, viste in `LabVista.tsx`) accoda catene di lavori, anche su più foto (`avviaLotto`); ogni ricetta ha il passo
+  `SORPRESA` (il prompt lo inventa il Qwen3-VL in `inventaPrompt`) e di partenza non c'è niente di segnato (`OpzioniRun.fai`); la **barra di stato** (`BarraStato`, clic = apre la coda) mostra il lavoro in corso; la **coda** (`Coda.tsx`) è un menu a tessere con anteprime;
   nel Laboratorio si segnano i passi da fare (`OpzioniRun.escludi`); **Camera** e azioni rapide (`rapide.ts`) accendono i LoRA.
+- **Ingranditore**: `impostazioni.upscalerRtx` → nodo `RTXVideoSuperResolution` (Comfy-Org/Nvidia_RTX_Nodes_ComfyUI al commit di
+  `versioni.json`, pacchetto `nvidia-vfx`, installati dal passo 4b di `installatore.ts` in modo facoltativo); le chiavi del nodo si leggono da
+  `object_info` (`chiaviRtx` in `cliente.ts`) e `ingrandisciImg()` in `grafi.ts` ripiega su 4x-UltraSharp. DLSS 5 (`ComfyUI-DLSS5-NR`) è
+  una cosa diversa (rendering neurale, interfaccia NVIDIA non documentata, serve una DLL tua): non c'è.
+- **Idle** (`src/main/idle.ts`): dopo 60 s senza lavori scarica i file `consigliato` mancanti (non denoiser né encoder); `fileInutilizzati()`
+  elenca i file dei modelli che non servono (Opzioni → File inutilizzati, Cestino).
 - Stato in `stato.ts` (zustand); le scelte di Crea/Modifica e i LoRA accesi restano in localStorage.
 - Crea: **risoluzione = lato corto** (`RISOLUZIONI`, `dimensioniRis`: multipli di 16, al massimo 4,2 MP e 2688 px di lato);
   **preset** in `preset.ts` (campi in italiano → prompt in inglese, i testi da disegnare fra virgolette e identici).

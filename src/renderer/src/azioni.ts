@@ -10,6 +10,10 @@ import type { ChiaveLora } from './rapide'
 export const SISTEMA_SORPRESA =
   'You write prompts for the Qwen-Image 2.1 image model. You are given the name and description of a recipe (a series of variations of one idea) and example prompts of some of its variations. Invent ONE brand-new variation that is very different from the examples: creative, specific and surprising. Follow exactly the same structure, wording style and constraints as the examples, including every reference tag like <image1> and any instruction to keep things identical, but with a new subject, idea or style of your own choice. Never repeat an example. Output only the prompt, in English, as one paragraph.'
 
+/** "Sorprendimi" in Crea: il modello inventa un'idea di immagine originale */
+export const SISTEMA_IDEA =
+  'You invent ideas for images for the Qwen-Image 2.1 text-to-image model. Invent ONE vivid, original and unexpected image idea: a specific subject, a setting, the light, the mood and a style or medium. Avoid clichés and avoid repeating common ideas. Write it as one rich English paragraph of 50-90 words that describes the finished image. Any text that must appear in the image goes inside double quotes. Output only the paragraph.'
+
 export const SISTEMA_MIGLIORA =
   "You are an expert prompt writer for the Qwen-Image 2.1 text-to-image model. Rewrite the user's request (it may be in Italian or any language) as one rich English paragraph of 80-160 words describing the finished image: the main subject and its details, action, setting and background, composition and framing, lighting, color palette, style or medium, and mood. Keep every element, count, color, position and constraint the user gave. Any text that must appear in the image goes inside double quotes, in its original language. No quality tags such as 8K or masterpiece. Output only the paragraph."
 

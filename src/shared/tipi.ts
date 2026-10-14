@@ -181,6 +181,10 @@ export interface Impostazioni {
   encoder: string
   vae: string
   upscaler: string
+  /** quando l'app è ferma scarica da sola i file consigliati che mancano (LoRA Turbo, traduttore…) */
+  scaricaInIdle: boolean
+  /** ingrandisce con l'ingranditore NVIDIA RTX (se c'è); se no con quello a modello (4x-UltraSharp) */
+  upscalerRtx: boolean
   porta: number
   cacheKV: 'auto' | 'gpu' | 'cpu' | 'off'
   cacheTipo: 'default' | 'int8' | 'int4'

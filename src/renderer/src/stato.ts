@@ -1,6 +1,6 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
+import type { Download, Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
@@ -38,6 +38,8 @@ export interface StatoCrea {
   preset: string
   stile: string
   campi: Record<string, string>
+  /** le dimensioni precise (se scelte): il modello lavora ai megapixel, poi si porta a questa misura */
+  misura: Misura
 }
 
 export interface StatoModifica {
@@ -91,6 +93,8 @@ interface Stato {
   agg: StatoAggiornamento
   /** RAM, VRAM e GPU (dalla barra in alto) */
   risorse: Risorse | null
+  /** un download di un modello in corso (anche quelli da soli, quando l'app è ferma) */
+  scarico: Download | null
   /** il selettore di foto aperto (galleria o PC): chi lo apre aspetta la scelta */
   selettore: { multi: boolean; ok: (f: FotoBase[]) => void } | null
   vai(p: Pagina): void
@@ -121,7 +125,7 @@ const leggiLista = <T,>(k: string): T[] => {
 
 const CREA0: StatoCrea = {
   prompt: '', negativo: '', formato: '1:1', ris: 1024, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
-  cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}
+  cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
@@ -154,6 +158,7 @@ export const usaStato = create<Stato>((set, get) => ({
   visore: null,
   agg: { stato: 'nessuno', attuale: '' },
   risorse: null,
+  scarico: null,
   selettore: null,
   vai: (pagina) => set({ pagina }),
   setImp: (imp) => set({ imp }),
@@ -237,6 +242,7 @@ export async function collegaEventi(): Promise<void> {
   usaStato.setState({ agg: await api.aggiornamento.stato() })
   api.su.aggiornamento((agg) => usaStato.setState({ agg }))
   api.su.risorse((risorse) => usaStato.setState({ risorse }))
+  api.su.download((d) => usaStato.setState({ scarico: d.stato === 'in corso' || d.stato === 'verifica' ? { ...d } : null }))
   api.su.motore((motore) => usaStato.setState({ motore }))
   api.su.lavori((lavori) => usaStato.setState({ lavori: [...lavori] }))
   api.su.lavoro((uno) => {

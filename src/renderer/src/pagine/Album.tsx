@@ -1,7 +1,7 @@
 // Album: impaginazione automatica di foto (anche RAW) in spread pronti per la stampa, come SmartAlbums.
 // Scegli le foto (dalla galleria o dal PC), il formato, e "Impagina tutto": le foto vanno nell'ordine di scatto, divise in
 // spread, con layout che tagliano il meno possibile. Poi ritocchi a mano (sposta, scambia, ingrandisci, altro layout) ed esporti.
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, scegliFoto, ascoltatoriLavoro } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'

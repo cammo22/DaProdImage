@@ -13,6 +13,7 @@ import { AvvisoLora } from '../componenti/AvvisoLora'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
+import { FORMATI_FUSION, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
@@ -21,15 +22,6 @@ import { categoriePer, type Rapida } from '../rapide'
 import { apriInModifica, fotoDaOpera } from '../azioni'
 import type { Bordi, Lavoro, Opera } from '@shared/tipi'
 
-/** le proporzioni della foto di Fusion (r = null: come la prima foto) */
-const FORMATI_FUSION: { id: string; nome: string; r?: [number, number] }[] = [
-  { id: 'prima', nome: 'Prima foto' },
-  { id: '1:1', nome: '1:1', r: [1, 1] },
-  { id: '4:5', nome: '4:5', r: [4, 5] },
-  { id: '3:2', nome: '3:2', r: [3, 2] },
-  { id: '16:9', nome: '16:9', r: [16, 9] },
-  { id: '9:16', nome: '9:16', r: [9, 16] }
-]
 const attesiFusion = new Set<string>()
 
 const NIENTE: Bordi = { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }
@@ -290,8 +282,7 @@ export function Modifica(): JSX.Element {
 
   async function manda(): Promise<void> {
     const s = usaStato.getState().modifica
-    if (s.modo === 'fusion') return mandaFusion()
-    if (s.modo === 'esempio') return mandaEsempio()
+    if (s.modo === 'fusion' || s.modo === 'esempio') return mandaGriglia()
     if (!s.base) return
     if (s.modo !== 'espandi' && !s.prompt.trim()) {
       avvisa('Scrivi cosa cambiare (o scegli un\'azione rapida)', 'errore')
@@ -345,79 +336,15 @@ export function Modifica(): JSX.Element {
     ids.forEach((id) => attesiModifica.add(id))
   }
 
-  /** Esempio: il modello rifà la foto d'esempio (<image1>) con le persone/oggetti dei riferimenti (<image2>…) */
-  async function mandaEsempio(): Promise<void> {
+  /** Fusion / Esempio: la richiesta la costruisce fusion.ts; qui si accoda e si aspetta il risultato */
+  async function mandaGriglia(): Promise<void> {
     const s = usaStato.getState().modifica
-    if (!s.esempio) {
-      avvisa('Metti la foto di esempio: com\'è il risultato che vuoi', 'errore')
+    const e = s.modo === 'esempio' ? richiestaEsempio(s, turbo.presente) : richiestaFusion(s, turbo.presente)
+    if ('errore' in e) {
+      avvisa(e.errore, 'errore')
       return
     }
-    if (!s.riferimenti.length) {
-      avvisa('Aggiungi almeno una foto di riferimento (la persona o l\'oggetto da usare)', 'errore')
-      return
-    }
-    if (s.qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
-      return
-    }
-    const tag = s.riferimenti.map((_, i) => `<image${i + 2}>`)
-    const lista = tag.length > 1 ? `${tag.slice(0, -1).join(', ')} and ${tag[tag.length - 1]}` : tag[0]
-    // istruzione di modifica: l'esempio resta com'è (posa, inquadratura, luce), cambiano i soggetti
-    const guida = `Recreate the photo <image1> exactly as the target: keep its composition, pose, framing, camera angle, lighting, colors and mood, but replace its people and main subjects with those from ${lista} (keep their identity, face, hair, clothes and details).`
-    const note = s.prompt.trim()
-    const base0 = richiestaBase()
-    const q = {
-      ...base0,
-      modalita: 'modifica' as const,
-      prompt: conParoleLora(note ? `${guida} ${note}` : guida),
-      immagini: [s.esempio.percorso, ...s.riferimenti.map((r) => r.percorso)],
-      megapixel: s.mp,
-      ...perQualita(s.qualita),
-      quante: s.quante,
-      etichetta: 'Esempio · ' + (note.slice(0, 50) || 'come l\'esempio'),
-      ...conMisura(s.misura, s.esempio)
-    }
-    const ids = await api.lavori.accoda(q)
-    ids.forEach((id) => attesiFusion.add(id))
-  }
-
-  /** Fusion: tutte le foto sono riferimenti, ne esce una immagine nuova in base al testo */
-  async function mandaFusion(): Promise<void> {
-    const s = usaStato.getState().modifica
-    if (!s.riferimenti.length) {
-      avvisa('Aggiungi almeno una foto', 'errore')
-      return
-    }
-    if (!s.prompt.trim()) {
-      avvisa('Scrivi cosa deve nascere dalle foto (es. "la donna di <image1> con la giacca di <image2> in una strada di Tokyo di notte")', 'errore')
-      return
-    }
-    if (s.qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
-      return
-    }
-    const mis = s.misura && s.misura.tipo === 'custom' ? s.misura : null
-    const [a, b] = mis ? [mis.w, mis.h] : FORMATI_FUSION.find((f) => f.id === s.formatoFusion)?.r || [s.riferimenti[0].larghezza, s.riferimenti[0].altezza]
-    const px = s.mp * 1048576
-    const t = (x: number): number => Math.max(256, Math.round(x / 32) * 32)
-    const ar = a / b
-    const w = t(Math.sqrt(px * ar))
-    const h = t(Math.sqrt(px / ar))
-    const q = {
-      ...richiestaBase(),
-      modalita: 'crea' as const,
-      prompt: conParoleLora(s.prompt.trim()),
-      larghezza: w,
-      altezza: h,
-      megapixel: (w * h) / 1048576,
-      immagini: s.riferimenti.map((r) => r.percorso),
-      ...perQualita(s.qualita),
-      quante: s.quante,
-      etichetta: 'Fusion · ' + s.prompt.trim().slice(0, 50),
-      // la misura esatta scelta: il modello lavora ai megapixel, poi il motore porta l'immagine a quella misura
-      ...(mis ? { uscita: { w: mis.w, h: mis.h } } : {})
-    }
-    const ids = await api.lavori.accoda(q)
+    const ids = await api.lavori.accoda(e.q)
     ids.forEach((id) => attesiFusion.add(id))
   }
 
