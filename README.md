@@ -1,3 +1,8 @@
+<!-- discord-card -->
+<p align="center">
+  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
+</p>
+
 <div align="center">
 
 <img src="build/icon.png" width="110" alt="DaProd Image">
@@ -154,14 +159,3 @@ quando su `main` arriva un `version` nuovo in `package.json`. Le regole del prog
 App: MIT. Qwen-Image 2.1 e Texture-Fix VAE: Qwen Research License. ComfyUI: GPL-3.0. ComfyUI-GGUF: Apache-2.0.
 4x-UltraSharp: CC-BY-NC-SA 4.0. TAESD/TAEQI: MIT. Turbo8: vedi la sua [pagina](https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1).
 Il modello "Uncensored" non ha filtri: quello che generi è responsabilità tua.
-
----
-
-<!-- discord-card -->
-## 💬 Community
-
-<p align="center">
-  <a href="https://discord.gg/Njs52aacwq"><img src=".github/discord-card.svg" alt="Entra nella community DaProd su Discord" width="720"></a>
-</p>
-
-Domande, idee, bug o solo voglia di chiacchierare? Entra nel **[Discord di DaProd](https://discord.gg/Njs52aacwq)**: ogni app ha la sua stanza e le nuove versioni arrivano in automatico.
