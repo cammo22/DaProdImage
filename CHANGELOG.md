@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.0 — 2026-10-14
+
+Un laboratorio di ricette, più foto insieme, il Turbo nuovo e la scelta dell'LLM.
+
+- **Barra di stato in basso**: fase, passi, tempo e prompt inglese sempre scritti lì, senza riquadri sopra le foto.
+- **Prima / dopo di nuovo sulla tela**: dopo ogni modifica si apre la linea da trascinare (PRIMA / DOPO) con
+  **Continua da qui** e **Torna indietro** bene in vista.
+- **Modifica**: la foto si prende **dalla galleria**, dal PC, trascinata o incollata; **Togli foto** riporta la pagina
+  com'era appena aperta, senza chiudere il programma.
+- **Più foto, tu scegli la base**: sulle miniature dei riferimenti c'è **★ base** (la foto diventa quella che si
+  modifica, la vecchia passa fra i riferimenti). Il nuovo modo **Nuova dalle foto** non modifica niente: crea
+  un'immagine completamente nuova prendendo persone, vestiti, oggetti, luoghi e stili dalle foto (`<image1>`, `<image2>`…).
+  Più foto trascinate insieme: la prima è la base, le altre riferimenti. Anche in Crea ci sono i riferimenti.
+- **Azioni rapide a categorie** in Modifica: persone, vestiti, situazioni, **prospettiva** (con la **camera da
+  trascinare**: giro, altezza, distanza, anche senza prompt), luce, stili, testi, ritocco; accendono da sole i LoRA giusti
+  (coerenza, cambio vestito, camera) e li propongono con un clic se mancano.
+- **Laboratorio**: 47 ricette pronte, serie e catene (il personaggio in 9 pose, espressioni, età, armadio, camera,
+  luce, what-if, stili, prodotto, testi, casa, restauro…), foglio contatti e confronto prima/dopo per ogni risultato.
+- **Il nuovo Turbo di AtomicChat** (`Qwen-Image-2.1-Turbo-GGUF`): già distillato, 8 passi, senza LoRA. L'app chiede a
+  Hugging Face il nome vero del file e lo scarica con lo sha256.
+- **Solo Q4, Q6 e Q8**, per tutti i modelli (denoiser e LLM). Via Q5 e bf16.
+- **Scelta dell'LLM (text encoder)**: oltre al Qwen3-VL int8 di sempre, in Opzioni si scaricano e si scelgono
+  l'encoder **uncensored di AtomicChat** (`Qwen-Image-2.1-Turbo-Uncensored-GGUF`) e il
+  **Qwen3-VL 8B Uncensored V2 di mradermacher**, in Q4 / Q6 / Q8, con l'mmproj che serve per guardare le foto
+  (si mette accanto col nome che il nodo GGUF cerca). Il motore li carica con `CLIPLoaderGGUF`.
+  L'LLM fa tre cose: legge il prompt, guarda le foto e traduce dall'italiano.
+
 ## 0.3.0 — 2026-10-08
 
 Modifica che funziona sempre, anteprime vere, foto di ogni formato.

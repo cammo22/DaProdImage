@@ -7,8 +7,10 @@ import { cpSync, existsSync, linkSync, readFileSync, readdirSync, renameSync, rm
 import { totalmem } from 'node:os'
 import { basename, join, parse } from 'node:path'
 import { app } from 'electron'
-import type { ControlloSistema, PassoSetup, StatoVoce } from '@shared/tipi'
+import type { ControlloSistema, PassoSetup, StatoVoce, VoceCatalogo } from '@shared/tipi'
 import { CATALOGO, voce } from './catalogo'
+import { conRisolto, presenteRisolto, risolviVoce, risoltoSalvato, type FileRisolto } from './risolvi'
+import { elencoLora, scaricaLora } from '../lora'
 import { scarica } from './scarica'
 import { COMFY, MOTORE, NODI, PYTHON, RADICE, TEMP, UV, UV_CACHE, UV_PYTHON, VENV, VERSIONI, LOG, assicura } from '../percorsi'
 import { impostazioni, salvaImpostazioni } from '../impostazioni'
@@ -93,7 +95,11 @@ export async function controlloSistema(cartella: string): Promise<ControlloSiste
 
 /** stato dei file del catalogo nella cartella modelli */
 export function statoModelli(cartella = impostazioni().cartellaModelli): StatoVoce[] {
+  // i LoRA presi da una pagina si riconoscono dal link da cui sono arrivati
+  const daLink = CATALOGO.some((v) => v.link) ? elencoLora() : []
   return CATALOGO.map((v) => {
+    if (v.link) return { ...v, presente: daLink.some((l) => l.fonte === v.link) }
+    if (v.repo) return { ...conRisolto(v), presente: presenteRisolto(v, cartella) }
     const p = join(cartella, v.cartella, v.file)
     let presente = false
     try {
@@ -332,9 +338,16 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
     // 5. modelli
     attuale = 'modelli'
     inizia('modelli', 'controllo i modelli…')
-    const scelto = voce(opz.modello) || voce('q4km')!
+    let scelto = voce(opz.modello) || voce('q4km')!
     const imp = impostazioni()
-    const servono = [scelto, voce('te-int8')!, voce('vae-fix')!, voce('ultrasharp')!, voce('tae')!, ...opz.extra.map((id) => voce(id)).filter((x) => !!x)]
+    // il Turbo di AtomicChat: il nome del file lo dice Hugging Face
+    if (scelto.repo && !opz.mantieniModello && !opz.fileEsistente) {
+      p('modelli').dettaglio = 'cerco il file di ' + scelto.nome + '…'
+      notifica(passi)
+      await risolviVoce(scelto)
+      scelto = conRisolto(scelto)
+    }
+    const servono = [scelto, voce('te-int8')!, voce('vae-fix')!, voce('ultrasharp')!, voce('tae')!, ...opz.extra.flatMap((id) => { const v = voce(id); return v && !v.link ? [v] : [] })]
     // se l'utente ha già il modello, lo si porta dentro (collegamento o copia)
     if (opz.mantieniModello) {
       servono.splice(servono.indexOf(scelto), 1)
@@ -358,28 +371,30 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
     const totale = daScaricare.reduce((a, s) => a + s.byte, 0)
     let fatto = 0
     for (const s of daScaricare) {
-      const dest = join(opz.cartellaModelli, s.cartella, s.file)
-      const intestazioni: Record<string, string> = {}
-      if (imp.tokenHF && s.url.includes('huggingface.co')) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
-      await scarica({
-        url: s.url,
-        destinazione: dest,
-        sha256: s.sha256,
-        intestazioni,
-        segnale,
-        avanzamento: (r, t, vel) => {
-          const parz = fatto + r
-          p('modelli').avanzamento = totale ? parz / totale : undefined
-          p('modelli').dettaglio = `${s.nome}: ${(r / 1e9).toFixed(2)} / ${((t || s.byte) / 1e9).toFixed(2)} GB · ${(vel / 1e6).toFixed(1)} MB/s`
-          notifica(passi)
-        },
-        verifica: () => {
-          p('modelli').dettaglio = `${s.nome}: controllo che sia integro…`
-          notifica(passi)
-        }
-      })
-      fatto += s.byte
-      log('scaricato ' + s.file)
+      for (const f of await fileDaScaricare(s)) {
+        const dest = join(opz.cartellaModelli, s.cartella, f.file)
+        const intestazioni: Record<string, string> = {}
+        if (imp.tokenHF && f.url.includes('huggingface.co')) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
+        await scarica({
+          url: f.url,
+          destinazione: dest,
+          sha256: f.sha256,
+          intestazioni,
+          segnale,
+          avanzamento: (r, t, vel) => {
+            const parz = fatto + r
+            p('modelli').avanzamento = totale ? Math.min(1, parz / totale) : undefined
+            p('modelli').dettaglio = `${s.nome}: ${(r / 1e9).toFixed(2)} / ${((t || f.byte) / 1e9).toFixed(2)} GB · ${(vel / 1e6).toFixed(1)} MB/s`
+            notifica(passi)
+          },
+          verifica: () => {
+            p('modelli').dettaglio = `${s.nome}: controllo che sia integro…`
+            notifica(passi)
+          }
+        })
+        fatto += f.byte
+        log('scaricato ' + f.file)
+      }
     }
     finisci('modelli', daScaricare.length ? `${daScaricare.length} file scaricati` : 'tutti presenti')
 
@@ -405,10 +420,33 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
 export async function scaricaVoce(id: string, avanz: (r: number, t: number, v: number) => void, segnale?: AbortSignal): Promise<string> {
   const s = voce(id)
   if (!s) throw new Error('voce sconosciuta')
+  if (s.link) return scaricaLora(s.link, avanz, segnale)
   const imp = impostazioni()
-  const dest = join(imp.cartellaModelli, s.cartella, s.file)
   const intestazioni: Record<string, string> = {}
-  if (imp.tokenHF && s.url.includes('huggingface.co')) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
-  await scarica({ url: s.url, destinazione: dest, sha256: s.sha256, intestazioni, segnale, avanzamento: avanz })
-  return dest
+  if (imp.tokenHF) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
+  let principale = ''
+  const files = await fileDaScaricare(s)
+  const totale = files.reduce((a, f) => a + f.byte, 0) || 1
+  let fatto = 0
+  for (const f of files) {
+    const dest = join(imp.cartellaModelli, s.cartella, f.file)
+    if (!principale) principale = dest
+    await scarica({
+      url: f.url,
+      destinazione: dest,
+      sha256: f.sha256,
+      intestazioni: f.url.includes('huggingface.co') ? intestazioni : {},
+      segnale,
+      avanzamento: (r, t, v) => avanz(fatto + r, files.length > 1 ? totale : t, v)
+    })
+    fatto += f.byte
+  }
+  return principale
+}
+
+/** i file veri da scaricare per una voce (per quelle di terzi si chiede il nome a Hugging Face) */
+export async function fileDaScaricare(v: VoceCatalogo): Promise<FileRisolto[]> {
+  if (!v.repo) return [{ file: v.file, url: v.url, byte: v.byte, sha256: v.sha256 }]
+  const r = risoltoSalvato(v.id) ?? (await risolviVoce(v))
+  return [r, ...(r.mmproj ? [r.mmproj] : [])]
 }

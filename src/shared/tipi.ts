@@ -241,6 +241,24 @@ export interface VoceCatalogo {
   necessario?: boolean
   /** la dimensione è indicativa (file di terzi senza sha256 noto): basta che ci sia */
   circa?: boolean
+  /** un LoRA da prendere da una pagina (Hugging Face / Civitai) invece che da un file preciso: `url` non serve */
+  link?: string
+  /** per i LoRA: a cosa servono, in una riga ("Prova vestito", "Camera") */
+  uso?: string
+  /** quantizzazione offerta (solo Q4, Q6 e Q8) */
+  quant?: 'Q4' | 'Q6' | 'Q8'
+  /** per le voci di terzi: il repo Hugging Face e le espressioni (in ordine) per trovare il file giusto; `file` e `url` si scoprono scaricando */
+  repo?: string
+  cerca?: string[]
+  /** per gli encoder GGUF: come trovare l'mmproj (e dove, se sta in un altro repo) */
+  cercaMmproj?: string[]
+  mmprojRepo?: string
+  /** per il denoiser: è già il Turbo (distillato a 8 passi), non serve il LoRA Turbo8 */
+  turbo?: boolean
+  /** come raggruppare le voci nell'elenco (encoder: AtomicChat / mradermacher) */
+  famiglia?: string
+  /** non so ancora il nome vero del file: lo trovo al primo download */
+  daCercare?: boolean
 }
 
 export interface StatoVoce extends VoceCatalogo {
@@ -285,3 +303,6 @@ export interface Download {
   stato: 'in corso' | 'fatto' | 'errore' | 'annullato' | 'verifica'
   errore?: string
 }
+
+/** il modello di diffusione è il Turbo ufficiale (già distillato a 8 passi)? */
+export const modelloTurbo = (file: string): boolean => /turbo/i.test(file)

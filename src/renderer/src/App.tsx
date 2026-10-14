@@ -6,6 +6,9 @@ import { I } from './componenti/Icone'
 import { Coda } from './componenti/Coda'
 import { Crea } from './pagine/Crea'
 import { Modifica } from './pagine/Modifica'
+import { Laboratorio } from './pagine/Laboratorio'
+import { BarraStato } from './componenti/BarraStato'
+import { SelettoreFoto } from './componenti/SelettoreFoto'
 import { Galleria } from './pagine/Galleria'
 import { Lora } from './pagine/Lora'
 import { Impostazioni } from './pagine/Impostazioni'
@@ -16,6 +19,7 @@ import { apriInModifica } from './azioni'
 const VOCI: { id: Pagina; nome: string; icona: () => JSX.Element }[] = [
   { id: 'crea', nome: 'Crea', icona: I.crea },
   { id: 'modifica', nome: 'Modifica', icona: I.modifica },
+  { id: 'laboratorio', nome: 'Lab', icona: I.laboratorio },
   { id: 'galleria', nome: 'Galleria', icona: I.galleria },
   { id: 'lora', nome: 'LoRA', icona: I.lora }
 ]
@@ -131,7 +135,7 @@ export function App(): JSX.Element {
   const testoMotore = { pronto: 'Motore pronto', avvio: 'Avvio del motore…', errore: 'Motore fermo', spento: 'Motore spento', 'non installato': 'Da installare' }[motore.stato]
 
   return (
-    <div className="app">
+    <div className={`app ${pronto && installato ? 'con-barra' : ''}`}>
       <div className="barra-titolo">
         <div className="logo">
           <img src="./icona.svg" alt="" />
@@ -189,6 +193,7 @@ export function App(): JSX.Element {
             {/* le pagine restano montate: la maschera disegnata o il prompt non si perdono cambiando pagina */}
             <div className={pagina === 'crea' ? '' : 'nascosto'}><Crea /></div>
             <div className={pagina === 'modifica' ? '' : 'nascosto'}><Modifica /></div>
+            <div className={pagina === 'laboratorio' ? '' : 'nascosto'}><Laboratorio /></div>
             <div className={pagina === 'galleria' ? '' : 'nascosto'}>{pagina === 'galleria' && <Galleria />}</div>
             <div className={pagina === 'lora' ? '' : 'nascosto'}>{pagina === 'lora' && <Lora />}</div>
             <div className={pagina === 'impostazioni' ? '' : 'nascosto'}>{pagina === 'impostazioni' && <Impostazioni />}</div>
@@ -197,6 +202,8 @@ export function App(): JSX.Element {
         </>
       )}
 
+      {pronto && installato && <BarraStato />}
+      <SelettoreFoto />
       <div className="avvisi">
         {avvisi.map((a) => (
           <div key={a.id} className={`avviso ${a.tipo}`}>{a.testo}</div>

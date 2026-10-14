@@ -1,8 +1,10 @@
 // Le azioni che servono a più pagine: costruire le richieste, aprire una foto in Modifica, rifinire, variare.
+import { modelloTurbo } from '@shared/tipi'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
 import { PASSI_QUALITA, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
+import type { ChiaveLora } from './rapide'
 
 export const SISTEMA_MIGLIORA =
   "You are an expert prompt writer for the Qwen-Image 2.1 text-to-image model. Rewrite the user's request (it may be in Italian or any language) as one rich English paragraph of 80-160 words describing the finished image: the main subject and its details, action, setting and background, composition and framing, lighting, color palette, style or medium, and mood. Keep every element, count, color, position and constraint the user gave. Any text that must appear in the image goes inside double quotes, in its original language. No quality tags such as 8K or masterpiece. Output only the paragraph."
@@ -37,6 +39,7 @@ export function richiestaBase(): Richiesta {
 /** il LoRA Turbo è fra i LoRA? */
 export function turboPresente(): boolean {
   const { imp, lore } = usaStato.getState()
+  if (imp && modelloTurbo(imp.modello)) return true
   return !!imp?.loraTurbo && lore.some((l) => l.file === imp.loraTurbo)
 }
 
@@ -130,4 +133,25 @@ export function riusa(o: Opera): void {
   s.apriVisore(null)
   s.vai('crea')
   s.avvisa('Impostazioni rimesse in Crea (seed fisso)', 'ok')
+}
+
+const FILE_LORA: Record<Exclude<ChiaveLora, 'camera'>, string> = {
+  coerenza: 'qwen-image-2.1-consistency.safetensors',
+  vestiti: 'qwen-image-2.1-outfit-swap.safetensors'
+}
+
+/** il file del LoRA delle angolazioni (akhaliq, "Multiple Angles"), se è fra i LoRA */
+export function fileLoraCamera(): string | undefined {
+  return usaStato.getState().lore.find((l) => /multiple-angles/i.test(l.fonte || '') || /multiple.?angles|(^|[-_.])mva([-_.]|$)/i.test(l.file))?.file
+}
+
+/** i LoRA che un'azione rapida accende da sola, se ci sono nella cartella (se no si va col modello da solo) */
+export function loraPer(chiavi: ChiaveLora[] | undefined): { file: string; forza: number }[] {
+  const { lore } = usaStato.getState()
+  const out: { file: string; forza: number }[] = []
+  for (const k of chiavi || []) {
+    const file = k === 'camera' ? fileLoraCamera() : FILE_LORA[k]
+    if (file && lore.some((l) => l.file === file) && !out.some((o) => o.file === file)) out.push({ file, forza: k === 'camera' ? 0.9 : 1 })
+  }
+  return out
 }

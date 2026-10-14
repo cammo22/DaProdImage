@@ -180,7 +180,10 @@ async function risolvi(link: string): Promise<{ url: string; nome?: string; file
       const repo = u.pathname.split('/').filter(Boolean).slice(0, 2).join('/')
       const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/main?recursive=true`, { headers: intestazioni })
       const files = (await r.json()) as { path: string; type: string }[]
-      const st = files.find((f) => f.type === 'file' && f.path.endsWith('.safetensors'))
+      const tutti = files.filter((f) => f.type === 'file' && f.path.endsWith('.safetensors'))
+      // #file=v2,1500,1000: le preferenze, in ordine (il checkpoint consigliato dall'autore); se niente combacia, il primo
+      const pref = (u.hash.match(/file=([^&]+)/)?.[1] || '').split(',').map((x) => decodeURIComponent(x).toLowerCase()).filter(Boolean)
+      const st = pref.map((p) => tutti.find((f) => f.path.toLowerCase().includes(p))).find(Boolean) || tutti[0]
       if (!st) throw new Error('in quel repo non trovo un .safetensors')
       return { url: `https://huggingface.co/${repo}/resolve/main/${st.path}`, file: basename(st.path), nome: repo.split('/')[1], intestazioni }
     }

@@ -9,7 +9,8 @@ import { percentuale } from '../componenti/Coda'
 import { BarraPreset, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
-import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi, troppoLenta } from '../util'
+import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi } from '../util'
+import { Riferimenti } from '../componenti/Riferimenti'
 import { SISTEMA_DESCRIVI, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
 import type { Lavoro, Opera } from '@shared/tipi'
@@ -93,6 +94,7 @@ export function Crea(): JSX.Element {
       altezza: dim.h,
       megapixel: (dim.w * dim.h) / 1048576,
       quante: crea.quante,
+      immagini: crea.riferimenti.map((r) => r.percorso),
       trasparente: crea.trasparente,
       ...perQualita(crea.qualita),
       etichetta: bozza ? 'Bozza' : preset ? preset.nome : undefined
@@ -148,6 +150,13 @@ export function Crea(): JSX.Element {
   }
 
   const op = scelto ? opere[scelto] : undefined
+
+  const inserisci = (testo: string): void => {
+    const t = document.querySelector<HTMLTextAreaElement>('.colonna:not(.destra) textarea')
+    const v = crea.prompt
+    const i = t ? t.selectionStart : v.length
+    setCrea({ prompt: v.slice(0, i) + testo + v.slice(i) })
+  }
 
   return (
     <div className="pagina">
@@ -223,6 +232,16 @@ export function Crea(): JSX.Element {
             />
             {crea.qualita === 'turbo' && <AvvisoTurbo />}
             {bozza && <div className="piccolo tenue" style={{ marginTop: 8 }}>Esplori più idee in poco tempo; sulla bozza che ti piace premi <b className="oro">Rifinisci</b>.</div>}
+          </div>
+
+          <div className="sezione">
+            <Riferimenti
+              lista={crea.riferimenti}
+              cambia={(riferimenti) => setCrea({ riferimenti })}
+              inizio={1}
+              inserisci={inserisci}
+              esempio={'Una persona, un vestito, un oggetto, uno stile: "una donna come <image1> su una spiaggia", "la giacca di <image1> addosso a un robot". Fino a 9 foto.'}
+            />
           </div>
 
           <div className="sezione">
@@ -349,49 +368,11 @@ export function Crea(): JSX.Element {
   )
 }
 
+/** la foto che nasce (anteprima nitida a ogni passo); fase, passi e tempo stanno nella barra in basso */
 export function InCorso({ l, ar }: { l: Lavoro; ar: string }): JSX.Element {
   return (
     <div className="in-corso" style={{ width: '100%', height: '100%' }}>
       {l.anteprima ? <img src={l.anteprima} alt="" style={{ width: 'auto', height: 'auto', maxHeight: '100%' }} /> : <div className="attesa-grande" style={{ ['--ar' as string]: ar }} />}
-      <PannelloLavoro l={l} />
-    </div>
-  )
-}
-
-/** fase, passi, barra, tempo che manca e Annulla (sopra l'anteprima di Crea e sulla tela di Modifica) */
-export function PannelloLavoro({ l }: { l: Lavoro }): JSX.Element {
-  const p = percentuale(l)
-  const lenta = troppoLenta(l.secondiPasso, l.megapixel || 1)
-  return (
-    <div className="sopra">
-      <div className="riga spazia">
-        <b>{l.fase}</b>
-        <span className="tenue piccolo">
-          {l.fase === 'Disegno' && `${l.passo}/${l.passiTotali} · `}
-          {l.stima ? `~${durata(l.stima)}` : ''}
-        </span>
-      </div>
-      <div className={`barra-progresso ${p === null ? 'indeterminata' : ''}`}>
-        <i style={{ width: `${p ?? 30}%` }} />
-      </div>
-      <div className="riga spazia piccolo spento">
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 360 }}>{l.richiesta.etichetta || l.richiesta.prompt}</span>
-        <button className="btn piccolo fantasma" onClick={() => api.lavori.annulla(l.id)}>Annulla</button>
-      </div>
-      {l.promptInglese && <div className="piccolo spento tradotto" title={l.promptInglese}>In inglese: {l.promptInglese}</div>}
-      {lenta && <AvvisoLenta secondi={l.secondiPasso!} />}
-    </div>
-  )
-}
-
-/** la scheda va molto più piano del normale: quasi sempre è la VRAM che finisce nella RAM condivisa */
-export function AvvisoLenta({ secondi }: { secondi: number }): JSX.Element {
-  return (
-    <div className="avviso-box" style={{ marginTop: 2, fontSize: 13 }}>
-      <b>{secondi.toFixed(1)} s per passo: molto più lento del normale.</b> Di solito la scheda è piena e Windows usa la RAM.
-      Prova <b>Turbo</b>, una risoluzione più bassa o il profilo <b>6 GB</b>; nel Pannello NVIDIA metti
-      “Criterio di fallback della memoria di sistema CUDA” su <i>Preferisci nessun fallback</i>.{' '}
-      <a href="#" onClick={(e) => { e.preventDefault(); usaStato.getState().vai('impostazioni') }}>Opzioni ↗</a>
     </div>
   )
 }

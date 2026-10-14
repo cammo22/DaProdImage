@@ -1,6 +1,7 @@
 // Da una Richiesta al grafo di ComfyUI (formato API). Ogni modalità usa gli stessi pezzi:
 //   modello GGUF → (Turbo) → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
 // e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
+import { modelloTurbo } from '@shared/tipi'
 import type { Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
 
 /** il profilo di memoria: con poca VRAM il VAE lavora a tessere (niente picchi che finiscono nella RAM condivisa) */
@@ -55,7 +56,14 @@ export function dimensioniPer(mp: number, larghezza: number, altezza: number): {
 }
 
 /** il Turbo è acceso e il suo LoRA c'è? */
-const conTurbo = (q: Richiesta, imp: Impostazioni): boolean => !!q.turbo && !!imp.loraTurbo
+const conTurbo = (q: Richiesta, imp: Impostazioni): boolean => !!q.turbo && (modelloTurbo(imp.modello) || !!imp.loraTurbo)
+
+/** il text encoder: safetensors col CLIPLoader, GGUF (Q4/Q6/Q8) col suo loader, che trova da solo l'mmproj accanto */
+function caricaClip(g: Grafo, imp: Impostazioni): Rif {
+  const titolo = 'Carico il text encoder'
+  if (imp.encoder.toLowerCase().endsWith('.gguf')) return r(g.add('CLIPLoaderGGUF', { clip_name: imp.encoder, type: 'qwen_image' }, titolo))
+  return r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, titolo))
+}
 
 function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Rif; vae: Rif } {
   const carico = 'Carico il modello'
@@ -64,13 +72,14 @@ function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Ri
     : g.add('UNETLoader', { unet_name: imp.modello, weight_dtype: 'default' }, carico)
   let model = r(unet)
   const turbo = conTurbo(q, imp)
-  if (turbo) model = r(g.add('LoraLoaderModelOnly', { model, lora_name: imp.loraTurbo, strength_model: 1 }, 'Accendo il Turbo'))
+  const nativo = modelloTurbo(imp.modello)
+  if (turbo && !nativo) model = r(g.add('LoraLoaderModelOnly', { model, lora_name: imp.loraTurbo, strength_model: 1 }, 'Accendo il Turbo'))
   for (const l of q.lora) {
     if (!l.file || !l.forza || (turbo && l.file === imp.loraTurbo)) continue
     model = r(g.add('LoraLoaderModelOnly', { model, lora_name: l.file, strength_model: l.forza }, 'Applico i LoRA'))
   }
   model = r(g.add('QwenImage21Cache', { model, device: imp.cacheKV, dtype: imp.cacheTipo }))
-  const clip = r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+  const clip = caricaClip(g, imp)
   const vae = r(g.add('VAELoader', { vae_name: imp.vae }, 'Carico il VAE'))
   return { model, clip, vae }
 }
@@ -188,7 +197,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const minimo = conTurbo(q, imp) ? 4 : 8
 
   if (q.modalita === 'descrivi') {
-    const clip = r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+    const clip = caricaClip(g, imp)
     const inputs: Record<string, unknown> = {
       clip,
       prompt: q.prompt,
@@ -227,10 +236,19 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
 
   if (q.modalita === 'crea') {
     const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
-    const enc = g.add('TextEncodeQwenImage21', { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }, leggo)
+    // con dei riferimenti (<image1>…) Qwen-Image 2.1 li guarda mentre disegna da zero: persone, vestiti, oggetti, stili
+    const inputs: Record<string, unknown> = { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }
+    if (ing.immagini.length) {
+      inputs.vae = vae
+      ing.immagini.slice(0, 16).forEach((im, i) => {
+        const caricata = r(g.add('LoadImage', { image: im.nome }, 'Carico i riferimenti'))
+        inputs[`images.image_${i + 1}`] = r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: 1, resolution_steps: 32 }))
+      })
+    }
+    const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
     const lat = r(g.add('EmptyLatentImage', { width: q.larghezza, height: q.altezza, batch_size: 1 }))
     // il Turbo è stato allenato con la scaletta del rumore che dipende dalla grandezza (come nel suo workflow)
-    const m = conTurbo(q, imp)
+    const m = conTurbo(q, imp) && !modelloTurbo(imp.modello)
       ? r(g.add('ModelSamplingFlux', { model, max_shift: 0.6935, base_shift: 0.5, width: q.larghezza, height: q.altezza }))
       : model
     const ks = campiona(g, q, m, enc, lat, q.passi)
