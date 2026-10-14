@@ -135,6 +135,8 @@ export const usaAlbum = create<StatoAlbum>((set, get) => ({
 function apriImg(src: string): Promise<HTMLImageElement> {
   return new Promise((ok, ko) => {
     const im = new Image()
+    // daprod:// ha il CORS: con crossOrigin il canvas non si "sporca" e si può esportare
+    im.crossOrigin = 'anonymous'
     im.onload = () => ok(im)
     im.onerror = () => ko(new Error('non riesco ad aprire la foto'))
     im.src = src

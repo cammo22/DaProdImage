@@ -6,7 +6,7 @@ import type { Misura } from './componenti/Misura'
 
 export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'lora' | 'impostazioni'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion'
+export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
 
@@ -45,6 +45,8 @@ export interface StatoModifica {
   /** le versioni di questa foto (la prima è l'originale) */
   versioni: FotoBase[]
   riferimenti: FotoBase[]
+  /** modo Esempio: la foto che mostra com'è il risultato che vuoi */
+  esempio: FotoBase | null
   modo: ModoModifica
   prompt: string
   mp: number
@@ -122,7 +124,7 @@ const CREA0: StatoCrea = {
   cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}
 }
 const MOD0: StatoModifica = {
-  base: null, versioni: [], riferimenti: [], modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
+  base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima'
 }
 
@@ -146,7 +148,7 @@ export const usaStato = create<Stato>((set, get) => ({
   lore: [],
   loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
   crea: { ...daVecchio(leggiLocale('dpi-crea', CREA0)), riferimenti: [] },
-  modifica: daVecchioMod({ ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [] }),
+  modifica: daVecchioMod({ ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [], esempio: null }),
   codaAperta: false,
   avvisi: [],
   visore: null,
@@ -169,7 +171,7 @@ export const usaStato = create<Stato>((set, get) => ({
     const modifica = { ...get().modifica, ...m }
     set({ modifica })
     try {
-      const { base: _b, versioni: _v, riferimenti: _r, ...resto } = modifica
+      const { base: _b, versioni: _v, riferimenti: _r, esempio: _e, ...resto } = modifica
       localStorage.setItem('dpi-modifica', JSON.stringify(resto))
     } catch {
       /* niente */

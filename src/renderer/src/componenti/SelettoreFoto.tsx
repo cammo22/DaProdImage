@@ -76,10 +76,10 @@ export function SelettoreFoto(): JSX.Element | null {
           {visibili.map((o) => {
             const n = scelte.indexOf(o.id)
             return (
-              <button key={o.id} className={`miniatura ${n >= 0 ? 'su' : ''} ${o.trasparente ? 'scacchi' : ''}`} onClick={() => clic(o)} title={o.prompt || o.etichetta}>
+              <div key={o.id} role="button" tabIndex={0} className={`miniatura ${n >= 0 ? 'su' : ''} ${o.trasparente ? 'scacchi' : ''}`} onClick={() => clic(o)} onKeyDown={(e) => e.key === 'Enter' && clic(o)} title={o.prompt || o.etichetta}>
                 <img src={urlFile(o.miniatura || o.file)} alt="" loading="lazy" />
                 {n >= 0 && <span className="num">{n + 1}</span>}
-              </button>
+              </div>
             )
           })}
         </div>

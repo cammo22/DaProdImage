@@ -11,6 +11,8 @@ import { PRESET, campiCon, componiPreset } from './preset'
 import { componiCamera } from './componenti/Camera'
 import { dimensioniRis } from './util'
 import { conMisura, type Misura } from './componenti/Misura'
+import { usaRicette, type RicettaUtente } from './ricette'
+import { SISTEMA_SORPRESA } from './azioni'
 import type { ChiaveLora } from './rapide'
 import type { Richiesta } from '@shared/tipi'
 
@@ -34,6 +36,8 @@ export interface PassoWf {
   crea?: { formato: string; ris?: number }
   /** usa solo il riferimento n (per i workflow dove ogni riferimento è un passo) */
   soloRif?: number
+  /** il prompt lo inventa il modello al momento di partire (il passo "Sorpresa") */
+  sorpresa?: boolean
 }
 
 export interface Workflow {
@@ -52,6 +56,8 @@ export interface Workflow {
   passi: (c: Ctx) => PassoWf[]
   /** a cosa serve il LoRA, se ce n'è uno che aiuta */
   nota?: string
+  /** una ricetta fatta da te */
+  utente?: boolean
 }
 
 export const CATEGORIE_WF: { id: string; nome: string; icona: string; testo: string }[] = [
@@ -63,6 +69,7 @@ export const CATEGORIE_WF: { id: string; nome: string; icona: string; testo: str
   { id: 'stili', nome: 'Stili e arte', icona: 'arte', testo: 'La stessa foto in dieci stili, giocattoli, oggetti' },
   { id: 'prodotto', nome: 'Prodotto e business', icona: 'prodotto', testo: 'Foto da catalogo, mockup, formati social' },
   { id: 'grafica', nome: 'Testi e grafica', icona: 'poster', testo: 'Poster, loghi, infografiche in tutti gli stili, testi sulle foto' },
+  { id: 'sticker', nome: 'Sticker e icone', icona: 'sticker', testo: 'Sticker, emoji e icone di qualsiasi cosa: animali, cibo, oggetti, personaggi' },
   { id: 'casa', nome: 'Casa e spazi', icona: 'casa', testo: 'Ristruttura, cambia pareti, arreda' },
   { id: 'ritocco', nome: 'Ritocco e restauro', icona: 'bacchetta', testo: 'Foto vecchie, ritratti, dal disegno al render' }
 ]
@@ -197,7 +204,7 @@ const SERIE = (id: string, nome: string, categoria: string, icona: string, descr
   ...extra
 })
 
-export const WORKFLOW: Workflow[] = [
+export const WORKFLOW_BASE: Workflow[] = [
   // ---- personaggio
   SERIE('pose', 'Il personaggio in 9 pose', 'personaggio', 'ritratto', 'Una foto del personaggio e lo vedi in piedi, seduto, mentre cammina, corre, salta… sempre lo stesso volto e lo stesso vestito.', POSE,
     (d, c) => `Show the same character from ${FOTO} ${d}. Keep exactly the same face, hairstyle, outfit, colors and art style, with the full body visible. ${sfondoDi(c.v)}`, { ingressi: [SFONDO] }),
@@ -221,7 +228,7 @@ export const WORKFLOW: Workflow[] = [
     passi: () => [8, 20, 40, 60, 80].map((n) => E(`${n} anni`, `Show the same person from ${FOTO} as they would look at age ${n}. Keep the identity recognizable, with the same pose, framing and background, and age-appropriate hair, skin and clothes.`))
   },
   {
-    id: 'sticker', nome: 'Pacchetto sticker', categoria: 'personaggio', icona: 'sticker', modo: 'serie', foto: true, rif: 'no', ingressi: [],
+    id: 'sticker', nome: 'Sticker dal tuo personaggio (emozioni)', categoria: 'sticker', icona: 'sticker', modo: 'serie', foto: true, rif: 'no', ingressi: [],
     descrizione: 'Il tuo personaggio come sticker da chat: 8 emozioni, con il bordo bianco e lo sfondo trasparente.',
     passi: () => ['happy', 'laughing', 'sad crying', 'angry', 'surprised', 'in love with heart eyes', 'sleepy', 'thumbs up'].map((e, i) =>
       E(['Felice', 'Ride', 'Piange', 'Arrabbiato', 'Sorpreso', 'Innamorato', 'Assonnato', 'Pollice su'][i], `Turn the subject of ${FOTO} into a cute chibi die-cut sticker expressing: ${e}. Thick white outline, flat colors, clean vector look, centered. Remove the background, and output a PNG image`, { trasparente: true }))
@@ -372,6 +379,56 @@ export const WORKFLOW: Workflow[] = [
   }
 ]
 
+
+// ---- sticker e icone di qualsiasi cosa (non solo persone)
+const STILI_STICKER: [string, string][] = [
+  ['Kawaii', 'a cute kawaii chibi style with big shiny eyes and soft pastel colors'], ['Fumetto', 'a bold cartoon style with thick black outlines and flat bright colors'],
+  ['Vettoriale', 'a clean flat vector illustration with simple geometric shapes'], ['Acquerello', 'a delicate watercolor style with soft bleeding colors'],
+  ['Pixel art', 'a detailed 32-bit pixel art style'], ['Creta 3D', 'a cute 3D clay render with soft lighting'],
+  ['Retro anni \'70', 'a retro 1970s style with warm earthy colors and rounded shapes'], ['Neon', 'a glowing neon line style on dark colors']
+]
+const AZIONI_STICKER: [string, string][] = [
+  ['Saluta', 'waving hello with a big smile'], ['Dorme', 'sleeping peacefully with little "z" bubbles'], ['Festeggia', 'celebrating with confetti and a party hat'],
+  ['Corre', 'running fast with motion lines'], ['Mangia', 'happily eating a snack'], ['Cuore', 'holding a big red heart'],
+  ['Occhiali da sole', 'wearing cool sunglasses, looking confident'], ['Arrabbiato', 'looking grumpy and angry with a little storm cloud']
+]
+const E2 = (etichetta: string, prompt: string): PassoWf => E(etichetta, prompt, { crea: { formato: '1:1', ris: 1024 }, trasparente: true })
+WORKFLOW_BASE.push(
+  {
+    id: 'sticker-tutto', nome: 'Sticker di qualsiasi cosa', categoria: 'sticker', icona: 'sticker', modo: 'serie', foto: false, rif: 'si', rifNome: 'una foto di riferimento (facoltativa)',
+    ingressi: [{ id: 'soggetto', tipo: 'testo', nome: 'Cosa raffigura', esempio: 'un gatto arancione con un cappello da cuoco' }],
+    descrizione: 'Scrivi cosa vuoi (un animale, un cibo, un oggetto, un personaggio…) e ottieni lo sticker in 8 stili: kawaii, fumetto, vettoriale, acquerello, pixel art, creta 3D, retrò, neon. Sfondo trasparente.',
+    passi: (c) => STILI_STICKER.map(([e, d]) => E2(e, `A die-cut sticker of ${(c.v.soggetto || 'a cute animal').trim()}, in ${d}. Thick white die-cut outline, the subject centered and fully visible, no text, on a plain background.`))
+  },
+  {
+    id: 'sticker-azioni', nome: 'Sticker: stessa cosa, tante azioni', categoria: 'sticker', icona: 'sticker', modo: 'serie', foto: false, rif: 'si', rifNome: 'una foto di riferimento (facoltativa)',
+    ingressi: [{ id: 'soggetto', tipo: 'testo', nome: 'Il soggetto', esempio: 'una pizza margherita con occhi e braccia' }],
+    descrizione: 'Un soggetto qualsiasi (non solo persone) che saluta, dorme, festeggia, corre, mangia, regge un cuore, ha gli occhiali da sole o è arrabbiato: un pacchetto per le chat.',
+    passi: (c) => AZIONI_STICKER.map(([e, d]) => E2(e, `A cute die-cut sticker of ${(c.v.soggetto || 'a friendly mascot').trim()} ${d}. Consistent character design, thick white die-cut outline, flat colors, centered, no extra text.`))
+  },
+  {
+    id: 'sticker-lista', nome: 'Sticker da una lista', categoria: 'sticker', icona: 'sticker', modo: 'serie', foto: false, rif: 'no',
+    ingressi: [
+      { id: 'soggetti', tipo: 'righe', nome: 'Un soggetto per riga', esempio: 'una pizza\nun gatto astronauta\nuna chitarra elettrica\nun fiore di loto' },
+      { id: 'stile', tipo: 'scelta', nome: 'Stile', predefinita: 'kawaii', opzioni: [{ id: 'kawaii', nome: 'Kawaii' }, { id: 'fumetto', nome: 'Fumetto' }, { id: 'vettoriale', nome: 'Vettoriale' }, { id: 'acquerello', nome: 'Acquerello' }] }
+    ],
+    descrizione: 'Scrivi una cosa per riga (anche venti): ognuna diventa uno sticker nello stesso stile, con lo sfondo trasparente.',
+    passi: (c) => {
+      const stile = { kawaii: 'a cute kawaii chibi style', fumetto: 'a bold cartoon style with thick outlines', vettoriale: 'a clean flat vector style', acquerello: 'a soft watercolor style' }[c.v.stile || 'kawaii'] || 'a cute kawaii chibi style'
+      return righe(c.v.soggetti).slice(0, 40).map((r) => E2(r.slice(0, 28), `A die-cut sticker of ${r}, in ${stile}. Thick white die-cut outline, centered, fully visible, no text.`))
+    }
+  },
+  {
+    id: 'icone-set', nome: 'Set di icone coerenti', categoria: 'sticker', icona: 'app', modo: 'serie', foto: false, rif: 'no',
+    ingressi: [
+      { id: 'icone', tipo: 'righe', nome: 'Un\'icona per riga', esempio: 'una casa\nuna lente d\'ingrandimento\nun carrello della spesa\nuna campana' },
+      { id: 'stile', tipo: 'testo', nome: 'Lo stile', esempio: 'flat design colorato con angoli arrotondati e un\'ombra morbida' }
+    ],
+    descrizione: 'Un set di icone (app, sito, presentazioni) tutte nello stesso stile, su fondo trasparente.',
+    passi: (c) => righe(c.v.icone).slice(0, 40).map((r) => E2(r.slice(0, 28), `An app icon of ${r}, ${(c.v.stile || 'flat colorful design with rounded corners').trim()}. Centered, a single object, consistent style and palette, no text, plain background.`))
+  }
+)
+
 // ---------------------------------------------------------------------------------------------------------------
 // la grafica: ogni preset di Crea in tutti i suoi stili (poster, loghi, infografiche, menù…)
 // ---------------------------------------------------------------------------------------------------------------
@@ -379,7 +436,7 @@ const DA_PRESET = ['poster', 'infografica', 'logo', 'social', 'miniatura', 'cope
 for (const id of DA_PRESET) {
   const p = PRESET.find((x) => x.id === id)
   if (!p || p.stili.length < 2) continue
-  WORKFLOW.push({
+  WORKFLOW_BASE.push({
     id: 'preset-' + p.id, nome: `${p.nome} in ${p.stili.length} stili`, categoria: 'grafica', icona: p.icona, modo: 'serie', foto: false, rif: 'no',
     descrizione: `${p.descrizione}: compili i campi una volta e ottieni ${p.stili.length} versioni, una per stile (${p.stili.map((s) => s.nome.toLowerCase()).join(', ')}).`,
     ingressi: p.campi.map((c): Ingresso => ({ id: c.id, tipo: c.tipo === 'righe' ? 'righe' : 'testo', nome: c.nome, esempio: c.esempio, opzionale: false })),
@@ -387,7 +444,47 @@ for (const id of DA_PRESET) {
   })
 }
 
-export const workflowDa = (id: string): Workflow | undefined => WORKFLOW.find((w) => w.id === id)
+/** il passo "Sorpresa": in ogni ricetta, una variazione inventata dal modello al momento di partire */
+export const SORPRESA = '🎲 Sorpresa'
+
+/** una ricetta fatta da te come workflow: i {campi} nei prompt prendono i valori, {riga} una riga alla volta */
+export function daUtente(r: RicettaUtente): Workflow {
+  const metti = (t: string, v: Record<string, string>, riga?: string): string =>
+    t.replace(/\{(\w+)\}/g, (m, k: string) => (k === 'riga' && riga !== undefined ? riga : k in v ? (v[k] || '').trim() : m))
+  return {
+    id: r.id, nome: r.nome, categoria: r.categoria, icona: r.foto ? 'ritratto' : 'bacchetta', modo: r.modo, foto: r.foto, rif: r.rif, rifNome: r.rifNome,
+    descrizione: r.descrizione, ingressi: r.ingressi, utente: true,
+    passi: (c) =>
+      r.passi.flatMap((p): PassoWf[] => {
+        const base: Partial<PassoWf> = { trasparente: p.trasparente, lora: p.lora as ChiaveLora[] | undefined, crea: p.crea }
+        if (p.perRiga) {
+          return righe(c.v[p.perRiga]).map((riga) => E(metti(p.etichetta, c.v, riga) || riga.slice(0, 24), metti(p.prompt, c.v, riga), base))
+        }
+        return [E(metti(p.etichetta, c.v), metti(p.prompt, c.v), base)]
+      })
+  }
+}
+
+/** una ricetta che c'è già, come ricetta tua (si può cambiare): i campi di testo diventano {segnaposto} nei prompt */
+export function inUtente(w: Workflow, id = 'u-' + crypto.randomUUID().slice(0, 8)): RicettaUtente {
+  const v: Record<string, string> = {}
+  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : `{${i.id}}`
+  const passi = w.passi({ v, nRif: w.rif === 'ognuno' ? 3 : 1, camera: !!fileLoraCamera() })
+  return {
+    id, nome: w.nome + ' (mia)', categoria: w.categoria, descrizione: w.descrizione, modo: w.modo, foto: w.foto, rif: w.rif, rifNome: w.rifNome,
+    ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta'),
+    passi: passi.map((p) => ({ etichetta: p.etichetta, prompt: p.prompt, crea: p.crea, trasparente: p.trasparente, lora: p.lora })),
+    da: w.id
+  }
+}
+
+/** tutte le ricette che si vedono: quelle di serie (meno le nascoste) e le tue */
+export function elencoWorkflow(): Workflow[] {
+  const { utente, nascoste } = usaRicette.getState()
+  return [...WORKFLOW_BASE.filter((w) => !nascoste.includes(w.id)), ...utente.map(daUtente)]
+}
+
+export const workflowDa = (id: string): Workflow | undefined => elencoWorkflow().find((w) => w.id === id) || WORKFLOW_BASE.find((w) => w.id === id)
 
 /** il valore di partenza di ogni campo (gli esempi si scrivono da soli, si ritoccano) */
 export function valoriIniziali(w: Workflow): Record<string, string> {
@@ -401,6 +498,8 @@ export function valoriIniziali(w: Workflow): Record<string, string> {
 // ---------------------------------------------------------------------------------------------------------------
 export interface PassoRun {
   etichetta: string
+  /** il prompt inventato (passo Sorpresa) */
+  prompt?: string
   lavoroId?: string
   operaId?: string
   stato: 'attesa' | 'in coda' | 'fatto' | 'errore' | 'annullato'
@@ -412,8 +511,8 @@ export interface OpzioniRun {
   mp: number
   /** le dimensioni dell'immagine che esce (per i passi che modificano la foto) */
   misura?: Misura
-  /** i passi che non si fanno (per etichetta): se ti serve una foto sola non le fai tutte */
-  escludi?: string[]
+  /** i passi da fare (per etichetta): se ti serve una posa sola non le fai tutte */
+  fai?: string[]
 }
 
 export interface Run {
@@ -445,7 +544,26 @@ const aggiorna = (id: string, f: (r: Run) => void): void =>
 
 /** i passi del workflow con questi ingressi (serve per contarli prima di partire) */
 export function passiDi(w: Workflow, v: Record<string, string>, nRif: number): PassoWf[] {
-  return w.passi({ v, nRif, camera: !!fileLoraCamera() })
+  return conSorpresa(w.passi({ v, nRif, camera: !!fileLoraCamera() }))
+}
+
+/** ai passi della ricetta si aggiunge sempre "Sorpresa" (prende formato e sfondo trasparente dal primo passo) */
+function conSorpresa(passi: PassoWf[]): PassoWf[] {
+  const primo = passi[0]
+  return [...passi, { etichetta: SORPRESA, prompt: '', sorpresa: true, crea: primo?.crea, trasparente: primo?.trasparente }]
+}
+
+/** il prompt del passo Sorpresa: lo inventa il Qwen3-VL guardando la ricetta e qualche esempio */
+async function inventaPrompt(run: Run, wf: Workflow | undefined): Promise<string> {
+  const esempi = run.definizione.filter((p) => !p.sorpresa && p.prompt).slice(0, 4).map((p) => `- ${p.prompt}`)
+  const seed = Math.floor(Math.random() * 2 ** 31)
+  const richiesta = `Recipe: ${run.nome}\nDescription: ${wf?.descrizione || run.nome}\nExample prompts:\n${esempi.join('\n') || '- (none)'}\n\nNew variation (random idea ${seed % 9973}):`
+  const t = await api.testo.scrivi({
+    ...richiestaBase(), modalita: 'descrivi', prompt: richiesta, sistema: SISTEMA_SORPRESA, maxToken: 220, temperatura: 1.1, seed, immagini: [], etichetta: 'Idea a sorpresa'
+  })
+  const pulito = (t || '').trim().replace(/^["']|["']$/g, '')
+  if (!pulito) throw new Error('il modello non ha trovato un\'idea: riprova')
+  return pulito
 }
 
 /** il lavoro per un passo: modifica la foto (o disegna da zero con i riferimenti) */
@@ -482,7 +600,16 @@ async function accodaPasso(runId: string, i: number, base: FotoBase | null): Pro
   const run = usaLab.getState().runs.find((r) => r.id === runId)
   if (!run || run.fermata) return
   try {
-    const ids = await api.lavori.accoda(richiestaPasso(run, i, base))
+    if (run.definizione[i].sorpresa) {
+      const p = await inventaPrompt(run, workflowDa(run.wfId))
+      aggiorna(runId, (r) => {
+        r.definizione[i] = { ...r.definizione[i], prompt: p }
+        r.passi[i].prompt = p
+      })
+    }
+    const corrente = usaLab.getState().runs.find((r) => r.id === runId)
+    if (!corrente || corrente.fermata) return
+    const ids = await api.lavori.accoda(richiestaPasso(corrente, i, base))
     aggiorna(runId, (r) => {
       r.passi[i].lavoroId = ids[0]
       r.passi[i].stato = 'in coda'
@@ -509,27 +636,46 @@ export function manca(w: Workflow, i: Pick<IngressiRun, 'foto' | 'rif'>): string
   return null
 }
 
-export async function avviaWorkflow(w: Workflow, i: IngressiRun): Promise<string | null> {
+export async function avviaWorkflow(w: Workflow, i: IngressiRun, suffisso = ''): Promise<string | null> {
   const m = manca(w, i)
   if (m) {
     usaStato.getState().avvisa(m, 'errore')
     return null
   }
   const ctx: Ctx = { v: i.valori, nRif: i.rif.length, camera: !!fileLoraCamera() }
-  const escludi = new Set(i.opzioni.escludi || [])
-  const definizione = w.passi(ctx).filter((p) => !escludi.has(p.etichetta))
+  const tutti = conSorpresa(w.passi(ctx))
+  // senza una scelta si fanno tutti i passi tranne la sorpresa
+  const fai = i.opzioni.fai ? new Set(i.opzioni.fai) : null
+  const definizione = tutti.filter((p) => (fai ? fai.has(p.etichetta) : !p.sorpresa))
   if (!definizione.length) {
     usaStato.getState().avvisa('Scegli almeno un passo da fare', 'errore')
     return null
   }
   const run: Run = {
-    id: crypto.randomUUID(), wfId: w.id, nome: w.nome, base: i.foto, rif: i.rif, definizione, opzioni: i.opzioni, ctx,
+    id: crypto.randomUUID(), wfId: w.id, nome: w.nome + suffisso, base: i.foto, rif: i.rif, definizione, opzioni: i.opzioni, ctx,
     passi: definizione.map((p) => ({ etichetta: p.etichetta, stato: 'attesa' as const })), seed: Math.floor(Math.random() * 2 ** 32), creato: Date.now()
   }
-  usaLab.setState((s) => ({ runs: [run, ...s.runs].slice(0, 12), attiva: run.id, vista: 'risultati' }))
+  usaLab.setState((s) => ({ runs: [run, ...s.runs].slice(0, 40), attiva: run.id, vista: 'risultati' }))
   if (w.modo === 'serie') for (let n = 0; n < definizione.length; n++) await accodaPasso(run.id, n, i.foto)
   else await accodaPasso(run.id, 0, i.foto)
   return run.id
+}
+
+/** più foto insieme: la ricetta parte per ognuna, tutto in coda (una ricetta per foto nei risultati) */
+export async function avviaLotto(w: Workflow, i: Omit<IngressiRun, 'foto'> & { foto: FotoBase[] }): Promise<number> {
+  if (!w.foto || i.foto.length === 0) return (await avviaWorkflow(w, { ...i, foto: i.foto[0] || null })) ? 1 : 0
+  let n = 0
+  let primo: string | null = null
+  for (let k = 0; k < i.foto.length; k++) {
+    const id = await avviaWorkflow(w, { ...i, foto: i.foto[k] }, i.foto.length > 1 ? ` · foto ${k + 1}/${i.foto.length}` : '')
+    if (id) {
+      n++
+      primo ??= id
+    }
+  }
+  // nei risultati si vede subito la prima foto
+  if (primo) usaLab.setState({ attiva: primo })
+  return n
 }
 
 export async function fermaRun(id: string): Promise<void> {

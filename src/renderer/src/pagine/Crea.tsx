@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { usaStato, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
+import { AdattaFoto } from '../componenti/AdattaFoto'
 import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
@@ -373,16 +374,9 @@ export function Crea(): JSX.Element {
 export function InCorso({ l, ar }: { l: Lavoro; ar: string }): JSX.Element {
   const [nat, setNat] = useState<number | null>(null)
   const [a, b] = ar.split('/').map((x) => Number(x.trim()) || 1)
-  const arn = nat ?? a / b
   return (
-    <div className="in-corso">
-      <div className="adatta" style={{ ['--arn' as string]: arn }}>
-        {l.anteprima ? (
-          <img src={l.anteprima} alt="" onLoad={(e) => setNat(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)} />
-        ) : (
-          <div className="attesa-grande" />
-        )}
-      </div>
-    </div>
+    <AdattaFoto ar={nat ?? a / b} margine={22}>
+      {l.anteprima ? <img src={l.anteprima} alt="" onLoad={(e) => setNat(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)} /> : <div className="attesa-grande" />}
+    </AdattaFoto>
   )
 }

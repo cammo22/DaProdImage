@@ -10,6 +10,23 @@ export const MISURA0: Misura = { tipo: 'auto' }
 
 const LATO_MAX = 8192
 const LATI = [1024, 1536, 2048, 3000, 4096]
+/** i formati (proporzioni) da cliccare */
+const FORMATI_MISURA: { id: string; r: [number, number] }[] = [
+  { id: '1:1', r: [1, 1] }, { id: '4:5', r: [4, 5] }, { id: '3:2', r: [3, 2] }, { id: '4:3', r: [4, 3] },
+  { id: '16:9', r: [16, 9] }, { id: '9:16', r: [9, 16] }, { id: '21:9', r: [21, 9] }
+]
+/** le risoluzioni più usate */
+const RISOLUZIONI_USUALI: { nome: string; w: number; h: number; titolo: string }[] = [
+  { nome: 'HD', w: 1280, h: 720, titolo: '1280 × 720' },
+  { nome: 'Full HD', w: 1920, h: 1080, titolo: '1920 × 1080' },
+  { nome: '2K', w: 2560, h: 1440, titolo: '2560 × 1440' },
+  { nome: '4K', w: 3840, h: 2160, titolo: '3840 × 2160' },
+  { nome: 'Instagram', w: 1080, h: 1350, titolo: '1080 × 1350 (4:5)' },
+  { nome: 'Storia', w: 1080, h: 1920, titolo: '1080 × 1920 (9:16)' },
+  { nome: 'Quadrata', w: 1080, h: 1080, titolo: '1080 × 1080' },
+  { nome: 'A4 300 dpi', w: 2480, h: 3508, titolo: '2480 × 3508' },
+  { nome: 'Foto 10×15', w: 1800, h: 1200, titolo: '1800 × 1200 (300 dpi)' }
+]
 
 /** la parte della richiesta che dice la misura finale (niente se si lascia fare al modello) */
 export function conMisura(m: Misura | undefined, base: { larghezza: number; altezza: number } | null): Pick<Richiesta, 'uscita'> | Record<string, never> {
@@ -27,6 +44,8 @@ export function SceltaMisura(p: {
   base: { larghezza: number; altezza: number } | null
   /** i megapixel a cui lavora il modello, per dirlo chiaro */
   mp: number
+  /** quali scelte offrire (Fusion non ha l'originale) */
+  ammetti?: ('auto' | 'originale' | 'custom')[]
 }): JSX.Element {
   const [blocca, setBlocca] = useState(true)
   const ar = p.base ? p.base.larghezza / p.base.altezza : 1
@@ -41,6 +60,14 @@ export function SceltaMisura(p: {
     const w = orizz ? lungo : lungo * ar
     const h = orizz ? lungo / ar : lungo
     p.cambia({ tipo: 'custom', w: limita(w), h: limita(h) })
+  }
+  /** un formato (proporzioni): il lato lungo resta com'è (o 2048 se non c'era una misura) */
+  const conFormato = (r: [number, number]): void => {
+    const lungo = Math.max(custom.w, custom.h)
+    const orizz = r[0] >= r[1]
+    const ar2 = r[0] / r[1]
+    setBlocca(false)
+    p.cambia({ tipo: 'custom', w: limita(orizz ? lungo : lungo * ar2), h: limita(orizz ? lungo / ar2 : lungo) })
   }
   const cambiaW = (w: number): void => {
     const nw = limita(w)
@@ -58,10 +85,10 @@ export function SceltaMisura(p: {
         valore={v.tipo}
         cambia={(tipo) => p.cambia(tipo === 'auto' ? { tipo: 'auto' } : tipo === 'originale' ? { tipo: 'originale' } : custom)}
         voci={[
-          { id: 'auto', nome: 'Auto', sotto: `${mpTesto} MP`, titolo: 'Esce grande quanto i megapixel scelti, con le proporzioni della foto' },
-          { id: 'originale', nome: 'Originale', sotto: p.base ? `${p.base.larghezza}×${p.base.altezza}` : 'come la foto', titolo: 'Esce grande esattamente come la foto di partenza' },
-          { id: 'custom', nome: 'Misura mia', sotto: 'scelgo io' }
-        ]}
+          { id: 'auto' as const, nome: 'Auto', sotto: `${mpTesto} MP`, titolo: 'Esce grande quanto i megapixel scelti, con le proporzioni della foto' },
+          { id: 'originale' as const, nome: 'Originale', sotto: p.base ? `${p.base.larghezza}×${p.base.altezza}` : 'come la foto', titolo: 'Esce grande esattamente come la foto di partenza' },
+          { id: 'custom' as const, nome: 'Misura mia', sotto: 'scelgo io' }
+        ].filter((x) => (p.ammetti || ['auto', 'originale', 'custom']).includes(x.id))}
       />
       {v.tipo === 'custom' && (
         <div className="misura-campi">
@@ -73,9 +100,23 @@ export function SceltaMisura(p: {
             <input type="number" min={64} max={LATO_MAX} step={16} value={v.h} onChange={(e) => cambiaH(Number(e.target.value))} aria-label="Altezza" />
             <span className="piccolo tenue">px</span>
           </div>
-          <div className="riga a-capo" style={{ gap: 6, marginTop: 8 }}>
+          <span className="piccolo tenue" style={{ display: 'block', marginTop: 10 }}>Formato</span>
+          <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
+            {FORMATI_MISURA.map((f) => {
+              const su = Math.abs(v.w / v.h - f.r[0] / f.r[1]) < 0.01
+              return <button key={f.id} className={`chip ${su ? 'su' : ''}`} onClick={() => conFormato(f.r)} title={`Proporzioni ${f.id}, tenendo il lato lungo`}>{f.id}</button>
+            })}
+          </div>
+          <span className="piccolo tenue" style={{ display: 'block', marginTop: 10 }}>Risoluzioni usuali</span>
+          <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
+            {RISOLUZIONI_USUALI.map((r) => (
+              <button key={r.nome} className={`chip ${v.w === r.w && v.h === r.h ? 'su' : ''}`} onClick={() => { setBlocca(false); p.cambia({ tipo: 'custom', w: r.w, h: r.h }) }} title={r.titolo}>{r.nome}</button>
+            ))}
+          </div>
+          <span className="piccolo tenue" style={{ display: 'block', marginTop: 10 }}>Lato lungo</span>
+          <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
             {LATI.map((l) => (
-              <button key={l} className="chip" onClick={() => conLato(l)} title={`Il lato lungo a ${l} px`}>{l >= 3000 ? `${Math.round(l / 1024)}K` : l}</button>
+              <button key={l} className={`chip ${Math.max(v.w, v.h) === l ? 'su' : ''}`} onClick={() => conLato(l)} title={`Il lato lungo a ${l} px`}>{l >= 3000 ? `${Math.round(l / 1024)}K` : l}</button>
             ))}
           </div>
         </div>

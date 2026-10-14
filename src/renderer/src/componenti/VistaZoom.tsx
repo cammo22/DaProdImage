@@ -9,13 +9,14 @@ interface Vista {
   y: number
 }
 
-export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactNode; margine?: number }): JSX.Element {
+export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactNode; margine?: number; /** un clic sullo sfondo, fuori dalla foto (come la ✕ di un visore) */ onFuori?: () => void }): JSX.Element {
   const box = useRef<HTMLDivElement>(null)
   const [dim, setDim] = useState({ w: 0, h: 0 })
   const [nat, setNat] = useState({ w: 0, h: 0 })
   // null = adattata alla finestra (si ricalcola da sola quando la finestra cambia)
   const [vista, setVista] = useState<Vista | null>(null)
   const trascina = useRef<{ cx: number; cy: number; x: number; y: number } | null>(null)
+  const mosso = useRef(false)
   const margine = p.margine ?? 24
 
   useEffect(() => {
@@ -65,14 +66,21 @@ export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactN
         if (e.button !== 0 && e.button !== 1) return
         ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
         trascina.current = { cx: e.clientX, cy: e.clientY, x: v.x, y: v.y }
+        mosso.current = false
       }}
       onPointerMove={(e) => {
         const t = trascina.current
         if (!t) return
         if (Math.abs(e.clientX - t.cx) + Math.abs(e.clientY - t.cy) < 3 && !vista) return
+        mosso.current = true
         setVista({ s: v.s, x: t.x + e.clientX - t.cx, y: t.y + e.clientY - t.cy })
       }}
-      onPointerUp={() => (trascina.current = null)}
+      onPointerUp={(e) => {
+        const era = trascina.current
+        trascina.current = null
+        // un clic (senza trascinare) sullo sfondo vuoto, non sulla foto né sui comandi
+        if (era && !mosso.current && p.onFuori && e.target === e.currentTarget) p.onFuori()
+      }}
       onDoubleClick={(e) => {
         const r = box.current!.getBoundingClientRect()
         if (vista && Math.abs(v.s - 1) < 0.01) setVista(null)
