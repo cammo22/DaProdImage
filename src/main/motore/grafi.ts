@@ -3,6 +3,7 @@
 // e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
 import { modelloTurbo } from '@shared/tipi'
 import type { Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
+import type { ChiaviRtx } from './cliente'
 
 /** il profilo di memoria: con poca VRAM il VAE lavora a tessere (niente picchi che finiscono nella RAM condivisa) */
 export type Memoria = 'bassa' | 'normale' | 'alta'
@@ -138,15 +139,25 @@ export function doveNelRiquadro(zona: Riquadro, box: { x: number; y: number; w: 
   return o || v ? `the ${[v, o].filter(Boolean).join(' ')} part` : 'the center'
 }
 
+/** ingrandisce di circa `fattore` volte: con l'ingranditore NVIDIA RTX (se il motore lo ha) o col modello (4x-UltraSharp, 4×) */
+function ingrandisciImg(g: Grafo, imp: Impostazioni, rtx: ChiaviRtx | null | undefined, img: Rif, fattore: number): Rif {
+  if (rtx && imp.upscalerRtx) {
+    const inputs: Record<string, unknown> = { images: img, resize_type: rtx.scala, 'resize_type.scale': Math.max(1, Math.min(4, fattore)), quality: rtx.quality, strength: 1 }
+    if (rtx.codifica) inputs.image_encoding = rtx.codifica
+    return r(g.add('RTXVideoSuperResolution', inputs, 'Ingrandisco (NVIDIA RTX)'))
+  }
+  const um = r(g.add('UpscaleModelLoader', { model_name: imp.upscaler }, 'Carico l\'ingranditore'))
+  return r(g.add('ImageUpscaleWithModel', { upscale_model: um, image: img }, 'Ingrandisco'))
+}
+
 /** porta l'immagine (grande w × h) alla misura esatta chiesta in `q.uscita`: riduce, o con l'ingranditore se serve molto di più;
  *  con proporzioni diverse taglia al centro */
-function allaMisura(g: Grafo, q: Richiesta, imp: Impostazioni, img: Rif, w: number, h: number): Rif {
+function allaMisura(g: Grafo, q: Richiesta, imp: Impostazioni, img: Rif, w: number, h: number, rtx?: ChiaviRtx | null): Rif {
   const u = q.uscita
   if (!u || (Math.abs(u.w - w) < 2 && Math.abs(u.h - h) < 2)) return img
   let x = img
   if (Math.max(u.w / w, u.h / h) > 1.5 && imp.upscaler && !q.trasparente) {
-    const um = r(g.add('UpscaleModelLoader', { model_name: imp.upscaler }, 'Carico l\'ingranditore'))
-    x = r(g.add('ImageUpscaleWithModel', { upscale_model: um, image: x }, 'Ingrandisco'))
+    x = ingrandisciImg(g, imp, rtx, x, Math.max(u.w / w, u.h / h))
   }
   return r(g.add('ImageScale', { image: x, upscale_method: 'lanczos', width: u.w, height: u.h, crop: 'center' }, 'Porto alla misura'))
 }
@@ -204,7 +215,7 @@ export function riquadroLavoro(
   return { x, y, w, h, tw: m32(w * s), th: m32(h * s) }
 }
 
-export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefisso: string, memoria: Memoria = 'normale'): GrafoPronto {
+export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefisso: string, memoria: Memoria = 'normale', rtx?: ChiaviRtx | null): GrafoPronto {
   const g = new Grafo(memoria)
   const neg = q.negativo || ''
   const minimo = conTurbo(q, imp) ? 4 : 8
@@ -240,9 +251,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
 
   if (q.modalita === 'ingrandisci') {
     const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Carico la foto'))
-    const um = r(g.add('UpscaleModelLoader', { model_name: imp.upscaler }, 'Carico l\'ingranditore'))
-    const su = r(g.add('ImageUpscaleWithModel', { upscale_model: um, image: img }, 'Ingrandisco'))
     const f = q.fattore || 2
+    const su = ingrandisciImg(g, imp, rtx, img, f)
     const W = Math.round(ing.immagini[0].larghezza * f)
     const H = Math.round(ing.immagini[0].altezza * f)
     const fin = r(g.add('ImageScale', { image: su, upscale_method: 'lanczos', width: W, height: H, crop: 'disabled' }, 'Rifinisco'))
@@ -272,7 +282,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       : model
     const ks = campiona(g, q, m, enc, lat, q.passi)
     const mp = (q.larghezza * q.altezza) / 1048576
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), q.larghezza, q.altezza), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), q.larghezza, q.altezza, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
   }
 
@@ -287,7 +297,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const ks = campiona(g, q, model, enc, r(enc, 2), q.passi)
     const d = dimensioniPer(q.megapixel, ing.immagini[0].larghezza, ing.immagini[0].altezza)
     const mp = (d.w * d.h) / 1048576
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), d.w, d.h), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), d.w, d.h, rtx), prefisso)
     const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi, area }
   }
@@ -307,8 +317,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     }
     let img = r(g.add('LoadImage', { image: im.nome }, 'Carico la foto'))
     if (f > 1) {
-      const um = r(g.add('UpscaleModelLoader', { model_name: imp.upscaler }, 'Carico l\'ingranditore'))
-      img = r(g.add('ImageUpscaleWithModel', { upscale_model: um, image: img }, 'Ingrandisco'))
+      img = ingrandisciImg(g, imp, rtx, img, f)
     }
     img = r(g.add('ImageScale', { image: img, upscale_method: 'lanczos', width: W, height: H, crop: 'disabled' }))
     const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
@@ -318,7 +327,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
     const passi = passiPer(q.passi, forza, minimo)
     const ks = campiona(g, q, model, enc, lat, passi, forza)
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), W, H), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), W, H, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
 
@@ -445,7 +454,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     mFin = r(g.add('ImageToMask', { image: b, channel: 'red' }))
   }
   const finale = r(g.add('ImageCompositeMasked', { destination: foto, source: indietro, x: box.x, y: box.y, resize_source: false, mask: mFin }))
-  const uscita = salva(g, allaMisura(g, q, imp, finale, W, H), prefisso)
+  const uscita = salva(g, allaMisura(g, q, imp, finale, W, H, rtx), prefisso)
   // l'anteprima si posa sulla foto di partenza: per Espandi la tela comincia prima dei bordi
   const b0 = q.modalita === 'espandi' ? q.bordi || { sinistra: 0, sopra: 0, destra: 0, sotto: 0 } : { sinistra: 0, sopra: 0 }
   const area = { x: box.x - b0.sinistra, y: box.y - b0.sopra, w: box.w, h: box.h }

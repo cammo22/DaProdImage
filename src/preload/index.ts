@@ -12,7 +12,7 @@ const api = {
   impostazioni: { leggi: chiama('impostazioni:leggi'), salva: chiama('impostazioni:salva') },
   sistema: { controllo: chiama('sistema:controllo') },
   setup: { cerca: chiama('setup:cerca'), stato: chiama('setup:stato'), avvia: chiama('setup:avvia'), annulla: chiama('setup:annulla') },
-  modelli: { stato: chiama('modelli:stato'), file: chiama('modelli:file'), scarica: chiama('modelli:scarica'), annulla: chiama('download:annulla') },
+  modelli: { stato: chiama('modelli:stato'), file: chiama('modelli:file'), scarica: chiama('modelli:scarica'), annulla: chiama('download:annulla'), inutilizzati: chiama('modelli:inutilizzati'), elimina: chiama('modelli:elimina') },
   motore: {
     info: chiama('motore:info'), avvia: chiama('motore:avvia'), riavvia: chiama('motore:riavvia'), ferma: chiama('motore:ferma'),
     log: chiama('motore:log'), libera: chiama('motore:libera'), apriComfy: chiama('motore:apriComfy')

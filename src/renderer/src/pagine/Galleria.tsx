@@ -277,7 +277,7 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
         {confronta && origine ? (
           <PrimaDopo prima={urlFile(origine.file)} dopo={urlFile(attuale.file)} stile={{ maxHeight: 'calc(100vh - 90px)' }} />
         ) : (
-          <VistaZoom src={urlFile(attuale.file)} scacchi={attuale.trasparente} />
+          <VistaZoom src={urlFile(attuale.file)} scacchi={attuale.trasparente} onFuori={() => apriVisore(null)} />
         )}
         {i > 0 && <button className="freccia sx" onClick={() => apriVisore(opere[i - 1])}>‹</button>}
         {i < opere.length - 1 && <button className="freccia dx" onClick={() => apriVisore(opere[i + 1])}>›</button>}
@@ -299,6 +299,8 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
           </div>
           <div className="sezione">
             <dl className="dati">
+              {attuale.etichetta && attuale.etichetta !== 'Bozza' && <><dt>Effetto</dt><dd>{attuale.etichetta}</dd></>}
+              <dt>Tipo</dt><dd>{ETICHETTE_MODALITA[attuale.modalita]}</dd>
               <dt>Dimensioni</dt><dd>{attuale.larghezza} × {attuale.altezza}</dd>
               <dt>Seed</dt><dd>{attuale.seed}</dd>
               <dt>Passi</dt><dd>{attuale.passi} · cfg {attuale.cfg} · {attuale.sampler}/{attuale.scheduler}</dd>

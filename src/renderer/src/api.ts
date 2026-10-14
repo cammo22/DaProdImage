@@ -13,6 +13,13 @@ export interface RiassuntoAlbum {
   foto: number
   copertina?: string
 }
+export interface FileInutile {
+  percorso: string
+  nome: string
+  cartella: string
+  byte: number
+  motivo: string
+}
 export interface PaginaPdf {
   jpeg: string
   larghezza: number
@@ -49,7 +56,10 @@ export interface Api {
     avvia(o: OpzioniSetup): Promise<boolean>
     annulla(): Promise<void>
   }
-  modelli: { stato(): Promise<StatoVoce[]>; file(): Promise<FileModelli>; scarica(id: string): Promise<Download>; annulla(id: string): Promise<void> }
+  modelli: {
+    stato(): Promise<StatoVoce[]>; file(): Promise<FileModelli>; scarica(id: string): Promise<Download>; annulla(id: string): Promise<void>
+    inutilizzati(): Promise<FileInutile[]>; elimina(percorso: string): Promise<void>
+  }
   motore: {
     info(): Promise<InfoMotore>; avvia(): Promise<void>; riavvia(): Promise<void>; ferma(): Promise<void>
     log(): Promise<string[]>; libera(): Promise<void>; apriComfy(): Promise<void>

@@ -164,7 +164,7 @@ function Grande({ l, opera, chiudi }: { l: Lavoro; opera?: Opera; chiudi: () => 
   return (
     <div className="visore coda-grande" style={{ gridTemplateColumns: '1fr 320px' }} onClick={(e) => e.target === e.currentTarget && chiudi()}>
       <div className="immagine" onClick={(e) => e.target === e.currentTarget && chiudi()}>
-        {src ? <VistaZoom src={src} /> : <div className="spento" style={{ padding: 40 }}>Non c'è ancora niente da vedere: parte fra poco.</div>}
+        {src ? <VistaZoom src={src} onFuori={chiudi} /> : <div className="spento" style={{ padding: 40 }}>Non c'è ancora niente da vedere: parte fra poco.</div>}
       </div>
       <div className="info">
         <div className="riga spazia sezione">

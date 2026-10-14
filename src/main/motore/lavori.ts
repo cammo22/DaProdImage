@@ -9,7 +9,7 @@ import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
 import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
-import { accoda, caricaImmagine, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
+import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
@@ -284,7 +284,9 @@ async function esegui(l: Lavoro): Promise<void> {
     if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
     tempiPasso = []
     ultimoPasso = 0
-    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale))
+    // l'ingranditore NVIDIA RTX, se il motore ce l'ha e non l'hai spento in Opzioni
+    const rtx = imp.upscalerRtx ? await chiaviRtx().catch(() => null) : null
+    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi

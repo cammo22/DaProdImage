@@ -17,6 +17,7 @@ import { seguiRisorse } from './risorse'
 import { aggiornaLora, elencoLora, eliminaLora, importaLora, scaricaLora } from './lora'
 import { leggiMetadati } from './png'
 import { caricaAlbum, creaPdf, elencoAlbum, eliminaAlbum, preparaFoto, salvaAlbum, salvaEsportata, salvaFotoAlbum } from './album'
+import { avviaIdle, fileInutilizzati } from './idle'
 import { avviaAggiornamenti, controllaAggiornamenti, installaAggiornamento, statoAggiornamento, suAggiornamento } from './aggiornamenti'
 
 // corsEnabled: le <img crossOrigin> (canvas) e la mask-image della zona leggono da qui con il CORS
@@ -141,6 +142,13 @@ function registraIpc(): void {
       vae: leggi('vae', /\.safetensors$/i),
       upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i)
     }
+  })
+  gestisci('modelli:inutilizzati', () => fileInutilizzati())
+  gestisci('modelli:elimina', async (percorso: string) => {
+    // solo dentro la cartella dei modelli, e nel cestino (si può recuperare)
+    const n = normalize(percorso).toLowerCase()
+    if (!n.startsWith(normalize(impostazioni().cartellaModelli).toLowerCase())) throw new Error('questo file non è nella cartella dei modelli')
+    await shell.trashItem(percorso)
   })
   gestisci('modelli:scarica', async (id: string) => {
     const v = statoModelli().find((x) => x.id === id)
@@ -370,6 +378,25 @@ app.whenReady().then(() => {
   seguiRisorse((r) => invia('risorse', r), () => !!finestra && !finestra.isDestroyed() && finestra.isVisible() && !finestra.isMinimized())
   if (motoreInstallato() && impostazioni().installato) void avviaEMotore().catch(() => undefined)
   avviaAggiornamenti()
+  // quando l'app è ferma scarica da sola i file consigliati che mancano
+  avviaIdle({
+    libera: () => elencoLavori().every((l) => l.stato !== 'in coda' && l.stato !== 'in corso') && downloads.size === 0,
+    pronta: () => motoreInstallato() && impostazioni().installato && infoMotore().stato === 'pronto',
+    scarica: async (id) => {
+      const v = statoModelli().find((x) => x.id === id)
+      const d = nuovoDownload(v?.nome || id)
+      try {
+        await scaricaVoce(id, d.avanz, d.ctrl.signal)
+        d.info.stato = 'fatto'
+      } catch (e) {
+        d.info.stato = d.ctrl.signal.aborted ? 'annullato' : 'errore'
+        d.info.errore = (e as Error).message
+      }
+      invia('download', d.info)
+      downloads.delete(d.info.id)
+      return d.info.stato === 'fatto'
+    }
+  })
 })
 
 app.on('before-quit', (e) => {

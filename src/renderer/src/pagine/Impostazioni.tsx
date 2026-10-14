@@ -7,6 +7,11 @@ import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
 import { scaricaTurbo, useTurbo } from '../componenti/Turbo'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
+import type { FileInutile } from '../api'
+
+const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
+  ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
+]
 
 export function Impostazioni(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
@@ -17,6 +22,28 @@ export function Impostazioni(): JSX.Element {
   const [log, setLog] = useState<string[]>([])
   const [versione, setVersione] = useState('')
   const fineLog = useRef<HTMLDivElement>(null)
+  // i gruppi si possono chiudere (si ricorda come li hai lasciati); i più lunghi partono chiusi
+  const [chiusi, setChiusi] = useState<Record<string, boolean>>(() => {
+    try {
+      return { 'SCARICA ALTRI MODELLI': true, 'FILE INUTILIZZATI': true, 'VALORI DI PARTENZA': true, MOTORE: true, ...JSON.parse(localStorage.getItem('dpi-opzioni-chiusi') || '{}') }
+    } catch {
+      return { 'SCARICA ALTRI MODELLI': true, 'FILE INUTILIZZATI': true }
+    }
+  })
+  const alterna = (t: string): void =>
+    setChiusi((c) => {
+      const n = { ...c, [t]: !c[t] }
+      try {
+        localStorage.setItem('dpi-opzioni-chiusi', JSON.stringify(n))
+      } catch {
+        /* niente */
+      }
+      return n
+    })
+  const [inutili, setInutili] = useState<FileInutile[]>([])
+  useEffect(() => {
+    if (!chiusi['FILE INUTILIZZATI']) void api.modelli.inutilizzati().then(setInutili)
+  }, [chiusi['FILE INUTILIZZATI'], catalogo])
 
   const ricarica = async (): Promise<void> => {
     setFile(await api.modelli.file())
@@ -71,19 +98,29 @@ export function Impostazioni(): JSX.Element {
     <div className="pagina">
       <div className="impostazioni">
         <div className="gruppo">
-          <h2>MODELLI IN USO</h2>
-          <div className="pannello">
+          <h2 className="chiudibile" onClick={() => alterna('MODELLI IN USO')}>{chiusi['MODELLI IN USO'] ? '▸' : '▾'} MODELLI IN USO</h2>
+          <div className="pannello" style={chiusi['MODELLI IN USO'] ? { display: 'none' } : undefined}>
             {voceScelta('Modello di diffusione', 'Il cuore: Qwen-Image 2.1 (GGUF o safetensors)', imp.modello, file.diffusione, (modello) => salva({ modello }))}
             {voceScelta('Text encoder (l\'LLM)', 'Qwen3-VL 8B: legge il prompt, guarda le foto e traduce dall\'italiano. Gli .gguf (Q4/Q6/Q8) si scaricano qui sotto', imp.encoder, file.encoder, (encoder) => salva({ encoder }))}
             {voceScelta('VAE', 'Texture-Fix = trame più pulite', imp.vae, file.vae, (vae) => salva({ vae }))}
-            {voceScelta('Ingranditore', 'Per "2×" e "Rifinisci"', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
+            <div className="voce">
+              <div className="et"><b>Ingranditore</b><small>Per "2×", "Rifinisci" e le misure grandi. NVIDIA RTX (RTX Video Super Resolution) usa i Tensor core della scheda: più nitido e veloce; se non c'è, si usa quello a modello</small></div>
+              <Segmenti valore={imp.upscalerRtx ? 'rtx' : 'modello'} cambia={(v) => salva({ upscalerRtx: v === 'rtx' })} voci={[{ id: 'rtx', nome: 'NVIDIA RTX', sotto: 'consigliato' }, { id: 'modello', nome: 'A modello', sotto: '4x-UltraSharp' }]} />
+            </div>
+            {!imp.upscalerRtx && voceScelta('Ingranditore a modello', 'Il file in upscale_models', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
           </div>
         </div>
 
         <div className="gruppo">
-          <h2>SCARICA ALTRI MODELLI</h2>
-          <div className="pannello">
-            {catalogo.filter((v) => v.tipo !== 'lora').map((v) => {
+          <h2 className="chiudibile" onClick={() => alterna('SCARICA ALTRI MODELLI')}>{chiusi['SCARICA ALTRI MODELLI'] ? '▸' : '▾'} SCARICA ALTRI MODELLI</h2>
+          <div className="pannello" style={chiusi['SCARICA ALTRI MODELLI'] ? { display: 'none' } : undefined}>
+            {GRUPPI_MODELLI.map(([tipo, titolo]) => {
+              const voci = catalogo.filter((v) => v.tipo === tipo)
+              if (!voci.length) return null
+              return (
+                <details key={tipo} className="tipo-modelli" open={tipo === 'traduttore'}>
+                  <summary>{titolo} <span className="piccolo spento">· {voci.filter((x) => x.presente).length}/{voci.length} presenti</span></summary>
+                  {voci.map((v) => {
               const d = download[v.nome]
               const vaGiu = d && (d.stato === 'in corso' || d.stato === 'verifica')
               return (
@@ -108,12 +145,45 @@ export function Impostazioni(): JSX.Element {
                 </div>
               )
             })}
+                </details>
+              )
+            })}
           </div>
         </div>
 
         <div className="gruppo">
-          <h2>PRESTAZIONI E MEMORIA</h2>
-          <div className="pannello">
+          <h2 className="chiudibile" onClick={() => alterna('FILE INUTILIZZATI')}>{chiusi['FILE INUTILIZZATI'] ? '▸' : '▾'} FILE INUTILIZZATI</h2>
+          <div className="pannello" style={chiusi['FILE INUTILIZZATI'] ? { display: 'none' } : undefined}>
+            <div className="piccolo tenue" style={{ padding: '4px 2px 8px' }}>
+              File nella cartella dei modelli che non stai usando: vecchi VAE e modelli tolti dal catalogo, o scaricati ma non scelti. Vanno nel Cestino (si recuperano).
+            </div>
+            {inutili.length === 0 && <div className="spento piccolo" style={{ padding: 8 }}>Niente da togliere: ogni file è in uso.</div>}
+            {inutili.map((f) => (
+              <div className="modello" key={f.percorso}>
+                <div><span className="t">{f.nome}</span> <span className="piccolo spento">· {f.cartella} · {byte(f.byte)} · {f.motivo}</span></div>
+                <button className="btn piccolo fantasma pericolo" onClick={async () => {
+                  if (!confirm(`Metto "${f.nome}" nel Cestino?`)) return
+                  try {
+                    await api.modelli.elimina(f.percorso)
+                    setInutili(await api.modelli.inutilizzati())
+                    await ricarica()
+                  } catch (e) {
+                    avvisa((e as Error).message, 'errore')
+                  }
+                }}><I.cestino /> Cestino</button>
+              </div>
+            ))}
+            {inutili.length > 0 && <div className="piccolo tenue" style={{ padding: '6px 2px 0' }}>In tutto {byte(inutili.reduce((a, f) => a + f.byte, 0))}</div>}
+          </div>
+        </div>
+
+        <div className="gruppo">
+          <h2 className="chiudibile" onClick={() => alterna('PRESTAZIONI E MEMORIA')}>{chiusi['PRESTAZIONI E MEMORIA'] ? '▸' : '▾'} PRESTAZIONI E MEMORIA</h2>
+          <div className="pannello" style={chiusi['PRESTAZIONI E MEMORIA'] ? { display: 'none' } : undefined}>
+            <div className="voce">
+              <div className="et"><b>Scarica da solo quello che manca</b><small>Quando l'app è ferma per un minuto, scarica i file consigliati che non hai (il LoRA Turbo, il traduttore…). I modelli grandi li scegli tu</small></div>
+              <Interruttore acceso={imp.scaricaInIdle} cambia={(scaricaInIdle) => salva({ scaricaInIdle })}>{imp.scaricaInIdle ? 'Sì' : 'No'}</Interruttore>
+            </div>
             <div className="voce">
               <div className="et">
                 <b>Profilo della scheda video</b>
@@ -199,8 +269,8 @@ export function Impostazioni(): JSX.Element {
         </div>
 
         <div className="gruppo">
-          <h2>VALORI DI PARTENZA</h2>
-          <div className="pannello">
+          <h2 className="chiudibile" onClick={() => alterna('VALORI DI PARTENZA')}>{chiusi['VALORI DI PARTENZA'] ? '▸' : '▾'} VALORI DI PARTENZA</h2>
+          <div className="pannello" style={chiusi['VALORI DI PARTENZA'] ? { display: 'none' } : undefined}>
             <div className="voce">
               <div className="et"><b>Passi e campionatore</b><small>La pipeline ufficiale: 40 passi, euler, simple, CFG 1</small></div>
               <div className="riga">
@@ -213,8 +283,8 @@ export function Impostazioni(): JSX.Element {
         </div>
 
         <div className="gruppo">
-          <h2>CARTELLE</h2>
-          <div className="pannello">
+          <h2 className="chiudibile" onClick={() => alterna('CARTELLE')}>{chiusi['CARTELLE'] ? '▸' : '▾'} CARTELLE</h2>
+          <div className="pannello" style={chiusi['CARTELLE'] ? { display: 'none' } : undefined}>
             <div className="voce">
               <div className="et"><b>Galleria</b><small>Dove finiscono le immagini</small></div>
               <div className="riga">
@@ -235,8 +305,8 @@ export function Impostazioni(): JSX.Element {
         </div>
 
         <div className="gruppo">
-          <h2>ACCOUNT (FACOLTATIVI)</h2>
-          <div className="pannello">
+          <h2 className="chiudibile" onClick={() => alterna('ACCOUNT (FACOLTATIVI)')}>{chiusi['ACCOUNT (FACOLTATIVI)'] ? '▸' : '▾'} ACCOUNT (FACOLTATIVI)</h2>
+          <div className="pannello" style={chiusi['ACCOUNT (FACOLTATIVI)'] ? { display: 'none' } : undefined}>
             <div className="voce">
               <div className="et"><b>Token Civitai</b><small>Per scaricare i LoRA che chiedono l'accesso</small></div>
               <input type="password" value={imp.tokenCivitai} placeholder="civitai.com → Account → API Keys" onChange={(e) => usaStato.setState({ imp: { ...imp, tokenCivitai: e.target.value } })} onBlur={(e) => salva({ tokenCivitai: e.target.value.trim() })} />

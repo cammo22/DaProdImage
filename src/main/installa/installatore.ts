@@ -21,6 +21,8 @@ interface Versioni {
   comfyui: { commit: string; versione: string }
   torch: { indice: string; pacchetti: string[] }
   extra: string[]
+  /** l'ingranditore NVIDIA RTX (facoltativo): nodo di Comfy-Org al commit fissato + pacchetto pip */
+  rtx?: { nome: string; repo: string; commit: string; pacchetto: string }
 }
 
 const FILE_STATO = join(MOTORE, 'stato.json')
@@ -332,6 +334,37 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
       if (!/CUDA True/.test(cuda)) throw new Error('PyTorch non vede la scheda NVIDIA (' + cuda + '): aggiorna i driver NVIDIA e riprova')
       scriviStato({ ...leggiStato(), pacchetti: true, requisiti: v.comfyui.commit })
       finisci('pacchetti', cuda)
+    }
+    if (segnale.aborted) throw new Error('annullato')
+
+    // 4b. l'ingranditore NVIDIA RTX: facoltativo, se non riesce resta 4x-UltraSharp (e l'app funziona lo stesso)
+    if (v.rtx) {
+      const rtx = v.rtx
+      const cartellaRtx = join(COMFY, 'custom_nodes', rtx.nome)
+      if (leggiStato().rtx === rtx.commit && existsSync(cartellaRtx)) log('ingranditore NVIDIA RTX: già pronto')
+      else {
+        try {
+          attuale = 'pacchetti'
+          p('pacchetti').dettaglio = 'preparo l\'ingranditore NVIDIA RTX…'
+          notifica(passi)
+          const zip = join(TEMP, `rtx-${rtx.commit.slice(0, 7)}.zip`)
+          await scarica({ url: `https://codeload.github.com/${rtx.repo}/zip/${rtx.commit}`, destinazione: zip, segnale })
+          const estratto = join(MOTORE, `${rtx.nome}-${rtx.commit}`)
+          rmSync(estratto, { recursive: true, force: true })
+          await esegui(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', MOTORE], riga('pacchetti'))
+          rmSync(cartellaRtx, { recursive: true, force: true })
+          renameSync(estratto, cartellaRtx)
+          rmSync(zip, { force: true })
+          await esegui(UV, ['pip', 'install', '--python', PYTHON, rtx.pacchetto], riga('pacchetti'))
+          scriviStato({ ...leggiStato(), rtx: rtx.commit })
+          log('ingranditore NVIDIA RTX installato')
+        } catch (e) {
+          if (segnale.aborted) throw e
+          // senza il nodo il motore parte lo stesso: si toglie quello a metà e si va avanti con l'altro ingranditore
+          rmSync(cartellaRtx, { recursive: true, force: true })
+          log('ingranditore NVIDIA RTX non installato (' + (e as Error).message + '): uso 4x-UltraSharp')
+        }
+      }
     }
     if (segnale.aborted) throw new Error('annullato')
 

@@ -8,7 +8,7 @@ import { percentuale } from './Coda'
 import { durata, troppoLenta } from '../util'
 
 export function BarraStato(): JSX.Element {
-  const { lavori, motore, vai, codaAperta } = usaStato()
+  const { lavori, motore, vai, codaAperta, scarico } = usaStato()
   const corrente = lavori.find((l) => l.stato === 'in corso')
   const inCoda = lavori.filter((l) => l.stato === 'in coda').length
   const ultimo = useMemo(() => [...lavori].reverse().find((l) => l.stato === 'fatto' || l.stato === 'errore'), [lavori])
@@ -65,7 +65,12 @@ export function BarraStato(): JSX.Element {
         </div>
       </div>
       <div className="bs-centro">
-        {ultimo ? (
+        {scarico ? (
+          <div className="col" style={{ gap: 4 }}>
+            <div className="barra-progresso"><i style={{ width: `${scarico.totali ? (scarico.ricevuti / scarico.totali) * 100 : 0}%` }} /></div>
+            <div className="bs-testi"><span className="titolo">Scarico {scarico.nome} · {scarico.totali ? Math.round((scarico.ricevuti / scarico.totali) * 100) : 0}%</span><span className="inglese">{(scarico.velocita / 1e6).toFixed(1)} MB/s</span></div>
+          </div>
+        ) : ultimo ? (
           <div className="bs-testi">
             <span className={`titolo ${ultimo.stato === 'errore' ? 'errore' : 'ok'}`} title={ultimo.errore || ultimo.richiesta.prompt}>
               {ultimo.stato === 'errore' ? `✗ ${(ultimo.errore || 'Errore').split('\n')[0]}` : `✓ ${ultimo.richiesta.etichetta || ultimo.richiesta.prompt || 'Fatto'}`}

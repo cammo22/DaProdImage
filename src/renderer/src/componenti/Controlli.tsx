@@ -1,5 +1,5 @@
 // Controlli base: cursore, interruttore, contatore, segmenti.
-import type { JSX, ReactNode } from 'react'
+import { useState, type JSX, type ReactNode } from 'react'
 
 export function Cursore(p: {
   etichetta: ReactNode
@@ -65,6 +65,36 @@ export function Segmenti<T extends string | number>(p: {
           {v.sotto && <small>{v.sotto}</small>}
         </button>
       ))}
+    </div>
+  )
+}
+
+/** una sezione di una colonna con il titolo che la chiude/apre; ricorda com'era rimasta */
+export function SezioneChiudibile(p: { id: string; titolo: ReactNode; destra?: ReactNode; aperta?: boolean; children: ReactNode }): JSX.Element {
+  const chiave = `dpi-sez-${p.id}`
+  const [su, setSu] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem(chiave)
+      return v === null ? p.aperta !== false : v === '1'
+    } catch {
+      return p.aperta !== false
+    }
+  })
+  const alterna = (): void => {
+    setSu(!su)
+    try {
+      localStorage.setItem(chiave, su ? '0' : '1')
+    } catch {
+      /* niente */
+    }
+  }
+  return (
+    <div className="sezione">
+      <h3 className="chiudibile" onClick={alterna} style={{ cursor: 'pointer', marginBottom: su ? undefined : 0 }}>
+        {su ? '▾' : '▸'} {p.titolo}
+        {p.destra !== undefined && <span className="dx">{p.destra}</span>}
+      </h3>
+      {su && p.children}
     </div>
   )
 }

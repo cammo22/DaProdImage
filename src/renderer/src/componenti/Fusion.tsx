@@ -4,6 +4,7 @@ import { useEffect, useState, type JSX } from 'react'
 import { urlFile } from '../api'
 import { I } from './Icone'
 import { VistaZoom } from './VistaZoom'
+import { AdattaFoto } from './AdattaFoto'
 import { percentuale } from './Coda'
 import type { FotoBase } from '../stato'
 import type { Lavoro, Opera } from '@shared/tipi'
@@ -23,7 +24,10 @@ export function Fusion(p: {
   riusa: (o: Opera) => void
   apriInModifica: (o: Opera) => void
   mostra: (o: Opera) => void
+  /** modo Esempio: una foto che mostra com'è il risultato che vuoi (<image1>); le altre sono i riferimenti da <image2> */
+  esempio?: { foto: FotoBase | null; cambia: (f: FotoBase | null) => void; daGalleria: () => void; daPc: () => void }
 }): JSX.Element {
+  const inizio = p.esempio ? 2 : 1
   const [sel, setSel] = useState<string | null>(null)
   // l'ultimo risultato arrivato si guarda subito
   useEffect(() => {
@@ -40,18 +44,39 @@ export function Fusion(p: {
   }
 
   return (
-    <div className="fusion">
+    <div className={`fusion ${p.esempio ? 'con-esempio' : ''}`}>
       <div className="fusion-foto">
+        {p.esempio && (
+          <div className="esempio-slot">
+            <div className="fusion-testa"><b>L'ESEMPIO</b><span className="piccolo tenue">come vuoi il risultato: posa, inquadratura, luce, atmosfera · <b>&lt;image1&gt;</b></span></div>
+            {p.esempio.foto ? (
+              <div className="fusion-tessera esempio">
+                <img src={urlFile(p.esempio.foto.percorso)} alt="" />
+                <button className="tag" onClick={() => p.inserisci('<image1>')}>&lt;image1&gt;</button>
+                <div className="az"><button onClick={() => p.esempio!.cambia(null)} title="Togli"><I.x /></button></div>
+              </div>
+            ) : (
+              <div className="fusion-tessera esempio aggiungi">
+                <button onClick={p.esempio.daGalleria}><I.galleria /> Galleria</button>
+                <button onClick={p.esempio.daPc}><I.immagine /> Dal PC</button>
+              </div>
+            )}
+          </div>
+        )}
         <div className="fusion-testa">
-          <b>LE TUE FOTO</b>
-          <span className="piccolo tenue">{p.foto.length}/{MAX_FUSION} · sono tutte riferimenti: nel testo <b>&lt;image1&gt;</b>, <b>&lt;image2&gt;</b>…</span>
+          <b>{p.esempio ? 'LE TUE FOTO (RIFERIMENTI)' : 'LE TUE FOTO'}</b>
+          <span className="piccolo tenue">{p.foto.length}/{MAX_FUSION} · {p.esempio ? <>persone, vestiti, oggetti da usare: <b>&lt;image2&gt;</b>, <b>&lt;image3&gt;</b>…</> : <>sono tutte riferimenti: nel testo <b>&lt;image1&gt;</b>, <b>&lt;image2&gt;</b>…</>}</span>
           <span className="flex1" />
           {p.foto.length > 0 && <button className="btn piccolo fantasma pericolo" onClick={() => p.cambia([])}><I.x /> Svuota</button>}
         </div>
         {p.foto.length === 0 ? (
           <div className="vuoto fusion-vuoto">
-            <div className="grosso">FUSION</div>
-            <p>Metti qui <b className="oro">più foto</b>: persone, vestiti, oggetti, luoghi, stili. Tutte sono riferimenti: il modello le guarda insieme e crea <b>una foto nuova</b> in base a quello che scrivi.</p>
+            <div className="grosso">{p.esempio ? 'COME L\'ESEMPIO' : 'FUSION'}</div>
+            {p.esempio ? (
+              <p>Metti qui le foto da usare (persone, vestiti, oggetti) e sopra <b className="oro">una foto di esempio</b>: il modello rifà l'esempio con le tue foto al posto di quelle originali.</p>
+            ) : (
+              <p>Metti qui <b className="oro">più foto</b>: persone, vestiti, oggetti, luoghi, stili. Tutte sono riferimenti: il modello le guarda insieme e crea <b>una foto nuova</b> in base a quello che scrivi.</p>
+            )}
             <p className="piccolo">Trascinale qui (anche tante insieme), incollale con <kbd>Ctrl</kbd>+<kbd>V</kbd>, o scegli.</p>
             <div className="riga" style={{ justifyContent: 'center', marginTop: 12 }}>
               <button className="btn primario" onClick={p.daGalleria}><I.galleria /> Dalla galleria</button>
@@ -63,7 +88,7 @@ export function Fusion(p: {
             {p.foto.map((f, i) => (
               <div className="fusion-tessera" key={f.percorso + i}>
                 <img src={urlFile(f.percorso)} alt="" />
-                <button className="tag" onClick={() => p.inserisci(`<image${i + 1}>`)} title="Mette questa foto nel testo">&lt;image{i + 1}&gt;</button>
+                <button className="tag" onClick={() => p.inserisci(`<image${i + inizio}>`)} title="Mette questa foto nel testo">&lt;image{i + inizio}&gt;</button>
                 <div className="az">
                   <button disabled={i === 0} onClick={() => sposta(i, -1)} title="Una posizione prima">◂</button>
                   <button disabled={i === p.foto.length - 1} onClick={() => sposta(i, 1)} title="Una posizione dopo">▸</button>
@@ -87,11 +112,11 @@ export function Fusion(p: {
           {p.inAttesa > 0 && <span className="piccolo oro">{p.inCorso ? `si sta creando${percentuale(p.inCorso) !== null ? ` · ${percentuale(p.inCorso)}%` : ''}` : 'in coda'}{p.inAttesa > 1 ? ` · +${p.inAttesa - 1}` : ''}</span>}
         </div>
         {!p.risultati.length && !p.inAttesa ? (
-          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Scrivi cosa vuoi a destra e premi <b>Fusion</b>: la foto nuova compare qui e finisce anche in Galleria.</div>
+          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Scrivi cosa vuoi a destra e premi il pulsante: la foto nuova compare qui e finisce anche in Galleria.</div>
         ) : (
           <div className="fusion-ris-corpo">
             <div className="fusion-grande">
-              {vedo && !vivo ? <VistaZoom src={urlFile(vedo.file)} scacchi={vedo.trasparente} /> : vivo ? <img className="vivo" src={vivo} alt="" /> : <div className="attesa-grande" style={{ width: '60%', height: '60%' }} />}
+              {vedo && !vivo ? <VistaZoom src={urlFile(vedo.file)} scacchi={vedo.trasparente} /> : <VivoFusion l={p.inCorso} />}
             </div>
             <div className="fusion-strip">
               {p.risultati.map((o) => (
@@ -112,5 +137,16 @@ export function Fusion(p: {
         )}
       </div>
     </div>
+  )
+}
+
+/** la foto che sta nascendo: l'anteprima dal vivo, sempre intera dentro lo spazio */
+function VivoFusion({ l }: { l?: Lavoro }): JSX.Element {
+  const [nat, setNat] = useState<number | null>(null)
+  const ar = l?.richiesta.larghezza && l.richiesta.altezza ? l.richiesta.larghezza / l.richiesta.altezza : 1
+  return (
+    <AdattaFoto ar={nat ?? ar} margine={10}>
+      {l?.anteprima ? <img src={l.anteprima} alt="" onLoad={(e) => setNat(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)} /> : <div className="attesa-grande" />}
+    </AdattaFoto>
   )
 }

@@ -13,6 +13,8 @@ const PREDEFINITE: Impostazioni = {
   encoder: 'qwen3vl_8b_int8_convrot.safetensors',
   vae: 'texture_fix_vae_for_qwen_image_2.1_bf16.safetensors',
   upscaler: '4x-UltraSharp.pth',
+  upscalerRtx: true,
+  scaricaInIdle: true,
   porta: 8818,
   cacheKV: 'auto',
   cacheTipo: 'default',

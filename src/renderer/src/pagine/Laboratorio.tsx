@@ -9,18 +9,14 @@ import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, type Misura } from '../componenti/Misura'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
-import { PrimaDopo } from '../componenti/PrimaDopo'
-import { VistaZoom } from '../componenti/VistaZoom'
-import { percentuale } from '../componenti/Coda'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
-import { apriInModifica, fotoDaOpera, perQualita } from '../azioni'
-import { CATEGORIE_WF, WORKFLOW, avviaWorkflow, creaFoglio, fermaRun, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Run, type Workflow } from '../workflow'
+import { perQualita } from '../azioni'
+import { WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
+import { usaRicette, type RicettaUtente } from '../ricette'
+import { EditorRicetta } from '../componenti/EditorRicetta'
+import { Catalogo, Dettaglio, Risultati, icona } from '../componenti/LabVista'
 import type { Opera } from '@shared/tipi'
 
-const icona = (nome: string): JSX.Element => {
-  const Ic = (I as Record<string, () => JSX.Element>)[nome] || I.crea
-  return <Ic />
-}
 
 /** i LoRA che i passi di questo workflow possono usare (per proporli) */
 function loraUsati(w: Workflow, v: Record<string, string>, nRif: number): Set<string> {
@@ -39,14 +35,19 @@ export function Laboratorio(): JSX.Element {
   const { imp, lavori, avvisa } = usaStato()
   const { runs, attiva, vista, scelto } = usaLab()
   const turbo = useTurbo()
-  const [foto, setFoto] = useState<FotoBase | null>(null)
+  // le foto da lavorare (anche tante: la ricetta parte per ognuna)
+  const [fotos, setFotos] = useState<FotoBase[]>([])
+  const foto = fotos[0] ?? null
   const [rif, setRif] = useState<FotoBase[]>([])
   const [valori, setValori] = useState<Record<string, string>>({})
   const [qualita, setQualita] = useState<Qualita>('alta')
   const [mp, setMp] = useState(1)
   const [misura, setMisura] = useState<Misura>(MISURA0)
-  // i passi che non voglio fare (per etichetta)
-  const [esclusi, setEsclusi] = useState<string[]>([])
+  // i passi da fare (per etichetta): all'inizio non c'è niente di segnato
+  const [fai, setFai] = useState<string[]>([])
+  const [vediPrompt, setVediPrompt] = useState(false)
+  const [editor, setEditor] = useState<RicettaUtente | null>(null)
+  const ricette = usaRicette()
   const [cerca, setCerca] = useState('')
   const [aperto, setAperto] = useState<{ run: string; i: number } | null>(null)
   const [opere, setOpere] = useState<Record<string, Opera>>({})
@@ -65,7 +66,7 @@ export function Laboratorio(): JSX.Element {
     usaLab.setState({ scelto: id, vista: 'catalogo' })
     setValori(valoriIniziali(nuovo))
     setRif([])
-    setEsclusi([])
+    setFai([])
   }
 
   // le opere dei risultati (per vedere le immagini finite)
@@ -90,16 +91,17 @@ export function Laboratorio(): JSX.Element {
       if (!d) return
       e.preventDefault()
       const f = await daDataUrl(await d)
-      setFoto((x) => x || f)
+      setFotos((x) => [...x, f].slice(0, 40))
     }
     const h = (e: ClipboardEvent): void => void incolla(e)
     window.addEventListener('paste', h)
     return () => window.removeEventListener('paste', h)
   }, [])
 
-  const passi = useMemo(() => (w ? passiDi(w, valori, rif.length) : []), [w, valori, rif.length])
-  const scelti = passi.filter((x) => !esclusi.includes(x.etichetta))
-  const stima = imp ? stimaSecondi(imp.tempi, mp, perQualita(qualita).passi) * scelti.length : 0
+  const passi = useMemo(() => (w ? passiDi(w, valori, rif.length) : []), [w, valori, rif.length, ricette.utente])
+  const scelti = passi.filter((x) => fai.includes(x.etichetta))
+  const nFoto = w?.foto ? Math.max(1, fotos.length) : 1
+  const stima = imp ? stimaSecondi(imp.tempi, mp, perQualita(qualita).passi) * scelti.length * nFoto : 0
   const problema = w ? manca(w, { foto, rif }) : null
   const lora = w ? [...loraUsati(w, valori, rif.length)] : []
 
@@ -110,21 +112,55 @@ export function Laboratorio(): JSX.Element {
       return
     }
     if (!scelti.length) {
-      avvisa('Scegli almeno un passo da fare', 'errore')
+      avvisa('Segna almeno una cosa da fare', 'errore')
       return
     }
-    await avviaWorkflow(w, { foto, rif, valori, opzioni: { qualita, mp, misura, escludi: esclusi } })
+    await avviaLotto(w, { foto: fotos, rif, valori, opzioni: { qualita, mp, misura, fai: scelti.map((x) => x.etichetta) } })
   }
 
   const scegliLaFoto = async (): Promise<void> => {
-    const [f] = await scegliFoto(false)
-    if (f) setFoto(f)
+    const f = await scegliFoto(true)
+    if (f.length) setFotos((x) => [...x, ...f].slice(0, 40))
   }
   const fotoDaPc = async (p: string): Promise<void> => {
     try {
-      setFoto(await normalizza(p))
+      const f = await normalizza(p)
+      setFotos((x) => [...x, f].slice(0, 40))
     } catch (e) {
       avvisa((e as Error).message, 'errore')
+    }
+  }
+
+  // i preset di questa ricetta: i valori dei campi e i passi segnati, con un nome
+  const [nomePreset, setNomePreset] = useState('')
+  const presetQui = w ? ricette.preset.filter((x) => x.ricetta === w.id) : []
+  const caricaPreset = (id: string): void => {
+    const x = ricette.preset.find((y) => y.id === id)
+    if (!x) return
+    setValori({ ...(w ? valoriIniziali(w) : {}), ...x.valori })
+    setFai(x.fai)
+  }
+  const salvaPreset = (): void => {
+    if (!w || !nomePreset.trim()) return
+    usaRicette.getState().salvaPreset({ ricetta: w.id, nome: nomePreset.trim(), valori, fai })
+    setNomePreset('')
+    avvisa('Preset salvato', 'ok')
+  }
+  const nuovaRicetta = (): void =>
+    setEditor({ id: 'u-' + crypto.randomUUID().slice(0, 8), nome: 'La mia ricetta', categoria: 'personaggio', descrizione: '', modo: 'serie', foto: true, rif: 'no', ingressi: [], passi: [{ etichetta: 'Passo 1', prompt: 'Change <image1> so that ' }] })
+  const modificaRicetta = (x: Workflow): void => {
+    const u = ricette.utente.find((r) => r.id === x.id)
+    setEditor(u ? { ...u } : inUtente(x))
+  }
+  const togliRicetta = (x: Workflow): void => {
+    if (x.utente) {
+      if (confirm(`Elimino la ricetta "${x.nome}"?`)) {
+        usaRicette.getState().elimina(x.id)
+        usaLab.setState({ scelto: null })
+      }
+    } else if (confirm(`Nascondo la ricetta "${x.nome}"? La ritrovi da "Ricette nascoste".`)) {
+      usaRicette.getState().nascondi(x.id)
+      usaLab.setState({ scelto: null })
     }
   }
 
@@ -146,28 +182,42 @@ export function Laboratorio(): JSX.Element {
                   <span className="dx"><span className={`distintivo ${w.modo === 'catena' ? 'forse' : 'si'}`}>{w.modo === 'catena' ? 'catena' : 'serie'} × {passi.length}</span></span>
                 </h3>
                 <p className="tenue" style={{ margin: 0 }}>{w.descrizione}</p>
+                <div className="riga a-capo" style={{ gap: 6, marginTop: 8 }}>
+                  <button className="btn piccolo" onClick={() => modificaRicetta(w)} title={w.utente ? 'Cambia nome, campi e prompt' : 'Ne fa una copia tua da cambiare'}><I.modifica /> {w.utente ? 'Modifica' : 'Duplica e modifica'}</button>
+                  <button className="btn piccolo fantasma pericolo" onClick={() => togliRicetta(w)} title={w.utente ? 'Elimina la ricetta' : 'La nasconde (si può ripristinare)'}><I.cestino /> {w.utente ? 'Elimina' : 'Nascondi'}</button>
+                </div>
                 {lora.map((k) => <AvvisoLora key={k} id={ID_LORA[k]} perche={`${PERCHE[k]} Si accende da solo qui.`} />)}
               </div>
 
               {w.foto && (
                 <div className="sezione">
-                  <h3>La foto</h3>
+                  <h3>{fotos.length > 1 ? 'Le foto' : 'La foto'} <span className="dx">{fotos.length > 1 ? `${fotos.length} · la ricetta parte per ognuna` : ''}</span></h3>
                   <div
-                    className="foto-wf"
+                    className="foto-wf lotto"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      const f = e.dataTransfer.files[0]
-                      if (f) void fotoDaPc(api.file.percorso(f))
+                      for (const f of Array.from(e.dataTransfer.files).slice(0, 40)) void fotoDaPc(api.file.percorso(f))
                     }}
                   >
-                    {foto ? <img src={urlFile(foto.percorso)} alt="" /> : <div className="vuota"><I.immagine /><span>Trascina una foto qui<br />o incollala con Ctrl+V</span></div>}
+                    {fotos.length === 0 ? (
+                      <div className="vuota"><I.immagine /><span>Trascina qui una o più foto<br />o incollale con Ctrl+V</span></div>
+                    ) : (
+                      <div className="griglia-lotto">
+                        {fotos.map((f, i) => (
+                          <div key={f.percorso + i} className="t">
+                            <img src={urlFile(f.percorso)} alt="" />
+                            <button className="x" onClick={() => setFotos(fotos.filter((_, j) => j !== i))} title="Togli"><I.x /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="riga a-capo" style={{ marginTop: 8 }}>
                     <button className="btn piccolo" onClick={scegliLaFoto}><I.galleria /> Dalla galleria</button>
-                    <button className="btn piccolo" onClick={async () => { const [p] = await api.file.scegliImmagini(false); if (p) void fotoDaPc(p) }}><I.immagine /> Dal PC</button>
-                    {foto && <button className="btn piccolo fantasma pericolo" onClick={() => setFoto(null)}><I.x /> Togli</button>}
+                    <button className="btn piccolo" onClick={async () => { for (const p of await api.file.scegliImmagini(true)) await fotoDaPc(p) }}><I.immagine /> Dal PC</button>
+                    {fotos.length > 0 && <button className="btn piccolo fantasma pericolo" onClick={() => setFotos([])}><I.x /> Togli {fotos.length > 1 ? 'tutte' : ''}</button>}
                   </div>
                 </div>
               )}
@@ -179,7 +229,7 @@ export function Laboratorio(): JSX.Element {
                     cambia={setRif}
                     inizio={w.foto ? 2 : 1}
                     inserisci={() => undefined}
-                    comeBase={w.foto && foto ? (i) => { const f = rif[i]; setRif(rif.map((r, j) => (j === i ? foto : r))); setFoto(f) } : undefined}
+                    comeBase={w.foto && foto ? (i) => { const f = rif[i]; setRif(rif.map((r, j) => (j === i ? foto : r))); setFotos([f, ...fotos.slice(1)]) } : undefined}
                     esempio={w.rifNome ? `Servono ${w.rifNome}.${w.rif === 'ognuno' ? ' Ognuna fa un passo.' : ''}` : 'Foto di riferimento (facoltative).'}
                   />
                 </div>
@@ -207,30 +257,47 @@ export function Laboratorio(): JSX.Element {
                 </div>
               )}
 
-              {passi.length > 1 && (
-                <div className="sezione">
-                  <h3>
-                    Cosa fare <span className="dx">{scelti.length} di {passi.length}</span>
-                  </h3>
-                  <div className="riga a-capo" style={{ gap: 6, marginBottom: 8 }}>
-                    <button className="chip" onClick={() => setEsclusi([])}>Tutte</button>
-                    <button className="chip" onClick={() => setEsclusi(passi.map((x) => x.etichetta))}>Nessuna</button>
-                    <span className="piccolo spento">Segna solo quelle che ti servono</span>
-                  </div>
-                  <div className="scelta-passi">
-                    {passi.map((x) => {
-                      const su = !esclusi.includes(x.etichetta)
-                      return (
-                        <label key={x.etichetta} className={su ? 'su' : ''} title={x.prompt}>
-                          <input type="checkbox" checked={su} onChange={() => setEsclusi(su ? [...esclusi, x.etichetta] : esclusi.filter((e) => e !== x.etichetta))} />
-                          <span>{x.etichetta}</span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                  {w.modo === 'catena' && <div className="piccolo spento" style={{ marginTop: 6 }}>In una catena ogni passo parte dal risultato del precedente: i passi che togli vengono saltati.</div>}
+              <div className="sezione">
+                <h3>
+                  Cosa fare <span className="dx">{scelti.length} di {passi.length}</span>
+                </h3>
+                <div className="riga a-capo" style={{ gap: 6, marginBottom: 8 }}>
+                  <button className="chip" onClick={() => setFai(passi.filter((x) => !x.sorpresa).map((x) => x.etichetta))}>Tutte</button>
+                  <button className="chip" onClick={() => setFai([])}>Nessuna</button>
+                  <button className={`chip ${vediPrompt ? 'su' : ''}`} onClick={() => setVediPrompt(!vediPrompt)} title="Mostra il prompt di ogni passo">Vedi i prompt</button>
                 </div>
-              )}
+                <div className={`scelta-passi ${vediPrompt ? 'con-prompt' : ''}`}>
+                  {passi.map((x) => {
+                    const su = fai.includes(x.etichetta)
+                    return (
+                      <label key={x.etichetta} className={`${su ? 'su' : ''} ${x.sorpresa ? 'sorpresa' : ''}`} title={x.sorpresa ? 'Il modello inventa una variazione nuova, diversa ogni volta' : x.prompt}>
+                        <input type="checkbox" checked={su} onChange={() => setFai(su ? fai.filter((e) => e !== x.etichetta) : [...fai, x.etichetta])} />
+                        <span>{x.etichetta}</span>
+                        {vediPrompt && <small>{x.sorpresa ? 'Un\'idea a caso del modello, nello stile della ricetta' : x.prompt}</small>}
+                      </label>
+                    )
+                  })}
+                </div>
+                {w.modo === 'catena' && <div className="piccolo spento" style={{ marginTop: 6 }}>In una catena ogni passo parte dal risultato del precedente: i passi che non segni vengono saltati.</div>}
+              </div>
+
+              <div className="sezione">
+                <h3>Preset <span className="dx">{presetQui.length ? `${presetQui.length}` : ''}</span></h3>
+                {presetQui.length > 0 && (
+                  <div className="riga a-capo" style={{ gap: 6, marginBottom: 8 }}>
+                    {presetQui.map((x) => (
+                      <span key={x.id} className="chip-preset">
+                        <button onClick={() => caricaPreset(x.id)} title="Rimette i campi e i passi segnati">{x.nome}</button>
+                        <button className="x" onClick={() => usaRicette.getState().eliminaPreset(x.id)} title="Elimina il preset"><I.x /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="riga" style={{ gap: 6 }}>
+                  <input type="text" value={nomePreset} onChange={(e) => setNomePreset(e.target.value)} placeholder="Salva questi campi e passi come preset…" style={{ flex: 1, minWidth: 0 }} onKeyDown={(e) => e.key === 'Enter' && salvaPreset()} />
+                  <button className="btn piccolo" onClick={salvaPreset} disabled={!nomePreset.trim()}>Salva</button>
+                </div>
+              </div>
 
               {passi.some((x) => !x.crea) && (
                 <div className="sezione">
@@ -264,22 +331,24 @@ export function Laboratorio(): JSX.Element {
         </div>
         {w && (
           <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
-            <button className="btn primario grande" style={{ width: '100%' }} onClick={() => void parti()} disabled={!!problema}>
-              <I.gioca /> Avvia · {scelti.length} {scelti.length === 1 ? 'immagine' : 'immagini'}
+            <button className="btn primario grande" style={{ width: '100%' }} onClick={() => void parti()} disabled={!!problema || !scelti.length}>
+              <I.gioca /> Avvia · {scelti.length * nFoto} {scelti.length * nFoto === 1 ? 'immagine' : 'immagini'}
             </button>
-            <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{problema || `~${durata(stima)} · si vedono qui e nella barra in basso`}</div>
+            <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{problema || (!scelti.length ? 'Segna cosa fare qui sopra' : `~${durata(stima)} · si vedono qui e nella barra in basso`)}</div>
           </div>
         )}
       </div>
 
       <div className="palco palco-lab">
         <div className="schede-lab">
-          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW.length}</span></button>
+          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW_BASE.length - ricette.nascoste.length + ricette.utente.length}</span></button>
           <button className={vista === 'risultati' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'risultati' })} disabled={!runs.length}>
             <I.serie /> Risultati {runs.length > 0 && <span className="n">{runs.length}</span>}
           </button>
           <span className="flex1" />
-          {vista === 'catalogo' && <input type="search" placeholder="Cerca una ricetta…" value={cerca} onChange={(e) => setCerca(e.target.value)} style={{ width: 260 }} />}
+          {vista === 'catalogo' && <button className="btn piccolo" onClick={nuovaRicetta}><I.piu /> Nuova ricetta</button>}
+          {vista === 'catalogo' && ricette.nascoste.length > 0 && <button className="btn piccolo fantasma" onClick={() => usaRicette.getState().mostraTutte()} title="Rimette le ricette che avevi nascosto">Mostra le {ricette.nascoste.length} nascoste</button>}
+          {vista === 'catalogo' && <input type="search" placeholder="Cerca una ricetta…" value={cerca} onChange={(e) => setCerca(e.target.value)} style={{ width: 240 }} />}
           {vista === 'risultati' && runs.length > 1 && (
             <select value={attiva || ''} onChange={(e) => usaLab.setState({ attiva: e.target.value })} style={{ width: 300 }}>
               {runs.map((r) => <option key={r.id} value={r.id}>{r.nome} · {new Date(r.creato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</option>)}
@@ -288,7 +357,7 @@ export function Laboratorio(): JSX.Element {
         </div>
 
         {vista === 'catalogo' || !run ? (
-          <Catalogo cerca={cerca} scelto={scelto} scegli={scegli} />
+          <Catalogo cerca={cerca} scelto={scelto} scegli={scegli} elenco={elencoWorkflow()} />
         ) : (
           <Risultati
             run={run}
@@ -315,153 +384,8 @@ export function Laboratorio(): JSX.Element {
         )}
       </div>
 
+      {editor && <EditorRicetta ricetta={editor} chiudi={() => setEditor(null)} salvata={(r) => { usaRicette.getState().salva(r); setEditor(null); scegli(r.id) }} />}
       {aperto && run && <Dettaglio run={run} opere={opere} i={aperto.i} cambia={(i) => setAperto({ run: aperto.run, i })} chiudi={() => setAperto(null)} />}
-    </div>
-  )
-}
-
-function Catalogo(p: { cerca: string; scelto: string | null; scegli: (id: string) => void }): JSX.Element {
-  const q = p.cerca.trim().toLowerCase()
-  return (
-    <div className="catalogo-wf">
-      {CATEGORIE_WF.map((c) => {
-        const voci = WORKFLOW.filter((w) => w.categoria === c.id && (!q || (w.nome + ' ' + w.descrizione).toLowerCase().includes(q)))
-        if (!voci.length) return null
-        return (
-          <section key={c.id}>
-            <h2><span className="ic-wf">{icona(c.icona)}</span> {c.nome} <small>{c.testo}</small></h2>
-            <div className="carte-wf">
-              {voci.map((w) => (
-                <button key={w.id} className={`carta-wf ${p.scelto === w.id ? 'su' : ''}`} onClick={() => p.scegli(w.id)}>
-                  <div className="riga spazia">
-                    <span className="ic-wf grande">{icona(w.icona)}</span>
-                    <span className={`distintivo ${w.modo === 'catena' ? 'forse' : 'si'}`}>{w.modo === 'catena' ? <><I.catena /> catena</> : <><I.serie /> serie</>}</span>
-                  </div>
-                  <b>{w.nome}</b>
-                  <span>{w.descrizione}</span>
-                  <small>{w.foto ? 'serve una foto' : w.rif === 'serve' ? 'serve un logo o disegno' : 'solo testo'}</small>
-                </button>
-              ))}
-            </div>
-          </section>
-        )
-      })}
-    </div>
-  )
-}
-
-function Risultati(p: {
-  run: Run
-  opere: Record<string, Opera>
-  lavori: ReturnType<typeof usaStato.getState>['lavori']
-  apri: (i: number) => void
-  faiFoglio: () => Promise<void>
-  foglio: boolean
-  rifai: () => void
-}): JSX.Element {
-  const { run, opere, lavori } = p
-  const fatti = run.passi.filter((x) => x.stato === 'fatto').length
-  const attivo = run.passi.some((x) => x.stato === 'attesa' || x.stato === 'in coda') && !run.fermata
-  return (
-    <div className="risultati-wf">
-      <div className="testa-risultati">
-        <div className="col" style={{ gap: 2 }}>
-          <b style={{ fontSize: 18 }}>{run.nome}</b>
-          <span className="piccolo tenue">{fatti} di {run.passi.length} fatte{attivo ? ' · in lavorazione' : ''}</span>
-        </div>
-        <div className="barra-progresso" style={{ flex: 1, maxWidth: 360 }}><i style={{ width: `${(fatti / run.passi.length) * 100}%` }} /></div>
-        <span className="flex1" />
-        {attivo && <button className="btn piccolo pericolo" onClick={() => void fermaRun(run.id)}><I.stop /> Ferma</button>}
-        <button className="btn piccolo" onClick={p.rifai} title="Rifà tutta la serie con altri seed"><I.ricicla /> Rifai</button>
-        <button className="btn piccolo primario" disabled={fatti < 1 || p.foglio} onClick={() => void p.faiFoglio()} title="Tutte le immagini in un foglio solo, da condividere (entra in Galleria)"><I.serie /> {p.foglio ? 'Compongo…' : 'Crea il foglio'}</button>
-        <button className="btn piccolo" onClick={() => api.galleria.apriCartella()}><I.cartella /></button>
-      </div>
-      <div className="griglia-wf">
-        {run.base && (
-          <div className="scheda-wf originale">
-            <img src={urlFile(run.base.percorso)} alt="" />
-            <span className="et">ORIGINALE</span>
-          </div>
-        )}
-        {run.passi.map((x, i) => {
-          const l = lavori.find((v) => v.id === x.lavoroId)
-          const o = x.operaId ? opere[x.operaId] : undefined
-          const pc = l ? percentuale(l) : null
-          return (
-            <div key={i} role="button" className={`scheda-wf ${x.stato === 'in coda' ? 'incoda' : x.stato}`} onClick={() => x.stato === 'fatto' && o && p.apri(i)}>
-              {o ? <img src={urlFile(o.miniatura || o.file)} alt="" /> : l?.anteprima ? <img src={l.anteprima} alt="" /> : <div className="attesa-wf" />}
-              <span className="et">{x.etichetta}</span>
-              {x.stato === 'fatto' && <span className="ok-wf">✓</span>}
-              {l?.stato === 'in corso' && <span className="stato-wf">{pc !== null ? `${pc}%` : l.fase}</span>}
-              {x.stato === 'in coda' && l?.stato !== 'in corso' && <span className="stato-wf">in coda</span>}
-              {x.stato === 'in coda' && x.lavoroId && (
-                <button className="x-wf" title="Salta questa" onClick={(e) => { e.stopPropagation(); void api.lavori.annulla(x.lavoroId!) }}><I.x /></button>
-              )}
-              {x.stato === 'attesa' && <span className="stato-wf">dopo</span>}
-              {x.stato === 'annullato' && <span className="stato-wf">annullato</span>}
-              {x.stato === 'errore' && <span className="stato-wf errore" title={x.errore}>errore</span>}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/** un risultato in grande: prima/dopo con la linea (o zoom, se non c'era una foto), con i passi avanti e indietro */
-function Dettaglio(p: { run: Run; opere: Record<string, Opera>; i: number; cambia: (i: number) => void; chiudi: () => void }): JSX.Element | null {
-  const { run } = p
-  const fatti = run.passi.map((x, i) => ({ x, i })).filter(({ x }) => x.stato === 'fatto' && x.operaId && p.opere[x.operaId])
-  const pos = fatti.findIndex((f) => f.i === p.i)
-  const x = run.passi[p.i]
-  const o = x?.operaId ? p.opere[x.operaId] : undefined
-  const vai = (d: number): void => {
-    const n = fatti[pos + d]
-    if (n) p.cambia(n.i)
-  }
-  useEffect(() => {
-    const t = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') p.chiudi()
-      else if (e.key === 'ArrowLeft') vai(-1)
-      else if (e.key === 'ArrowRight') vai(1)
-    }
-    window.addEventListener('keydown', t)
-    return () => window.removeEventListener('keydown', t)
-  })
-  if (!o) return null
-  // in una catena il "prima" è il passo precedente, in una serie la foto di partenza
-  const wf = workflowDa(run.wfId)
-  const prima = wf?.modo === 'catena' && p.i > 0 ? p.opere[run.passi[p.i - 1].operaId || ''] : undefined
-  const primaUrl = prima ? urlFile(prima.file) : run.base ? urlFile(run.base.percorso) : null
-  return (
-    <div className="visore" style={{ gridTemplateColumns: '1fr 320px' }} onClick={(e) => e.target === e.currentTarget && p.chiudi()}>
-      <div className="immagine" onClick={(e) => e.target === e.currentTarget && p.chiudi()} style={{ padding: 24 }}>
-        {primaUrl ? <PrimaDopo prima={primaUrl} dopo={urlFile(o.file)} stile={{ maxHeight: 'calc(100vh - 110px)' }} /> : <VistaZoom src={urlFile(o.file)} />}
-        {pos > 0 && <button className="freccia sx" onClick={() => vai(-1)}>‹</button>}
-        {pos < fatti.length - 1 && <button className="freccia dx" onClick={() => vai(1)}>›</button>}
-      </div>
-      <div className="info">
-        <div className="riga spazia sezione">
-          <b className="oro" style={{ fontFamily: 'var(--titolo)', letterSpacing: 1.5, fontSize: 13 }}>{x.etichetta.toUpperCase()}</b>
-          <button className="btn fantasma piccolo icona" onClick={p.chiudi} title="Chiudi (Esc)"><I.x /></button>
-        </div>
-        <div className="scorri">
-          <div className="sezione col">
-            <div className="piccolo tenue">{run.nome} · {pos + 1} di {fatti.length}</div>
-            {o.promptInglese && <div className="piccolo spento" style={{ userSelect: 'text' }}>{o.promptInglese}</div>}
-            <div className="riga a-capo">
-              <button className="btn" onClick={() => { apriInModifica(fotoDaOpera(o)); p.chiudi() }}><I.modifica /> Modifica</button>
-              <button className="btn" onClick={() => api.galleria.copia(o.id)}><I.copia /> Copia</button>
-              <button className="btn" onClick={() => api.galleria.mostra(o.id)}><I.cartella /> Mostra</button>
-            </div>
-            <dl className="dati">
-              <dt>Dimensioni</dt><dd>{o.larghezza} × {o.altezza}</dd>
-              <dt>Seed</dt><dd>{o.seed}</dd>
-              <dt>Tempo</dt><dd>{durata(o.durata)}</dd>
-            </dl>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
