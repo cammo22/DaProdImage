@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
-import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
+import { Contatore, Cursore, Interruttore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
@@ -14,7 +14,7 @@ import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
 import { ControlliPersonaggio, PalcoPersonaggio } from '../componenti/Personaggio'
-import { FORMATI_FUSION, richiestaEsempio, richiestaFusion } from '../fusion'
+import { FORMATI_FUSION, TIENI_ESEMPIO, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
@@ -341,7 +341,8 @@ export function Modifica(): JSX.Element {
   /** Fusion / Esempio: la richiesta la costruisce fusion.ts; qui si accoda e si aspetta il risultato */
   async function mandaGriglia(): Promise<void> {
     const s = usaStato.getState().modifica
-    const e = s.modo === 'esempio' ? richiestaEsempio(s, turbo.presente) : richiestaFusion(s, turbo.presente)
+    if (s.modo === 'esempio' && s.esempioDescrivi) avvisa('Guardo l\'esempio…', 'info')
+    const e = s.modo === 'esempio' ? await richiestaEsempio(s, turbo.presente) : richiestaFusion(s, turbo.presente)
     if ('errore' in e) {
       avvisa(e.errore, 'errore')
       return
@@ -425,7 +426,7 @@ export function Modifica(): JSX.Element {
         }}
       >
         <div className="attrezzi">
-          <div style={{ width: 600 }}>
+          <div style={{ width: 660 }}>
             <Segmenti<ModoModifica>
               valore={m.modo}
               cambia={(modo) => setModifica({ modo })}
@@ -585,6 +586,11 @@ export function Modifica(): JSX.Element {
               <button className="btn piccolo" onClick={migliora} disabled={(!base && !griglia) || (fusion && !m.riferimenti.length) || (esempioMode && !m.esempio) || scrivendo || !m.prompt.trim()} title="Il modello guarda la foto e rende l'istruzione precisa (in inglese)">
                 <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
               </button>
+              {!fusion && (esempioMode ? m.esempio : base) && (
+                <button className="chip principale" onClick={() => inserisci('<image1>')} title={esempioMode ? 'Mette l\'esempio nel testo' : 'Mette la foto principale (quella che modifichi) nel testo'}>
+                  &lt;image1&gt; · {esempioMode ? 'esempio' : 'principale'}
+                </button>
+              )}
               {m.riferimenti.map((_, i) => (
                 <button key={i} className="chip" onClick={() => inserisci(`<image${i + (fusion ? 1 : 2)}>`)} title="Inserisci il riferimento nel testo">&lt;image{i + (fusion ? 1 : 2)}&gt;</button>
               ))}
@@ -595,6 +601,20 @@ export function Modifica(): JSX.Element {
               </div>
             )}
           </div>
+
+          {esempioMode && (
+            <div className="sezione">
+              <h3>Cosa tenere dell'esempio <span className="dx">il resto cambia con le tue foto</span></h3>
+              <div className="opzioni-esempio">
+                {TIENI_ESEMPIO.map((t) => (
+                  <button key={t.id} className={`chip ${m.esempioTieni.includes(t.id) ? 'su' : ''}`} onClick={() => setModifica({ esempioTieni: m.esempioTieni.includes(t.id) ? m.esempioTieni.filter((x) => x !== t.id) : [...m.esempioTieni, t.id] })}>{t.nome}</button>
+                ))}
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <Interruttore acceso={m.esempioDescrivi} cambia={(esempioDescrivi) => setModifica({ esempioDescrivi })} sotto="Il modello guarda l'esempio e lo descrive: lo segue meglio (qualche secondo in più)">Descrivi l'esempio prima</Interruttore>
+              </div>
+            </div>
+          )}
 
           {m.modo !== 'espandi' && !griglia && (
             <div className="sezione">
@@ -650,6 +670,7 @@ export function Modifica(): JSX.Element {
               cambia={(riferimenti) => setModifica({ riferimenti })}
               inizio={2}
               inserisci={inserisci}
+              principale={base?.percorso}
               comeBase={comeBase}
               titolo="Riferimenti"
               esempio={'Es. "metti a <image1> la giacca di <image2>". Persone, vestiti, oggetti, stili: fino a 9 foto in più (dalla galleria, dal PC o incollate con Ctrl+V).'}

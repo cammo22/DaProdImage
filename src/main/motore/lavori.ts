@@ -12,6 +12,7 @@ import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './trad
 import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
+import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
 const lavori: Lavoro[] = []
@@ -35,7 +36,25 @@ function avvisa(uno?: Lavoro, forza = true): void {
 
 const casuale = (): number => Math.floor(Math.random() * 2 ** 48)
 
-export function accodaRichiesta(q: Richiesta): Lavoro[] {
+/** i LoRA accesi si usano sempre: la loro parola chiave entra nel prompt da sola (se non c'è già), da qualsiasi pagina arrivi la richiesta */
+function conParoleLora(q: Richiesta): Richiesta {
+  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length) return q
+  let info
+  try {
+    info = elencoLora()
+  } catch {
+    return q
+  }
+  const extra: string[] = []
+  for (const a of q.lora) {
+    const p = info.find((l) => l.file === a.file)?.parole?.trim()
+    if (p && !q.prompt.toLowerCase().includes(p.toLowerCase()) && !extra.includes(p)) extra.push(p)
+  }
+  return extra.length ? { ...q, prompt: `${extra.join(', ')}, ${q.prompt}` } : q
+}
+
+export function accodaRichiesta(q0: Richiesta): Lavoro[] {
+  const q = conParoleLora(q0)
   const quante = Math.max(1, Math.min(16, q.quante || 1))
   const base = q.seed >= 0 ? q.seed : -1
   const nuovi: Lavoro[] = []

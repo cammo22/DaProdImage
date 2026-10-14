@@ -12,11 +12,14 @@ import { conMisura, type Misura } from './componenti/Misura'
 import { usaRicette, type RicettaUtente } from './ricette'
 import { SISTEMA_SORPRESA } from './azioni'
 import type { ChiaveLora } from './rapide'
+import type { PosizioneCamera } from './componenti/Camera'
 import type { Richiesta } from '@shared/tipi'
 
 export type Ingresso =
   | { id: string; tipo: 'testo' | 'righe'; nome: string; esempio: string; opzionale?: boolean }
   | { id: string; tipo: 'scelta'; nome: string; opzioni: { id: string; nome: string }[]; predefinita: string }
+  /** il comando Camera: la posizione si muove con i cerchi; il valore è un JSON {az, el, dist} (vuoto = camera ferma) */
+  | { id: string; tipo: 'camera'; nome: string }
 
 export interface Ctx {
   v: Record<string, string>
@@ -75,6 +78,20 @@ export const CATEGORIE_WF: { id: string; nome: string; icona: string; testo: str
 export { WORKFLOW_BASE } from './ricetteBase'
 import { E, righe, WORKFLOW_BASE } from './ricetteBase'
 
+/** il passo che nasce dal comando Camera di una ricetta (la posizione che hai scelto muovendo i cerchi) */
+export const VISTA_TUA = 'La tua vista'
+
+/** la posizione della camera scritta in un campo della ricetta (vuota o storta = camera ferma) */
+export function leggiCamera(s: string | undefined): PosizioneCamera | null {
+  if (!s) return null
+  try {
+    const c = JSON.parse(s) as PosizioneCamera
+    return Number.isFinite(c.az) && Number.isFinite(c.el) && Number.isFinite(c.dist) ? c : null
+  } catch {
+    return null
+  }
+}
+
 /** il passo "Sorpresa": in ogni ricetta, una variazione inventata dal modello al momento di partire */
 export const SORPRESA = '🎲 Sorpresa'
 
@@ -99,11 +116,11 @@ export function daUtente(r: RicettaUtente): Workflow {
 /** una ricetta che c'è già, come ricetta tua (si può cambiare): i campi di testo diventano {segnaposto} nei prompt */
 export function inUtente(w: Workflow, id = 'u-' + crypto.randomUUID().slice(0, 8)): RicettaUtente {
   const v: Record<string, string> = {}
-  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : `{${i.id}}`
+  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' ? '' : `{${i.id}}`
   const passi = w.passi({ v, nRif: w.rif === 'ognuno' ? 3 : 1, camera: !!fileLoraCamera() })
   return {
     id, nome: w.nome + ' (mia)', categoria: w.categoria, descrizione: w.descrizione, modo: w.modo, foto: w.foto, rif: w.rif, rifNome: w.rifNome,
-    ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta'),
+    ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta' && i.tipo !== 'camera'),
     passi: passi.map((p) => ({ etichetta: p.etichetta, prompt: p.prompt, crea: p.crea, trasparente: p.trasparente, lora: p.lora })),
     da: w.id
   }
@@ -120,7 +137,7 @@ export const workflowDa = (id: string): Workflow | undefined => elencoWorkflow()
 /** il valore di partenza di ogni campo (gli esempi si scrivono da soli, si ritoccano) */
 export function valoriIniziali(w: Workflow): Record<string, string> {
   const v: Record<string, string> = {}
-  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.esempio
+  for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' ? '' : i.esempio
   return v
 }
 

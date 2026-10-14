@@ -18,6 +18,8 @@ export function Riferimenti(p: {
   comeBase?: (i: number) => void
   /** titolo della sezione */
   titolo?: string
+  /** la foto principale (quella che modifichi): compare per prima, e un clic la mette nel testo come <image1> */
+  principale?: string
 }): JSX.Element {
   const max = p.max ?? 9
   const tag = (i: number): string => `<image${i + p.inizio}>`
@@ -29,6 +31,13 @@ export function Riferimenti(p: {
     <>
       <h3>{p.titolo || 'Riferimenti'} <span className="dx">{p.lista.length}/{max} · nel testo: {tag(0).replace('>', '')}&gt;…</span></h3>
       <div className="rif">
+        {p.principale && (
+          <div className="r principale">
+            <img src={urlFile(p.principale)} alt="" />
+            <span className="n" onClick={() => p.inserisci('<image1>')} title="Mette la foto principale nel testo">&lt;image1&gt;</span>
+            <span className="et">principale</span>
+          </div>
+        )}
         {p.lista.map((r, i) => (
           <div className="r" key={r.percorso + i}>
             <img src={urlFile(r.percorso)} alt="" />

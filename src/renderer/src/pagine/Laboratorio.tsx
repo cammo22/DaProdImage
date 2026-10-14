@@ -11,7 +11,9 @@ import { AvvisoLora } from '../componenti/AvvisoLora'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { perQualita } from '../azioni'
-import { WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
+import { CAMERA0, ControlloCamera } from '../componenti/Camera'
+import { fileLoraCamera } from '../azioni'
+import { VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
 import { usaRicette, type RicettaUtente } from '../ricette'
 import { EditorRicetta } from '../componenti/EditorRicetta'
 import { Catalogo, Dettaglio, Risultati, icona } from '../componenti/LabVista'
@@ -238,7 +240,21 @@ export function Laboratorio(): JSX.Element {
               {w.ingressi.length > 0 && (
                 <div className="sezione col" style={{ gap: 10 }}>
                   {w.ingressi.map((g) =>
-                    g.tipo === 'scelta' ? (
+                    g.tipo === 'camera' ? (
+                      <div key={g.id} className="col" style={{ gap: 6 }}>
+                        <span className="piccolo tenue">{g.nome}</span>
+                        <ControlloCamera
+                          valore={leggiCamera(valori[g.id]) ?? CAMERA0}
+                          lora={!!fileLoraCamera()}
+                          cambia={(c) => {
+                            setValori({ ...valori, [g.id]: JSON.stringify(c) })
+                            // muovendo la camera il passo "La tua vista" si segna da solo
+                            if (!fai.includes(VISTA_TUA)) setFai([...fai, VISTA_TUA])
+                          }}
+                        />
+                        <button className="btn piccolo fantasma" style={{ alignSelf: 'flex-start' }} onClick={() => { setValori({ ...valori, [g.id]: '' }); setFai(fai.filter((x) => x !== VISTA_TUA)) }}>Azzera la camera</button>
+                      </div>
+                    ) : g.tipo === 'scelta' ? (
                       <div key={g.id} className="col" style={{ gap: 4 }}>
                         <span className="piccolo tenue">{g.nome}</span>
                         <Segmenti valore={valori[g.id] ?? g.predefinita} cambia={(v) => setValori({ ...valori, [g.id]: v })} voci={g.opzioni.map((o) => ({ id: o.id, nome: o.nome }))} />

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.0 — 2026-10-15
+
+Tasto destro in Galleria, la camera nel turnaround, LoRA sempre usati, Esempio che segue meglio.
+
+- **Galleria**: **tasto destro** su una foto = **Copia** (una foto: l'immagine negli appunti; più foto: i file, da incollare in una
+  cartella o in una chat), **Elimina** (per sempre: non va nel Cestino, c'è la conferma), Apri, Modifica, Mostra nella cartella,
+  Seleziona tutte. **Ctrl+clic** ne sceglie più di una, **Maiusc+clic** un intervallo, **Ctrl+A** tutte, **Ctrl+C** copia, **Canc**
+  elimina, **Esc** toglie la scelta; le scelte hanno la spunta gialla. Nella barra in alto Copia, Nel Cestino ed Elimina.
+- **Laboratorio**: il **comando Camera** (i due cerchi: gira attorno, alza e abbassa, distanza) è anche nel **Foglio personaggio
+  (turnaround)** e nel **Giro intorno al soggetto**: lo muovi e compare il passo **La tua vista** (si segna da solo). Resta anche
+  in Modifica e nel modo Personaggio.
+- **LoRA sempre usati**: appena ne accendi uno, la sua parola chiave entra nel prompt **da sola in ogni richiesta** (Laboratorio,
+  Personaggio, azioni rapide, Fusion, Esempio…), senza doverla scrivere. Prima lo faceva solo da alcune pagine.
+- **Modo Esempio** più fedele: il prompt ora dice chiaramente che l'esempio è il **bersaglio** e cosa va **tenuto** esattamente; scegli
+  tu cosa tenere (posa, inquadratura, sfondo, luce e colori, vestiti); e il modello **guarda l'esempio e lo descrive** prima di partire
+  (si può spegnere), così lo segue meglio. Il volto e il corpo vengono dai riferimenti, mai dalla persona dell'esempio.
+- **La foto principale nel testo**: in Modifica (tutta la foto, zona, espandi) c'è il chip **\<image1\> · principale** vicino ai
+  riferimenti, e la foto principale è la prima tessera nei Riferimenti; in Esempio c'è **\<image1\> · esempio**; nell'editor delle
+  ricette ogni passo ha i chip `<image1>`, `<image2>`… e `{campo}`.
+- Da provare con l'app vera: Esempio (la resa dipende dal modello), la copia di più file (usa PowerShell di Windows).
+
 ## 0.7.0 — 2026-10-15
 
 Album rifatto da capo (semplice, con tanti modelli), modo Personaggio, Sorpresa sempre a tema.

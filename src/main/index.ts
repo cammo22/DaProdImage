@@ -1,4 +1,5 @@
 // DaProd Image — processo principale: finestra, protocollo daprod:// per le immagini, IPC verso l'interfaccia.
+import { execFile } from 'node:child_process'
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, ipcMain, nativeImage, net, protocol, shell, type IpcMainInvokeEvent } from 'electron'
 import { copyFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, normalize } from 'node:path'
@@ -194,18 +195,30 @@ function registraIpc(): void {
   gestisci('galleria:elenco', (f: FiltroGalleria) => elenco(f))
   gestisci('galleria:opera', (id: string) => opera(id))
   gestisci('galleria:preferita', (id: string, si: boolean) => preferita(id, si))
-  gestisci('galleria:elimina', (ids: string[]) => elimina(ids))
+  gestisci('galleria:elimina', (ids: string[], definitivo?: boolean) => elimina(ids, !!definitivo))
   gestisci('galleria:mostra', (id: string) => {
     const o = opera(id)
     if (o) shell.showItemInFolder(o.file)
   })
   gestisci('galleria:apriCartella', () => shell.openPath(impostazioni().cartellaGalleria))
-  gestisci('galleria:copia', async (id: string) => {
-    const o = opera(id)
-    if (!o) return
-    // gli appunti di Electron 44 vogliono un ClipboardItem (come quelli del web)
-    const png = nativeImage.createFromPath(o.file).toPNG()
-    await clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }) })])
+  gestisci('galleria:copia', async (ids: string | string[]) => {
+    const lista = (Array.isArray(ids) ? ids : [ids]).map((id) => opera(id)).filter((o): o is NonNullable<typeof o> => !!o)
+    if (!lista.length) return
+    if (lista.length === 1) {
+      // una sola: l'immagine negli appunti (gli appunti di Electron 44 vogliono un ClipboardItem, come quelli del web)
+      const png = nativeImage.createFromPath(lista[0].file).toPNG()
+      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }) })])
+      return
+    }
+    // più foto: i file negli appunti, come in Esplora risorse (si incollano in una cartella, in una chat, in un'email)
+    await new Promise<void>((ok, ko) => {
+      execFile(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', '$p = @($env:DAPROD_FILE_JSON | ConvertFrom-Json); Set-Clipboard -LiteralPath $p'],
+        { env: { ...process.env, DAPROD_FILE_JSON: JSON.stringify(lista.map((o) => o.file)) }, windowsHide: true },
+        (e) => (e ? ko(e) : ok())
+      )
+    })
   })
   gestisci('galleria:esporta', async (id: string) => {
     const o = opera(id)
