@@ -2,10 +2,11 @@
 import { create } from 'zustand'
 import type { Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
+import type { Misura } from './componenti/Misura'
 
-export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'galleria' | 'lora' | 'impostazioni'
+export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'lora' | 'impostazioni'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'nuova'
+export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
 
@@ -59,6 +60,10 @@ export interface StatoModifica {
   allarga: number
   bordi: Bordi
   trasparente: boolean
+  /** le dimensioni dell'immagine che esce: auto, come l'originale, o una misura scelta */
+  misura: Misura
+  /** Fusion: le proporzioni della foto nuova ('prima' = come la prima foto) */
+  formatoFusion: string
 }
 
 export interface Avviso {
@@ -118,7 +123,7 @@ const CREA0: StatoCrea = {
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
-  ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false
+  ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima'
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
@@ -127,6 +132,9 @@ function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
   // appena si salva, il campo mp sparisce: la conversione avviene una volta sola
   return mp ? { ...resto, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : resto
 }
+
+/** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion */
+const daVecchioMod = (m: StatoModifica): StatoModifica => ((m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : m)
 
 let idAvviso = 0
 
@@ -138,7 +146,7 @@ export const usaStato = create<Stato>((set, get) => ({
   lore: [],
   loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
   crea: { ...daVecchio(leggiLocale('dpi-crea', CREA0)), riferimenti: [] },
-  modifica: { ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [] },
+  modifica: daVecchioMod({ ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [] }),
   codaAperta: false,
   avvisi: [],
   visore: null,

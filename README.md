@@ -67,7 +67,8 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
 - **Tutta la foto** con una frase ("fallo di notte con la neve"), azioni rapide (rimuovi sfondo, restaura, colora
   il bianco e nero, luce da studio, cambia o traduci i testi, stili) e **fino a 9 foto di riferimento** (`<image2>`…).
 - **Più foto**: trascini quante ne vuoi, con **★ base** scegli quale modificare e le altre sono riferimenti; oppure
-  **Nuova dalle foto** crea un'immagine completamente nuova mettendo insieme persone, vestiti, oggetti e stili.
+  **Fusion**: tutte le foto sono riferimenti e ne esce una foto nuova (persone, vestiti, oggetti, luoghi, stili) in base al prompt.
+- **Dimensioni**: come la foto originale, secondo i megapixel, o una misura tua.
 - **Solo una zona**: la segni con pennello, rettangolo o lazo e scrivi cosa farci. Il modello guarda **tutta la foto**
   con la zona evidenziata e cambia **solo lì**: fuori, la foto resta identica al pixel. Niente cursori da regolare:
   bordi e sfumatura si adattano alla zona, e se scrivi "rimuovi…" la zona si ripulisce prima di ridisegnarla.
@@ -80,10 +81,17 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
 | --- | --- |
 | ![Zona](risorse/zona.png) | ![Anteprima della zona](risorse/anteprima.png) |
 
+## Album
+
+Impaginazione automatica per la stampa, come SmartAlbums: scegli le foto (dalla galleria o dal PC, **anche i RAW** di tutte le
+fotocamere), il formato, e **Impagina tutto**. Le foto vanno nell'ordine di scatto, divise in spread con layout che tagliano il meno
+possibile, copertina e pagine intere per le preferite. Poi ritocchi (altro layout, inquadratura, zoom, testi, sfondo anche fatto
+dall'AI) ed **esporti in PDF o JPEG** a 300 dpi con l'abbondanza.
+
 ## Laboratorio
 
 47 ricette pronte, in serie o a catena: il personaggio in 9 pose, espressioni, età, armadio, **camera da trascinare**,
-luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di risultati fuori, con prima/dopo.
+luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di risultati fuori, con prima/dopo. Puoi fare solo i passi che ti servono.
 
 ## I modelli
 

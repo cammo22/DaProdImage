@@ -45,6 +45,8 @@ export interface Richiesta {
   /** crea: dimensioni esatte (multipli di 32) */
   larghezza: number
   altezza: number
+  /** misura esatta dell'immagine che esce (px): il motore ci porta il risultato alla fine; se mancano, esce com'è */
+  uscita?: { w: number; h: number }
   /** modifica/zona/espandi/rifinisci: area di lavoro in megapixel */
   megapixel: number
   /** percorsi su disco: [0] è la foto da modificare, le altre sono riferimenti */

@@ -138,6 +138,19 @@ export function doveNelRiquadro(zona: Riquadro, box: { x: number; y: number; w: 
   return o || v ? `the ${[v, o].filter(Boolean).join(' ')} part` : 'the center'
 }
 
+/** porta l'immagine (grande w × h) alla misura esatta chiesta in `q.uscita`: riduce, o con l'ingranditore se serve molto di più;
+ *  con proporzioni diverse taglia al centro */
+function allaMisura(g: Grafo, q: Richiesta, imp: Impostazioni, img: Rif, w: number, h: number): Rif {
+  const u = q.uscita
+  if (!u || (Math.abs(u.w - w) < 2 && Math.abs(u.h - h) < 2)) return img
+  let x = img
+  if (Math.max(u.w / w, u.h / h) > 1.5 && imp.upscaler && !q.trasparente) {
+    const um = r(g.add('UpscaleModelLoader', { model_name: imp.upscaler }, 'Carico l\'ingranditore'))
+    x = r(g.add('ImageUpscaleWithModel', { upscale_model: um, image: x }, 'Ingrandisco'))
+  }
+  return r(g.add('ImageScale', { image: x, upscale_method: 'lanczos', width: u.w, height: u.h, crop: 'center' }, 'Porto alla misura'))
+}
+
 function salva(g: Grafo, img: Rif, prefisso: string): string {
   return g.add('SaveImage', { images: img, filename_prefix: `daprod/${prefisso}` }, 'Salvo')
 }
@@ -259,7 +272,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       : model
     const ks = campiona(g, q, m, enc, lat, q.passi)
     const mp = (q.larghezza * q.altezza) / 1048576
-    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), q.larghezza, q.altezza), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
   }
 
@@ -274,7 +287,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const ks = campiona(g, q, model, enc, r(enc, 2), q.passi)
     const d = dimensioniPer(q.megapixel, ing.immagini[0].larghezza, ing.immagini[0].altezza)
     const mp = (d.w * d.h) / 1048576
-    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), d.w, d.h), prefisso)
     const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi, area }
   }
@@ -305,7 +318,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
     const passi = passiPer(q.passi, forza, minimo)
     const ks = campiona(g, q, model, enc, lat, passi, forza)
-    const uscita = salva(g, sviluppa(g, q, ks, vae, mp), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), W, H), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
 
@@ -432,7 +445,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     mFin = r(g.add('ImageToMask', { image: b, channel: 'red' }))
   }
   const finale = r(g.add('ImageCompositeMasked', { destination: foto, source: indietro, x: box.x, y: box.y, resize_source: false, mask: mFin }))
-  const uscita = salva(g, finale, prefisso)
+  const uscita = salva(g, allaMisura(g, q, imp, finale, W, H), prefisso)
   // l'anteprima si posa sulla foto di partenza: per Espandi la tela comincia prima dei bordi
   const b0 = q.modalita === 'espandi' ? q.bordi || { sinistra: 0, sopra: 0, destra: 0, sotto: 0 } : { sinistra: 0, sopra: 0 }
   const area = { x: box.x - b0.sinistra, y: box.y - b0.sopra, w: box.w, h: box.h }

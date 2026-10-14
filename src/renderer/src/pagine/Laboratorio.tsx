@@ -6,6 +6,7 @@ import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Segmenti } from '../componenti/Controlli'
 import { Riferimenti } from '../componenti/Riferimenti'
+import { SceltaMisura, MISURA0, type Misura } from '../componenti/Misura'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { PrimaDopo } from '../componenti/PrimaDopo'
@@ -43,6 +44,9 @@ export function Laboratorio(): JSX.Element {
   const [valori, setValori] = useState<Record<string, string>>({})
   const [qualita, setQualita] = useState<Qualita>('alta')
   const [mp, setMp] = useState(1)
+  const [misura, setMisura] = useState<Misura>(MISURA0)
+  // i passi che non voglio fare (per etichetta)
+  const [esclusi, setEsclusi] = useState<string[]>([])
   const [cerca, setCerca] = useState('')
   const [aperto, setAperto] = useState<{ run: string; i: number } | null>(null)
   const [opere, setOpere] = useState<Record<string, Opera>>({})
@@ -61,6 +65,7 @@ export function Laboratorio(): JSX.Element {
     usaLab.setState({ scelto: id, vista: 'catalogo' })
     setValori(valoriIniziali(nuovo))
     setRif([])
+    setEsclusi([])
   }
 
   // le opere dei risultati (per vedere le immagini finite)
@@ -93,7 +98,8 @@ export function Laboratorio(): JSX.Element {
   }, [])
 
   const passi = useMemo(() => (w ? passiDi(w, valori, rif.length) : []), [w, valori, rif.length])
-  const stima = imp ? stimaSecondi(imp.tempi, mp, perQualita(qualita).passi) * passi.length : 0
+  const scelti = passi.filter((x) => !esclusi.includes(x.etichetta))
+  const stima = imp ? stimaSecondi(imp.tempi, mp, perQualita(qualita).passi) * scelti.length : 0
   const problema = w ? manca(w, { foto, rif }) : null
   const lora = w ? [...loraUsati(w, valori, rif.length)] : []
 
@@ -103,7 +109,11 @@ export function Laboratorio(): JSX.Element {
       avvisa('Per il Turbo scarica prima il suo LoRA, o scegli Alta', 'errore')
       return
     }
-    await avviaWorkflow(w, { foto, rif, valori, opzioni: { qualita, mp } })
+    if (!scelti.length) {
+      avvisa('Scegli almeno un passo da fare', 'errore')
+      return
+    }
+    await avviaWorkflow(w, { foto, rif, valori, opzioni: { qualita, mp, misura, escludi: esclusi } })
   }
 
   const scegliLaFoto = async (): Promise<void> => {
@@ -197,6 +207,38 @@ export function Laboratorio(): JSX.Element {
                 </div>
               )}
 
+              {passi.length > 1 && (
+                <div className="sezione">
+                  <h3>
+                    Cosa fare <span className="dx">{scelti.length} di {passi.length}</span>
+                  </h3>
+                  <div className="riga a-capo" style={{ gap: 6, marginBottom: 8 }}>
+                    <button className="chip" onClick={() => setEsclusi([])}>Tutte</button>
+                    <button className="chip" onClick={() => setEsclusi(passi.map((x) => x.etichetta))}>Nessuna</button>
+                    <span className="piccolo spento">Segna solo quelle che ti servono</span>
+                  </div>
+                  <div className="scelta-passi">
+                    {passi.map((x) => {
+                      const su = !esclusi.includes(x.etichetta)
+                      return (
+                        <label key={x.etichetta} className={su ? 'su' : ''} title={x.prompt}>
+                          <input type="checkbox" checked={su} onChange={() => setEsclusi(su ? [...esclusi, x.etichetta] : esclusi.filter((e) => e !== x.etichetta))} />
+                          <span>{x.etichetta}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                  {w.modo === 'catena' && <div className="piccolo spento" style={{ marginTop: 6 }}>In una catena ogni passo parte dal risultato del precedente: i passi che togli vengono saltati.</div>}
+                </div>
+              )}
+
+              {passi.some((x) => !x.crea) && (
+                <div className="sezione">
+                  <h3>Dimensioni <span className="dx">{misura.tipo === 'auto' ? 'come i megapixel' : misura.tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
+                  <SceltaMisura valore={misura} cambia={setMisura} base={foto} mp={mp} />
+                </div>
+              )}
+
               <div className="sezione">
                 <h3>Qualità <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
                 <Segmenti<Qualita>
@@ -223,7 +265,7 @@ export function Laboratorio(): JSX.Element {
         {w && (
           <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
             <button className="btn primario grande" style={{ width: '100%' }} onClick={() => void parti()} disabled={!!problema}>
-              <I.gioca /> Avvia · {passi.length} {passi.length === 1 ? 'immagine' : 'immagini'}
+              <I.gioca /> Avvia · {scelti.length} {scelti.length === 1 ? 'immagine' : 'immagini'}
             </button>
             <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{problema || `~${durata(stima)} · si vedono qui e nella barra in basso`}</div>
           </div>
@@ -352,6 +394,9 @@ function Risultati(p: {
               {x.stato === 'fatto' && <span className="ok-wf">✓</span>}
               {l?.stato === 'in corso' && <span className="stato-wf">{pc !== null ? `${pc}%` : l.fase}</span>}
               {x.stato === 'in coda' && l?.stato !== 'in corso' && <span className="stato-wf">in coda</span>}
+              {x.stato === 'in coda' && x.lavoroId && (
+                <button className="x-wf" title="Salta questa" onClick={(e) => { e.stopPropagation(); void api.lavori.annulla(x.lavoroId!) }}><I.x /></button>
+              )}
               {x.stato === 'attesa' && <span className="stato-wf">dopo</span>}
               {x.stato === 'annullato' && <span className="stato-wf">annullato</span>}
               {x.stato === 'errore' && <span className="stato-wf errore" title={x.errore}>errore</span>}

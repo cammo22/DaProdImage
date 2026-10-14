@@ -1,6 +1,31 @@
 # Changelog
 
-## 0.4.1 — 2026-10-14
+## 0.5.0 — 2026-10-14
+
+Album per la stampa, Fusion, coda a tessere.
+
+- **Album** (nuova pagina, come SmartAlbums): scegli le foto **dalla galleria o dal PC, anche i RAW di tutte le fotocamere**
+  (CR2/CR3, NEF, ARW, DNG, RAF, ORF… passano da WIC di Windows), il formato (quadrato 20/25/30, verticale, orizzontale, A4,
+  una misura tua; aperto a due pagine o pagina singola) e premi **Impagina tutto**: le foto vanno nell'ordine di scatto (data
+  EXIF, anche dei RAW), divise in spread da N a M foto (si può cominciare uno spread nuovo dopo una pausa fra gli scatti),
+  con layout che tagliano il meno possibile, la copertina col titolo e una pagina intera per le preferite (★). Poi ritocchi a mano:
+  **altro layout**, stile ordinato / dinamico / una grande, sposta e scambia le foto, **trascini la foto nella cella per
+  cambiare l'inquadratura** e zoom, foto trascinate dalla striscia sugli spread, testi, margini, spazio, angoli, taglio
+  massimo, sfondo a colori, da un'immagine o **fatto dall'AI** (Qwen-Image), annulla/ripeti e salvataggio da solo.
+  **Esporti per la stampa** in PDF a grandezza vera o in JPEG, a 150/200/300 dpi, con l'abbondanza (il vivo) e le pagine
+  doppie o singole. Gli originali non si toccano: nell'album ci sono JPEG ad alta qualità (6000 px) e le miniature.
+- **Fusion** (era "Nuova dalle foto"): metti **più foto, tutte riferimenti**, scrivi cosa vuoi e ne esce una foto nuova.
+  Le foto stanno in una griglia (`<image1>`, `<image2>`…, riordinabili), il formato lo scegli tu (come la prima foto, 1:1,
+  4:5, 3:2, 16:9, 9:16) e i risultati compaiono sotto, con "Fra le foto" per fonderli ancora.
+- **La coda è un menu a tessere**: ogni foto che si sta facendo, quelle in attesa e quelle finite, con l'anteprima dal
+  vivo; clic per vederla in grande; si apre anche toccando la barra in basso; ✕ per annullarne una sola.
+- **Laboratorio**: segni **solo i passi che ti servono** (se vuoi una posa sola non le fai tutte) e puoi saltare un passo già in coda.
+- **Dimensioni dell'immagine**: in Modifica e nel Laboratorio scegli se l'immagine esce **come la foto originale**, secondo i
+  megapixel, o a una **misura tua** (il motore porta il risultato alla misura esatta, con l'ingranditore se serve).
+- Sistemato: l'anteprima in Crea usciva dallo spazio sotto la striscia e poi si aggiustava; ora sta sempre dentro, come la foto finita.
+  Il testo "Scarico il traduttore" non sborda più dalla barra in basso.
+
+## 0.4.1## 0.4.1 — 2026-10-14
 
 - **Traduzione con un modello fatto apposta**: il prompt italiano lo traduce **Opus-MT it→en** (Helsinki-NLP, ~300 MB),
   un modello di sola traduzione che gira sul **processore**: niente Qwen, niente VRAM, nessun rifiuto sui prompt espliciti

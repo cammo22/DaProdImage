@@ -73,6 +73,7 @@ export const I = {
   situazione: () => <S><circle cx="17" cy="7" r="2.2" /><path d="M3 18l5.5-7 4 4.5 3-3.5L21 18z" /></S>,
   camera: () => <S><rect x="3" y="7" width="13" height="10" rx="2" /><path d="M16 11l5-3v8l-5-3z" /></S>,
   luce: () => <S><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z" /></S>,
+  album: () => <S><path d="M3 6.5C5.5 5 8.5 5 12 7c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z" /><path d="M12 7v12.5" /><circle cx="7.5" cy="11.5" r="1.2" /><path d="M5.5 16l2.2-2.4 2 1.8" /></S>,
   laboratorio: () => <S><path d="M9 3h6M10 3v6L4.6 18.6A1.6 1.6 0 006 21h12a1.6 1.6 0 001.4-2.4L14 9V3" /><path d="M7.5 15h9" /></S>,
   serie: () => <S><rect x="3" y="3" width="8" height="8" rx="1.6" /><rect x="13" y="3" width="8" height="8" rx="1.6" /><rect x="3" y="13" width="8" height="8" rx="1.6" /><rect x="13" y="13" width="8" height="8" rx="1.6" /></S>,
   catena: () => <S><rect x="2.5" y="8" width="6" height="8" rx="1.5" /><rect x="15.5" y="8" width="6" height="8" rx="1.5" /><path d="M9 12h6M13 9.5l2.5 2.5-2.5 2.5" /></S>,

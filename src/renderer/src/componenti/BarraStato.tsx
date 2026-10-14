@@ -19,7 +19,7 @@ export function BarraStato(): JSX.Element {
     const lenta = troppoLenta(corrente.secondiPasso, corrente.megapixel || 1)
     const titolo = q.etichetta || q.prompt || q.modalita
     return (
-      <div className="barra-stato attiva">
+      <div className="barra-stato attiva" style={{ cursor: 'pointer' }} onClick={() => usaStato.setState({ codaAperta: !codaAperta })} title="Apri la coda: tutte le foto che si stanno facendo">
         <div className="bs-sinistra">
           <span className="bs-giro" />
           <div className="col" style={{ gap: 0 }}>
@@ -40,15 +40,15 @@ export function BarraStato(): JSX.Element {
         </div>
         <div className="bs-destra">
           {lenta && (
-            <button className="chip lento" onClick={() => vai('impostazioni')} title={`${corrente.secondiPasso} s per passo: molto più del normale. Di solito la VRAM è piena e Windows usa la RAM (Opzioni → Prestazioni).`}>
+            <button className="chip lento" onClick={(e) => { e.stopPropagation(); vai('impostazioni') }} title={`${corrente.secondiPasso} s per passo: molto più del normale. Di solito la VRAM è piena e Windows usa la RAM (Opzioni → Prestazioni).`}>
               <I.tempo /> lento
             </button>
           )}
           <span className="bs-tempo">{p !== null && <b>{p}%</b>}{corrente.stima ? <span> · ~{durata(corrente.stima)}</span> : null}</span>
           {inCoda > 0 && (
-            <button className={`chip ${codaAperta ? 'su' : ''}`} onClick={() => usaStato.setState({ codaAperta: !codaAperta })} title="Altri lavori in attesa">+{inCoda} in coda</button>
+            <button className={`chip ${codaAperta ? 'su' : ''}`} onClick={(e) => { e.stopPropagation(); usaStato.setState({ codaAperta: !codaAperta }) }} title="Altri lavori in attesa">+{inCoda} in coda</button>
           )}
-          <button className="btn piccolo" onClick={() => api.lavori.annulla(corrente.id)} title="Ferma questo lavoro"><I.x /> Annulla</button>
+          <button className="btn piccolo" onClick={(e) => { e.stopPropagation(); void api.lavori.annulla(corrente.id) }} title="Ferma questo lavoro"><I.x /> Annulla</button>
         </div>
       </div>
     )

@@ -16,6 +16,7 @@ import { ESTENSIONI_FOTO, SOLO_WIC, pngConWic } from './converti'
 import { seguiRisorse } from './risorse'
 import { aggiornaLora, elencoLora, eliminaLora, importaLora, scaricaLora } from './lora'
 import { leggiMetadati } from './png'
+import { caricaAlbum, creaPdf, elencoAlbum, eliminaAlbum, preparaFoto, salvaAlbum, salvaEsportata, salvaFotoAlbum } from './album'
 import { avviaAggiornamenti, controllaAggiornamenti, installaAggiornamento, statoAggiornamento, suAggiornamento } from './aggiornamenti'
 
 // corsEnabled: le <img crossOrigin> (canvas) e la mask-image della zona leggono da qui con il CORS
@@ -305,6 +306,16 @@ function registraIpc(): void {
       return null
     }
   })
+  // album
+  gestisci('album:elenco', () => elencoAlbum())
+  gestisci('album:carica', (id: string) => caricaAlbum(id))
+  gestisci('album:salva', (a: { id: string }) => salvaAlbum(a))
+  gestisci('album:elimina', (id: string) => eliminaAlbum(id))
+  gestisci('album:prepara', (p: string) => preparaFoto(p))
+  gestisci('album:salvaFoto', (id: string, foto: string, grande: string, mini: string) => salvaFotoAlbum(id, foto, grande, mini))
+  gestisci('album:esportata', (cartella: string, nome: string, dataUrl: string) => salvaEsportata(cartella, nome, dataUrl))
+  gestisci('album:mostra', (p: string) => shell.showItemInFolder(p))
+  gestisci('album:pdf', (dest: string, pagine: Parameters<typeof creaPdf>[1]) => creaPdf(dest, pagine))
   gestisci('app:apriLink', (url: string) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url)
   })

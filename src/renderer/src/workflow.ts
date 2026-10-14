@@ -10,6 +10,7 @@ import { fileLoraCamera, loraPer, perQualita, richiestaBase, fotoDaOpera } from 
 import { PRESET, campiCon, componiPreset } from './preset'
 import { componiCamera } from './componenti/Camera'
 import { dimensioniRis } from './util'
+import { conMisura, type Misura } from './componenti/Misura'
 import type { ChiaveLora } from './rapide'
 import type { Richiesta } from '@shared/tipi'
 
@@ -409,6 +410,10 @@ export interface PassoRun {
 export interface OpzioniRun {
   qualita: Qualita
   mp: number
+  /** le dimensioni dell'immagine che esce (per i passi che modificano la foto) */
+  misura?: Misura
+  /** i passi che non si fanno (per etichetta): se ti serve una foto sola non le fai tutte */
+  escludi?: string[]
 }
 
 export interface Run {
@@ -468,7 +473,8 @@ function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null): Ric
   const base = baseCorrente || run.base
   return {
     ...comune, modalita: 'modifica', prompt: passo.prompt, megapixel: run.opzioni.mp,
-    immagini: [base!.percorso, ...rif.map((r) => r.percorso)], origine: base?.operaId
+    immagini: [base!.percorso, ...rif.map((r) => r.percorso)], origine: base?.operaId,
+    ...conMisura(run.opzioni.misura, run.base)
   }
 }
 
@@ -510,8 +516,12 @@ export async function avviaWorkflow(w: Workflow, i: IngressiRun): Promise<string
     return null
   }
   const ctx: Ctx = { v: i.valori, nRif: i.rif.length, camera: !!fileLoraCamera() }
-  const definizione = w.passi(ctx)
-  if (!definizione.length) return null
+  const escludi = new Set(i.opzioni.escludi || [])
+  const definizione = w.passi(ctx).filter((p) => !escludi.has(p.etichetta))
+  if (!definizione.length) {
+    usaStato.getState().avvisa('Scegli almeno un passo da fare', 'errore')
+    return null
+  }
   const run: Run = {
     id: crypto.randomUUID(), wfId: w.id, nome: w.nome, base: i.foto, rif: i.rif, definizione, opzioni: i.opzioni, ctx,
     passi: definizione.map((p) => ({ etichetta: p.etichetta, stato: 'attesa' as const })), seed: Math.floor(Math.random() * 2 ** 32), creato: Date.now()

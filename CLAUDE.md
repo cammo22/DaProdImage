@@ -78,9 +78,12 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **nuova dalle foto** (`modalita: 'crea'` con tutte le foto come
-  `images.image_N`); `★ base` scambia base e riferimento. **Laboratorio** (`workflow.ts`, 47 ricette) accoda catene di
-  lavori; la **barra di stato** (`BarraStato`) mostra il lavoro in corso; **Camera** e azioni rapide (`rapide.ts`) accendono i LoRA.
+- **Modifica** ha 4 modi: tutta la foto, zona, espandi e **Fusion** (`componenti/Fusion.tsx`: nessuna base, `m.riferimenti` sono tutte
+  le foto, `modalita: 'crea'` con `images.image_N`, formato `formatoFusion`; i risultati stanno in `Fusion`, non diventano versioni);
+  `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura
+  tua; `allaMisura()` in `grafi.ts` porta il risultato alla misura esatta (ingranditore se serve > 1,5×, taglio al centro). **Laboratorio** (`workflow.ts`, 47 ricette) accoda catene di
+  lavori; la **barra di stato** (`BarraStato`, clic = apre la coda) mostra il lavoro in corso; la **coda** (`Coda.tsx`) è un menu a tessere con anteprime;
+  nel Laboratorio si segnano i passi da fare (`OpzioniRun.escludi`); **Camera** e azioni rapide (`rapide.ts`) accendono i LoRA.
 - Stato in `stato.ts` (zustand); le scelte di Crea/Modifica e i LoRA accesi restano in localStorage.
 - Crea: **risoluzione = lato corto** (`RISOLUZIONI`, `dimensioniRis`: multipli di 16, al massimo 4,2 MP e 2688 px di lato);
   **preset** in `preset.ts` (campi in italiano → prompt in inglese, i testi da disegnare fra virgolette e identici).
@@ -94,6 +97,12 @@ interfaccia**, installato e guidato dall'app.
   e `normalizza` (Chromium + EXIF, se non ce la fa `file:inPng` con WIC; max 24 MP).
 - `VistaZoom`: foto con rotella/trascina/doppio clic (Crea, visore). Galleria a righe giustificate. Barra del titolo
   sempre bianca (`titleBarOverlay` chiaro) con RAM/VRAM/GPU da `src/main/risorse.ts` (nvidia-smi ogni 2 s).
+- **Album** (`pagine/Album.tsx`, `src/renderer/src/album/`, `src/main/album.ts`): progetto JSON in `DATI/album/<id>/album.json` + foto
+  (JPEG 6000 px e miniature 800 px, create dall'interfaccia da qualsiasi formato: `album:prepara` porta dentro il file, i RAW passano da
+  WIC a 6500 px; data di scatto da `exif.ts`, JPEG e RAW basati su TIFF). Tutto in **mm**. `layout.ts` è puro: enumera gli alberi di tagli
+  (fino a 8 foto) e dà i layout migliori (costo = taglio delle foto + celle minuscole + spazio vuoto oltre `taglioMax`); `costruisci.ts`
+  raggruppa le foto in spread; `disegna.ts` disegna su canvas (schermo e stampa); `esporta.ts` fa JPEG/PDF (`pdf.ts` scrive il PDF
+  con le JPEG, senza librerie). Le foto grandi non restano in cache (decine di MP).
 - Le impostazioni di ogni immagine stanno **dentro il PNG** (chunk iTXt `daprod`, `src/main/png.ts`): la galleria si
   ricostruisce dai file e un PNG trascinato in Galleria torna con prompt, seed e LoRA.
 - LoRA: dall'intestazione safetensors si capisce se sono per Qwen 2.1 (`transformer_blocks.N.attn.to_q`/`img_mlp`)
