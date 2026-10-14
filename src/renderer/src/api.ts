@@ -4,6 +4,22 @@ import type {
 } from '@shared/tipi'
 
 type Via = () => void
+
+export interface RiassuntoAlbum {
+  id: string
+  nome: string
+  aggiornato: number
+  spread: number
+  foto: number
+  copertina?: string
+}
+export interface PaginaPdf {
+  jpeg: string
+  larghezza: number
+  altezza: number
+  mmL: number
+  mmA: number
+}
 export interface FileModelli {
   diffusione: string[]
   encoder: string[]
@@ -57,6 +73,17 @@ export interface Api {
     portaDentro(p: string[]): Promise<string[]>
     inPng(p: string, latoMax?: number): Promise<{ percorso: string; larghezza: number; altezza: number }>
     percorso(f: File): string
+  }
+  album: {
+    elenco(): Promise<RiassuntoAlbum[]>
+    carica(id: string): Promise<unknown>
+    salva(a: { id: string }): Promise<void>
+    elimina(id: string): Promise<void>
+    prepara(p: string): Promise<{ percorso: string; nome: string; data: number }>
+    salvaFoto(id: string, foto: string, grande: string, mini: string): Promise<{ grande: string; mini: string }>
+    esportata(cartella: string, nome: string, dataUrl: string): Promise<string>
+    pdf(dest: string, pagine: PaginaPdf[]): Promise<string>
+    mostra(p: string): Promise<void>
   }
   app: { apriLink(u: string): Promise<void>; versione(): Promise<string>; apriCartella(q: 'modelli' | 'dati' | 'log'): Promise<void> }
   aggiornamento: { stato(): Promise<StatoAggiornamento>; controlla(): Promise<StatoAggiornamento>; installa(): Promise<void> }

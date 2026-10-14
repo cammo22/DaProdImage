@@ -12,11 +12,25 @@ import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
+import { Fusion, MAX_FUSION } from '../componenti/Fusion'
+import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { SISTEMA_MIGLIORA_MODIFICA, fileLoraCamera, loraPer, perQualita, richiestaBase } from '../azioni'
 import { categoriePer, type Rapida } from '../rapide'
-import type { Bordi } from '@shared/tipi'
+import { apriInModifica, fotoDaOpera } from '../azioni'
+import type { Bordi, Lavoro, Opera } from '@shared/tipi'
+
+/** le proporzioni della foto di Fusion (r = null: come la prima foto) */
+const FORMATI_FUSION: { id: string; nome: string; r?: [number, number] }[] = [
+  { id: 'prima', nome: 'Prima foto' },
+  { id: '1:1', nome: '1:1', r: [1, 1] },
+  { id: '4:5', nome: '4:5', r: [4, 5] },
+  { id: '3:2', nome: '3:2', r: [3, 2] },
+  { id: '16:9', nome: '16:9', r: [16, 9] },
+  { id: '9:16', nome: '9:16', r: [9, 16] }
+]
+const attesiFusion = new Set<string>()
 
 const NIENTE: Bordi = { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }
 
@@ -36,6 +50,9 @@ export function Modifica(): JSX.Element {
   const [camera, setCamera] = useState<PosizioneCamera>(CAMERA0)
   const [scrivendo, setScrivendo] = useState(false)
   const turbo = useTurbo()
+  // Fusion: i risultati (foto nuove) e il lavoro che li sta creando
+  const [ris, setRis] = useState<Opera[]>([])
+  const fusion = m.modo === 'fusion'
 
   const base = m.base
   const indice = base ? m.versioni.findIndex((v) => v.percorso === base.percorso) : -1
@@ -44,6 +61,8 @@ export function Modifica(): JSX.Element {
   const { passi } = perQualita(m.qualita)
   const inCorso = lavori.find((l) => l.stato === 'in corso' && attesiModifica.has(l.id))
   const inAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiModifica.has(l.id)).length
+  const fusInCorso: Lavoro | undefined = lavori.find((l) => l.stato === 'in corso' && attesiFusion.has(l.id))
+  const fusInAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiFusion.has(l.id)).length
   const forzaRapida = rapida?.forza
   const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * forzaRapida)) : passi) * m.quante
   const categorie = categoriePer(m.modo === 'zona' ? 'zona' : 'tutta')
@@ -62,6 +81,26 @@ export function Modifica(): JSX.Element {
         }
       : undefined
 
+  // Fusion: quando un lavoro finisce, la foto nuova compare fra i risultati
+  useEffect(() => {
+    const h = (uno: Lavoro): void => {
+      if (uno.stato === 'fatto' && attesiFusion.has(uno.id)) {
+        attesiFusion.delete(uno.id)
+        void Promise.all(uno.risultati.map((id) => api.galleria.opera(id))).then((l) => setRis((r) => [...(l.filter(Boolean) as Opera[]).reverse(), ...r]))
+      } else if ((uno.stato === 'errore' || uno.stato === 'annullato') && attesiFusion.has(uno.id)) attesiFusion.delete(uno.id)
+    }
+    ascoltatoriLavoro.push(h)
+    return () => {
+      const i = ascoltatoriLavoro.indexOf(h)
+      if (i >= 0) ascoltatoriLavoro.splice(i, 1)
+    }
+  }, [])
+  // entrando in Fusion con una foto già aperta, quella è la prima
+  useEffect(() => {
+    const s = usaStato.getState().modifica
+    if (s.modo === 'fusion' && !s.riferimenti.length && s.base) setModifica({ riferimenti: [s.base] })
+  }, [m.modo])
+
   // pennello proporzionato alla foto; foto nuova = niente confronto
   useEffect(() => {
     if (base) setPennello(Math.max(8, Math.round(Math.min(base.larghezza, base.altezza) / 16)))
@@ -76,7 +115,7 @@ export function Modifica(): JSX.Element {
   // un risultato nuovo: si apre il confronto prima/dopo (con "Continua da qui" bene in vista)
   const lunghezza = useRef(m.versioni.length)
   useEffect(() => {
-    if (m.versioni.length > lunghezza.current && m.versioni.length > 1 && usaStato.getState().modifica.modo !== 'nuova') setConfronto(true)
+    if (m.versioni.length > lunghezza.current && m.versioni.length > 1 && usaStato.getState().modifica.modo !== 'fusion') setConfronto(true)
     lunghezza.current = m.versioni.length
   }, [m.versioni.length])
 
@@ -93,11 +132,36 @@ export function Modifica(): JSX.Element {
       avvisa((e as Error).message, 'errore')
     }
   }
+  /** Fusion: aggiunge foto (anche tante insieme) a quelle che ci sono */
+  const aggiungiFusion = (f: FotoBase[]): void => {
+    if (!f.length) return
+    const cur = usaStato.getState().modifica.riferimenti
+    const nuove = [...cur, ...f].slice(0, MAX_FUSION)
+    if (cur.length + f.length > MAX_FUSION) avvisa(`Al massimo ${MAX_FUSION} foto`, 'errore')
+    setModifica({ riferimenti: nuove })
+  }
   const daPc = async (): Promise<void> => {
+    if (usaStato.getState().modifica.modo === 'fusion') {
+      const ps = await api.file.scegliImmagini(true)
+      const f: FotoBase[] = []
+      for (const x of ps) {
+        try {
+          f.push(await normalizza(x))
+        } catch (e) {
+          avvisa((e as Error).message, 'errore')
+        }
+      }
+      aggiungiFusion(f)
+      return
+    }
     const [p] = await api.file.scegliImmagini(false)
     if (p) void apri(p)
   }
   const daGalleria = async (): Promise<void> => {
+    if (usaStato.getState().modifica.modo === 'fusion') {
+      aggiungiFusion(await scegliFoto(true))
+      return
+    }
     const [f] = await scegliFoto(false)
     if (f) nuovaBase(f)
   }
@@ -133,7 +197,8 @@ export function Modifica(): JSX.Element {
       e.preventDefault()
       const f = await daDataUrl(await d)
       const s = usaStato.getState().modifica
-      if (!s.base) setModifica({ base: f, versioni: [f], riferimenti: [] })
+      if (s.modo === 'fusion') aggiungiFusion([f])
+      else if (!s.base) setModifica({ base: f, versioni: [f], riferimenti: [] })
       else if (s.riferimenti.length < 9) {
         setModifica({ riferimenti: [...s.riferimenti, f] })
         avvisa(`Aggiunta come riferimento <image${s.riferimenti.length + 2}>`, 'ok')
@@ -202,10 +267,11 @@ export function Modifica(): JSX.Element {
   }
 
   const migliora = async (): Promise<void> => {
-    if (!base || !m.prompt.trim()) return
+    const guarda = fusion ? m.riferimenti : base ? [base] : []
+    if (!guarda.length || !m.prompt.trim()) return
     setScrivendo(true)
     try {
-      const t = await api.testo.scrivi({ ...richiestaBase(), modalita: 'descrivi', prompt: m.prompt, immagini: [base.percorso], sistema: SISTEMA_MIGLIORA_MODIFICA, maxToken: 200, etichetta: 'Migliora istruzione' })
+      const t = await api.testo.scrivi({ ...richiestaBase(), modalita: 'descrivi', prompt: m.prompt, immagini: [guarda[0].percorso], sistema: SISTEMA_MIGLIORA_MODIFICA, maxToken: 200, etichetta: 'Migliora istruzione' })
       if (t) setModifica({ prompt: t })
     } catch (e) {
       avvisa((e as Error).message, 'errore')
@@ -216,11 +282,8 @@ export function Modifica(): JSX.Element {
 
   async function manda(): Promise<void> {
     const s = usaStato.getState().modifica
+    if (s.modo === 'fusion') return mandaFusion()
     if (!s.base) return
-    if (s.modo === 'nuova' && !s.prompt.trim()) {
-      avvisa('Scrivi cosa deve nascere dalle foto (es. "le due persone di <image1> e <image2> in spiaggia")', 'errore')
-      return
-    }
     if (s.modo !== 'espandi' && !s.prompt.trim()) {
       avvisa('Scrivi cosa cambiare (o scegli un\'azione rapida)', 'errore')
       return
@@ -239,7 +302,7 @@ export function Modifica(): JSX.Element {
     const q = {
       ...base0,
       lora: [...base0.lora, ...extra],
-      modalita: (s.modo === 'tutta' ? 'modifica' : s.modo === 'nuova' ? 'crea' : s.modo) as 'modifica' | 'zona' | 'espandi' | 'crea',
+      modalita: (s.modo === 'tutta' ? 'modifica' : s.modo) as 'modifica' | 'zona' | 'espandi',
       prompt: conParoleLora(s.prompt.trim()),
       immagini: [s.base.percorso, ...s.riferimenti.map((r) => r.percorso)],
       megapixel: s.mp,
@@ -250,13 +313,6 @@ export function Modifica(): JSX.Element {
     }
     if (s.modo !== 'espandi') Object.assign(q, conMisura(s.misura, s.base))
     if (s.modo === 'tutta') Object.assign(q, { trasparente: !!rapida?.trasparente })
-    if (s.modo === 'nuova') {
-      // un'immagine nuova che prende dalle foto (persone, oggetti, stile…): stesse proporzioni della foto principale
-      const px = s.mp * 1048576
-      const ar = s.base.larghezza / s.base.altezza
-      const t = (x: number): number => Math.max(256, Math.round(x / 32) * 32)
-      Object.assign(q, { larghezza: t(Math.sqrt(px * ar)), altezza: t(Math.sqrt(px / ar)) })
-    }
     if (s.modo === 'zona') {
       const e = tela.current?.esporta()
       if (!e) {
@@ -278,6 +334,43 @@ export function Modifica(): JSX.Element {
     setConfronto(false)
     const ids = await api.lavori.accoda(q)
     ids.forEach((id) => attesiModifica.add(id))
+  }
+
+  /** Fusion: tutte le foto sono riferimenti, ne esce una immagine nuova in base al testo */
+  async function mandaFusion(): Promise<void> {
+    const s = usaStato.getState().modifica
+    if (!s.riferimenti.length) {
+      avvisa('Aggiungi almeno una foto', 'errore')
+      return
+    }
+    if (!s.prompt.trim()) {
+      avvisa('Scrivi cosa deve nascere dalle foto (es. "la donna di <image1> con la giacca di <image2> in una strada di Tokyo di notte")', 'errore')
+      return
+    }
+    if (s.qualita === 'turbo' && !turbo.presente) {
+      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
+      return
+    }
+    const [a, b] = FORMATI_FUSION.find((f) => f.id === s.formatoFusion)?.r || [s.riferimenti[0].larghezza, s.riferimenti[0].altezza]
+    const px = s.mp * 1048576
+    const t = (x: number): number => Math.max(256, Math.round(x / 32) * 32)
+    const ar = a / b
+    const w = t(Math.sqrt(px * ar))
+    const h = t(Math.sqrt(px / ar))
+    const q = {
+      ...richiestaBase(),
+      modalita: 'crea' as const,
+      prompt: conParoleLora(s.prompt.trim()),
+      larghezza: w,
+      altezza: h,
+      megapixel: (w * h) / 1048576,
+      immagini: s.riferimenti.map((r) => r.percorso),
+      ...perQualita(s.qualita),
+      quante: s.quante,
+      etichetta: 'Fusion · ' + s.prompt.trim().slice(0, 50)
+    }
+    const ids = await api.lavori.accoda(q)
+    ids.forEach((id) => attesiFusion.add(id))
   }
 
   const inserisci = (testo: string): void => {
@@ -324,6 +417,21 @@ export function Modifica(): JSX.Element {
           e.stopPropagation()
           const fs = Array.from(e.dataTransfer.files)
           if (!fs.length) return
+          if (usaStato.getState().modifica.modo === 'fusion') {
+            // Fusion: tutte le foto trascinate sono riferimenti
+            void (async () => {
+              const f: FotoBase[] = []
+              for (const x of fs.slice(0, MAX_FUSION)) {
+                try {
+                  f.push(await normalizza(api.file.percorso(x)))
+                } catch (er) {
+                  avvisa((er as Error).message, 'errore')
+                }
+              }
+              aggiungiFusion(f)
+            })()
+            return
+          }
           void (async () => {
             await apri(api.file.percorso(fs[0]))
             // le altre foto trascinate insieme diventano riferimenti
@@ -340,7 +448,7 @@ export function Modifica(): JSX.Element {
         }}
       >
         <div className="attrezzi">
-          <div style={{ width: 470 }}>
+          <div style={{ width: 420 }}>
             <Segmenti<ModoModifica>
               valore={m.modo}
               cambia={(modo) => setModifica({ modo })}
@@ -348,7 +456,7 @@ export function Modifica(): JSX.Element {
                 { id: 'tutta', nome: 'Tutta la foto' },
                 { id: 'zona', nome: 'Solo una zona' },
                 { id: 'espandi', nome: 'Espandi' },
-                { id: 'nuova', nome: 'Nuova dalle foto' }
+                { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' }
               ]}
             />
           </div>
@@ -377,17 +485,32 @@ export function Modifica(): JSX.Element {
             </>
           )}
           <span className="flex1" />
-          {base && <button className="btn piccolo icona" onClick={() => tela.current?.adatta()} title="Adatta alla finestra"><I.adatta /></button>}
-          <button className="btn piccolo" onClick={daGalleria} title="Scegli una foto dalla galleria"><I.galleria /> Dalla galleria</button>
-          <button className="btn piccolo" onClick={daPc} title="Apri una foto dal PC"><I.immagine /> Dal PC</button>
-          {base && (
+          {base && !fusion && <button className="btn piccolo icona" onClick={() => tela.current?.adatta()} title="Adatta alla finestra"><I.adatta /></button>}
+          <button className="btn piccolo" onClick={daGalleria} title={fusion ? 'Aggiungi foto dalla galleria (anche tante insieme)' : 'Scegli una foto dalla galleria'}><I.galleria /> {fusion ? 'Aggiungi dalla galleria' : 'Dalla galleria'}</button>
+          <button className="btn piccolo" onClick={daPc} title={fusion ? 'Aggiungi foto dal PC (anche tante insieme)' : 'Apri una foto dal PC'}><I.immagine /> Dal PC</button>
+          {base && !fusion && (
             <button className="btn piccolo pericolo" onClick={togliFoto} title="Toglie la foto e rimette la pagina com'era appena aperta (le versioni restano in galleria)">
               <I.x /> Togli foto
             </button>
           )}
         </div>
 
-        {!base ? (
+        {fusion ? (
+          <Fusion
+            foto={m.riferimenti}
+            cambia={(riferimenti) => setModifica({ riferimenti })}
+            inserisci={inserisci}
+            risultati={ris}
+            inCorso={fusInCorso}
+            inAttesa={fusInAttesa}
+            daGalleria={daGalleria}
+            daPc={daPc}
+            riusa={(o) => aggiungiFusion([fotoDaOpera(o)])}
+            apriInModifica={(o) => { apriInModifica(fotoDaOpera(o)); setModifica({ modo: 'tutta' }) }}
+            mostra={(o) => void api.galleria.mostra(o.id)}
+          />
+        ) : null}
+        {fusion ? null : !base ? (
           <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
             <div className="vuoto">
               <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
@@ -443,7 +566,7 @@ export function Modifica(): JSX.Element {
           </TelaMaschera>
         )}
 
-        {m.versioni.length > 0 && (
+        {!fusion && m.versioni.length > 0 && (
           <div className="versioni">
             {m.versioni.map((v, i) => (
               <div key={v.percorso} className={`v ${v.percorso === base?.percorso ? 'su' : ''}`} style={{ ['--ar' as string]: `${v.larghezza} / ${v.altezza}` }} onClick={() => { setModifica({ base: v }); setConfronto(false) }} title={v.prompt}>
@@ -462,7 +585,7 @@ export function Modifica(): JSX.Element {
         <div className="scorri">
           <div className="sezione">
             <h3>
-              {m.modo === 'nuova' ? 'Cosa creare con le foto' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
+              {fusion ? 'Cosa creare con le foto' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
               {m.modo === 'zona' && <span className="dx">{haMaschera ? <span className="oro">zona segnata ✓</span> : 'segnala col pennello'}</span>}
             </h3>
             <textarea
@@ -472,26 +595,26 @@ export function Modifica(): JSX.Element {
                 setModifica({ prompt: e.target.value })
                 if (!e.target.value.trim()) setRapida(null)
               }}
-              placeholder={m.modo === 'nuova' ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
+              placeholder={fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
               style={{ minHeight: 96 }}
               disabled={scrivendo}
             />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
-              <button className="btn piccolo" onClick={migliora} disabled={!base || scrivendo || !m.prompt.trim()} title="Il modello guarda la foto e rende l'istruzione precisa (in inglese)">
+              <button className="btn piccolo" onClick={migliora} disabled={(!base && !fusion) || (fusion && !m.riferimenti.length) || scrivendo || !m.prompt.trim()} title="Il modello guarda la foto e rende l'istruzione precisa (in inglese)">
                 <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
               </button>
               {m.riferimenti.map((_, i) => (
-                <button key={i} className="chip" onClick={() => inserisci(`<image${i + 2}>`)} title="Inserisci il riferimento nel testo">&lt;image{i + 2}&gt;</button>
+                <button key={i} className="chip" onClick={() => inserisci(`<image${i + (fusion ? 1 : 2)}>`)} title="Inserisci il riferimento nel testo">&lt;image{i + (fusion ? 1 : 2)}&gt;</button>
               ))}
             </div>
-            {mancaRif && (
+            {mancaRif && !fusion && (
               <div className="avviso-box" style={{ marginTop: 10, padding: '8px 10px', fontSize: 13.5 }}>
                 Serve {rapida?.rifNome || 'una foto di riferimento'}: aggiungila qui sotto in <b>Riferimenti</b> (nel testo è <b>&lt;image2&gt;</b>).
               </div>
             )}
           </div>
 
-          {m.modo !== 'espandi' && m.modo !== 'nuova' && (
+          {m.modo !== 'espandi' && !fusion && (
             <div className="sezione">
               <h3>Azioni rapide <span className="dx">un clic = istruzione pronta</span></h3>
               <div className="cat-rapide">
@@ -539,17 +662,17 @@ export function Modifica(): JSX.Element {
             </div>
           )}
 
-          <div className="sezione">
+          {!fusion && <div className="sezione">
             <Riferimenti
               lista={m.riferimenti}
               cambia={(riferimenti) => setModifica({ riferimenti })}
               inizio={2}
               inserisci={inserisci}
               comeBase={comeBase}
-              titolo={m.modo === 'nuova' ? 'Altre foto' : 'Riferimenti'}
-              esempio={m.modo === 'nuova' ? 'La foto principale è <image1>, le altre <image2>…: persone, vestiti, oggetti, luoghi, stili. Il risultato è un\'immagine completamente nuova.' : 'Es. "metti a <image1> la giacca di <image2>". Persone, vestiti, oggetti, stili: fino a 9 foto in più (dalla galleria, dal PC o incollate con Ctrl+V).'}
+              titolo="Riferimenti"
+              esempio={'Es. "metti a <image1> la giacca di <image2>". Persone, vestiti, oggetti, stili: fino a 9 foto in più (dalla galleria, dal PC o incollate con Ctrl+V).'}
             />
-          </div>
+          </div>}
 
           {m.modo === 'zona' && (
             <div className="sezione">
@@ -560,7 +683,25 @@ export function Modifica(): JSX.Element {
             </div>
           )}
 
-          {m.modo !== 'espandi' && (
+          {fusion && (
+            <div className="sezione">
+              <h3>Formato della foto nuova <span className="dx">{(() => { const [a, b] = FORMATI_FUSION.find((f) => f.id === m.formatoFusion)?.r || (m.riferimenti[0] ? [m.riferimenti[0].larghezza, m.riferimenti[0].altezza] : [1, 1]); const t = (x: number): number => Math.max(256, Math.round(x / 32) * 32); const px = m.mp * 1048576; return `${t(Math.sqrt(px * (a / b)))} × ${t(Math.sqrt(px / (a / b)))}` })()}</span></h3>
+              <Segmenti
+                valore={m.formatoFusion || 'prima'}
+                cambia={(formatoFusion) => setModifica({ formatoFusion })}
+                voci={FORMATI_FUSION.map((f) => ({ id: f.id, nome: f.nome }))}
+              />
+              <div style={{ marginTop: 10 }}>
+                <Segmenti
+                  valore={m.mp}
+                  cambia={(mp) => setModifica({ mp })}
+                  voci={[{ id: 0.5, nome: '0,5 MP', sotto: 'veloce' }, { id: 1, nome: '1 MP', sotto: 'consigliato' }, { id: 2, nome: '2 MP', sotto: 'dettaglio' }, { id: 4, nome: '4 MP', sotto: 'lento' }]}
+                />
+              </div>
+            </div>
+          )}
+
+          {m.modo !== 'espandi' && !fusion && (
             <div className="sezione">
               <h3>Dimensioni <span className="dx">{(m.misura ?? MISURA0).tipo === 'auto' ? 'come i megapixel' : (m.misura ?? MISURA0).tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
               <SceltaMisura valore={m.misura ?? MISURA0} cambia={(misura) => setModifica({ misura })} base={base} mp={m.mp} />
@@ -610,9 +751,9 @@ export function Modifica(): JSX.Element {
           </div>
         </div>
         <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
-          <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={!base}>
-            {m.modo === 'zona' ? <I.zona /> : m.modo === 'espandi' ? <I.espandi /> : m.modo === 'nuova' ? <I.crea /> : <I.modifica />}
-            {m.modo === 'zona' ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : m.modo === 'nuova' ? 'Crea dalle foto' : 'Modifica'}
+          <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={fusion ? !m.riferimenti.length : !base}>
+            {m.modo === 'zona' ? <I.zona /> : m.modo === 'espandi' ? <I.espandi /> : fusion ? <I.crea /> : <I.modifica />}
+            {m.modo === 'zona' ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : fusion ? 'Fusion · crea la foto nuova' : 'Modifica'}
           </button>
           <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>Ctrl+Invio · ~{durata(stima)}</div>
         </div>

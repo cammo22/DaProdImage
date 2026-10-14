@@ -31,6 +31,10 @@ const api = {
     /** il percorso vero di un file trascinato nella finestra */
     percorso: (f: File) => webUtils.getPathForFile(f)
   },
+  album: {
+    elenco: chiama('album:elenco'), carica: chiama('album:carica'), salva: chiama('album:salva'), elimina: chiama('album:elimina'),
+    prepara: chiama('album:prepara'), salvaFoto: chiama('album:salvaFoto'), esportata: chiama('album:esportata'), pdf: chiama('album:pdf'), mostra: chiama('album:mostra')
+  },
   app: { apriLink: chiama('app:apriLink'), versione: chiama('app:versione'), apriCartella: chiama('app:apriCartella') },
   aggiornamento: { stato: chiama('aggiornamento:stato'), controlla: chiama('aggiornamento:controlla'), installa: chiama('aggiornamento:installa') },
   trascina: (percorso: string) => ipcRenderer.send('trascina', percorso),
