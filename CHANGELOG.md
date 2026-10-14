@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.1 — 2026-10-15
+
+Il modo Esempio funziona con qualsiasi cosa, non solo con le persone.
+
+- **Esempio, il modello decide da solo**: via i pulsanti «cosa tenere». Premendo «Crea come l'esempio» il Qwen3-VL **guarda in un colpo solo
+  l'esempio e le tue foto** (un foglio con le foto numerate) e scrive lui l'istruzione di modifica: cosa dell'esempio va sostituito con cosa
+  (persone, volti, **iridi**, vestiti, oggetti, prodotti, sfondi, stili…), abbinando le cose dello stesso tipo una per una, e cosa resta identico.
+  Se scrivi una nota la segue; se la lasci vuota capisce da solo l'intento più naturale.
+- **Il piano si vede** («Il piano del modello», colonna di destra) e si può **correggere**: vale finché non cambi le foto o la nota; «Rifai»
+  lo fa rifare.
+- Prima il prompt dava per scontato che nell'esempio ci fossero persone (volto, capelli…): con altre cose (le iridi) il modello andava
+  fuori strada.
+
 ## 0.8.0 — 2026-10-15
 
 Tasto destro in Galleria, la camera nel turnaround, LoRA sempre usati, Esempio che segue meglio.

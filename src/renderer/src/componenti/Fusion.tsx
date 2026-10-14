@@ -48,7 +48,7 @@ export function Fusion(p: {
       <div className="fusion-foto">
         {p.esempio && (
           <div className="esempio-slot">
-            <div className="fusion-testa"><b>L'ESEMPIO</b><span className="piccolo tenue">come vuoi il risultato: posa, inquadratura, luce, atmosfera · <b>&lt;image1&gt;</b></span></div>
+            <div className="fusion-testa"><b>L'ESEMPIO</b><span className="piccolo tenue">la foto base: il modello la rifà con quello che c'è nelle tue foto · <b>&lt;image1&gt;</b></span></div>
             {p.esempio.foto ? (
               <div className="fusion-tessera esempio">
                 <img src={urlFile(p.esempio.foto.percorso)} alt="" />
@@ -65,7 +65,7 @@ export function Fusion(p: {
         )}
         <div className="fusion-testa">
           <b>{p.esempio ? 'LE TUE FOTO (RIFERIMENTI)' : 'LE TUE FOTO'}</b>
-          <span className="piccolo tenue">{p.foto.length}/{MAX_FUSION} · {p.esempio ? <>persone, vestiti, oggetti da usare: <b>&lt;image2&gt;</b>, <b>&lt;image3&gt;</b>…</> : <>sono tutte riferimenti: nel testo <b>&lt;image1&gt;</b>, <b>&lt;image2&gt;</b>…</>}</span>
+          <span className="piccolo tenue">{p.foto.length}/{MAX_FUSION} · {p.esempio ? <>quello che vuoi portare nell'esempio (persone, oggetti, iridi, vestiti, stili…): <b>&lt;image2&gt;</b>, <b>&lt;image3&gt;</b>…</> : <>sono tutte riferimenti: nel testo <b>&lt;image1&gt;</b>, <b>&lt;image2&gt;</b>…</>}</span>
           <span className="flex1" />
           {p.foto.length > 0 && <button className="btn piccolo fantasma pericolo" onClick={() => p.cambia([])}><I.x /> Svuota</button>}
         </div>
@@ -73,7 +73,7 @@ export function Fusion(p: {
           <div className="vuoto fusion-vuoto">
             <div className="grosso">{p.esempio ? 'COME L\'ESEMPIO' : 'FUSION'}</div>
             {p.esempio ? (
-              <p>Metti qui le foto da usare (persone, vestiti, oggetti) e sopra <b className="oro">una foto di esempio</b>: il modello rifà l'esempio con le tue foto al posto di quelle originali.</p>
+              <p>Metti qui le foto da usare (qualsiasi cosa) e sopra <b className="oro">una foto di esempio</b>: il modello guarda tutto insieme, <b>decide da solo</b> cosa sostituire con cosa e rifà l'esempio.</p>
             ) : (
               <p>Metti qui <b className="oro">più foto</b>: persone, vestiti, oggetti, luoghi, stili. Tutte sono riferimenti: il modello le guarda insieme e crea <b>una foto nuova</b> in base a quello che scrivi.</p>
             )}
