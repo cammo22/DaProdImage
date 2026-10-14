@@ -843,3 +843,15 @@ details.tipo-modelli > summary:hover { color: var(--oro); }
 .chip.principale { border-color: var(--oro); color: var(--oro); }
 .opzioni-esempio { display: flex; flex-wrap: wrap; gap: 6px; }
 .rif .r.principale .et { top: 0; bottom: auto; padding: 2px 4px 12px; background: linear-gradient(rgba(0,0,0,.8), transparent); }
+.idee-scelte { margin-top: 12px; padding: 10px; border-radius: 10px; border: 1px solid var(--oro); background: rgba(255, 213, 74, .06); display: flex; flex-direction: column; gap: 6px; }
+.idee-scelte textarea { width: 100%; }
+
+/* ---------- l'omino ---------- */
+.omino-svg { width: 100%; max-width: 330px; display: block; margin: 0 auto; border-radius: 10px; border: 1px solid var(--bordo); touch-action: none; user-select: none; }
+.omino-fondo { fill: #0c0918; }
+.omino-asse { stroke: #2a2147; stroke-width: 1; stroke-dasharray: 4 4; }
+.omino-giunto { cursor: grab; stroke: #0c0918; stroke-width: 1.5; transition: r .1s; }
+.omino-giunto.su, .omino-giunto.preso { stroke: #fff; cursor: grabbing; }
+.omino-mani { margin-top: 12px; }
+.omino-mano { margin-top: 8px; padding: 10px; border-radius: 10px; border: 1px solid var(--bordo); background: #0f0b1c; display: flex; flex-direction: column; gap: 4px; }
+.omino-zoom { width: 110px; height: 110px; flex: none; border-radius: 8px; border: 1px solid var(--bordo); }

@@ -11,6 +11,7 @@ import { Contatore, Segmenti } from './Controlli'
 import { AvvisoTurbo, useTurbo } from './Turbo'
 import { CAMERA0, ControlloCamera, descriviCamera, type PosizioneCamera } from './Camera'
 import { fileLoraCamera } from '../azioni'
+import { Omino } from './Omino'
 import { durata, stimaSecondi } from '../util'
 import {
   FORMATI_PERSONAGGIO, POSE_ESTRAI, SFONDI_ESTRAI, VISTE_CLASSICHE, VISTE_GIRO, attesiPersonaggio, impostaPersonaggio, richiestaEstrai, richiestaVista,
@@ -223,6 +224,11 @@ export function ControlliPersonaggio(p: { base: FotoBase | null }): JSX.Element 
           <h3><span className="num-passo">2</span> Estrai a figura intera</h3>
           <span className="piccolo tenue">Posa</span>
           <Segmenti valore={s.posa} cambia={(posa) => impostaPersonaggio({ posa })} voci={POSE_ESTRAI.map((x) => ({ id: x.id, nome: x.nome, sotto: x.sotto }))} />
+          {s.posa === 'omino' && (
+            <div style={{ marginTop: 10 }}>
+              <Omino valore={s.omino} cambia={(omino) => impostaPersonaggio({ omino })} />
+            </div>
+          )}
           <div style={{ marginTop: 10 }}>
             <span className="piccolo tenue">Sfondo</span>
             <Segmenti valore={s.sfondo} cambia={(sfondo) => impostaPersonaggio({ sfondo })} voci={SFONDI_ESTRAI.map((x) => ({ id: x.id, nome: x.nome }))} />

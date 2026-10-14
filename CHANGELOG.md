@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.9.0 — 2026-10-15
+
+L'omino con le ossa e le mani, idee da sommare al posto delle azioni rapide, Esempio con i colori giusti.
+
+- **L'omino** (Personaggio e Laboratorio): un manichino con le ossa di lunghezza fissa che trascini come vuoi (i pallini sono le
+  articolazioni: il bacino sposta tutto, gli altri ruotano l'osso e si portano dietro il resto), con 11 pose pronte (T-pose, braccia in
+  alto, saluta, mani sui fianchi, corsa, salto…) e **Specchia**. **Le mani**: clic su un polso e apri/chiudi la mano (aperta, pugno,
+  indice, pace, pollice su…), muovi **le dita una per una**, le divarichi, pieghi il polso, con l'ingrandimento della mano. L'omino
+  diventa una **mappa di posa in stile OpenPose** (corpo e dita colorati) che si dà al modello come immagine, più la posa descritta a
+  parole («braccio destro alzato sopra la testa, mano sinistra chiusa a pugno…»).
+  - In **Personaggio**: posa «Disegnata» (con l'omino) accanto a T-pose, A-pose, in piedi…
+  - Nelle **ricette** (come la camera): il campo «Muovi l'omino» in *Il personaggio in 9 pose* e in *Foglio personaggio*; muovendolo
+    compare il passo **La tua posa** (si segna da solo).
+- **Idee da sommare** (al posto delle azioni rapide fisse): i pulsanti di Modifica ora si accendono e si spengono, **ne puoi scegliere
+  quante vuoi**; premendo Modifica il Qwen3-VL **guarda la foto, mescola tutte le idee (e la tua nota) in una sola istruzione e inventa
+  lui i dettagli**: colori, materiali, oggetti, stile. Con «Fantasia del modello» (Fedele / Normale / Tanta) decidi quanto osa. Il
+  piano si vede e si corregge; «Rifai» lo rimescola con dettagli nuovi. Un'idea sola in «Fedele» resta com'era (frase fissa).
+- **Esempio, colori giusti**: il modello descrive **a parole i colori e i dettagli esatti** di quello che prende da ogni foto
+  («iride arancio ambra con anello marrone scuro e striature radiali»), e **ritaglia la parte che conta** di ogni riferimento
+  (l'iride dentro la foto di un occhio) così il modello di modifica la vede in grande; i ritagli si vedono sotto il piano. Se è
+  acceso il Turbo c'è un avviso: segue meno colori e dettagli, con **Alta** è più fedele.
+- Foglio di foto e ritagli in `foglio.ts`, regista delle idee in `regista.ts`, omino in `omino.ts` (puro, provato) e
+  `componenti/Omino.tsx`.
+- Da provare con l'app vera: la resa delle pose con le mani (il modello di modifica legge la mappa di posa, ma non è garantito dito
+  per dito) e i colori dell'Esempio.
+
 ## 0.8.1 — 2026-10-15
 
 Il modo Esempio funziona con qualsiasi cosa, non solo con le persone.
