@@ -1,10 +1,10 @@
 // L'omino: un manichino con le ossa che trascini come vuoi (le articolazioni sono i pallini: il bacino sposta tutto, gli altri
 // ruotano l'osso attorno al pallino prima). Clic su una mano per aprirla, chiuderla o muovere le dita una per una.
-import { useRef, useState, type JSX } from 'react'
+import { useEffect, useRef, useState, type JSX } from 'react'
 import { Cursore } from './Controlli'
 import {
-  ALTO, LARGO, MANI_PRONTE, NOMI_DITA, POSE_PRONTE, geometriaMano, posaDi, specchia, trascina,
-  type Giunto, type Mano, type Posa, type Punto
+  ALTO, LARGO, MANI_PRONTE, NOMI_DITA, POSE_PRONTE, VISO0, disegnaManichino, geometriaMano, posaDi, specchia, trascina, visoDi,
+  type Giunto, type Mano, type Posa, type Punto, type Viso
 } from '../omino'
 
 const OSSA: [Giunto, Giunto, 'c' | 'sx' | 'dx'][] = [
@@ -31,12 +31,36 @@ function Mano2({ p, lato, scala = 1 }: { p: Posa; lato: 'sx' | 'dx'; scala?: num
   )
 }
 
+/** i modi pronti per la testa */
+const TESTE: { nome: string; v: Viso }[] = [
+  { nome: 'Dritta', v: VISO0 },
+  { nome: '¾ a sinistra', v: { gira: -38, su: 0, inclina: 0 } },
+  { nome: '¾ a destra', v: { gira: 38, su: 0, inclina: 0 } },
+  { nome: 'Profilo ◀', v: { gira: -80, su: 0, inclina: 0 } },
+  { nome: 'Profilo ▶', v: { gira: 80, su: 0, inclina: 0 } },
+  { nome: 'Su', v: { gira: 0, su: 28, inclina: 0 } },
+  { nome: 'Giù', v: { gira: 0, su: -28, inclina: 0 } }
+]
+
+/** il manichino come lo vede il modello (anteprima piccola) */
+function Anteprima({ posa }: { posa: Posa }): JSX.Element {
+  const c = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const g = c.current?.getContext('2d')
+    if (g) disegnaManichino(g, posa, 280, 300)
+  }, [posa])
+  return <canvas ref={c} width={280} height={300} className="omino-anteprima" />
+}
+
 export function Omino(p: { valore: Posa; cambia: (p: Posa) => void }): JSX.Element {
   const { valore: v } = p
   const svg = useRef<SVGSVGElement>(null)
   const [preso, setPreso] = useState<Giunto | null>(null)
   const [mano, setMano] = useState<'sx' | 'dx' | null>(null)
   const [suGiunto, setSuGiunto] = useState<Giunto | null>(null)
+  const [vedi, setVedi] = useState(false)
+  const viso = visoDi(v)
+  const cambiaViso = (m: Partial<Viso>): void => p.cambia({ ...v, viso: { ...viso, ...m } })
 
   const punto = (e: React.PointerEvent): Punto => {
     const s = svg.current!
@@ -64,6 +88,10 @@ export function Omino(p: { valore: Posa; cambia: (p: Posa) => void }): JSX.Eleme
           <line key={i} x1={v.p[a][0]} y1={v.p[a][1]} x2={v.p[b][0]} y2={v.p[b][1]} stroke={COLORE[l]} strokeWidth={4} strokeLinecap="round" opacity={0.9} />
         ))}
         <circle cx={v.p.testa[0]} cy={v.p.testa[1]} r={13} fill="rgba(233,228,255,.12)" stroke={COLORE.c} strokeWidth={2.5} />
+        <g transform={`translate(${v.p.testa[0]} ${v.p.testa[1]}) rotate(${(Math.atan2(v.p.testa[0] - v.p.collo[0], v.p.collo[1] - v.p.testa[1]) * 180) / Math.PI + viso.inclina})`} pointerEvents="none">
+          <ellipse cx={0} cy={0} rx={Math.max(0.8, Math.abs(Math.cos((viso.gira * Math.PI) / 180)) * 13)} ry={13} fill="none" stroke={COLORE.c} strokeWidth={1} opacity={0.7} />
+          <circle cx={Math.sin((viso.gira * Math.PI) / 180) * 11} cy={-Math.sin((viso.su * Math.PI) / 180) * 9 + 1} r={2.6} fill="#ffd54a" />
+        </g>
         <Mano2 p={v} lato="sx" />
         <Mano2 p={v} lato="dx" />
         {mano && <circle cx={v.p[mano === 'sx' ? 'polSx' : 'polDx'][0]} cy={v.p[mano === 'sx' ? 'polSx' : 'polDx'][1]} r={17} fill="none" stroke="#ffd54a" strokeWidth={1.4} strokeDasharray="3 3" />}
@@ -91,13 +119,25 @@ export function Omino(p: { valore: Posa; cambia: (p: Posa) => void }): JSX.Eleme
 
       <div className="riga a-capo" style={{ gap: 5, marginTop: 8 }}>
         {POSE_PRONTE.map((x) => (
-          <button key={x.id} className="chip" onClick={() => p.cambia(x.posa())}>{x.nome}</button>
+          <button key={x.id} className="chip" onClick={() => p.cambia({ ...x.posa(), viso: v.viso })}>{x.nome}</button>
         ))}
       </div>
       <div className="riga a-capo" style={{ gap: 6, marginTop: 8 }}>
         <button className="btn piccolo" onClick={() => p.cambia(specchia(v))} title="Scambia destra e sinistra">⇋ Specchia</button>
         <button className="btn piccolo fantasma" onClick={() => p.cambia(posaDi('attenti'))}>Riparti</button>
         <span className="piccolo spento">Trascina i pallini. Il pallino giallo (bacino) sposta tutto.</span>
+      </div>
+
+      <div className="omino-mani">
+        <div className="riga a-capo" style={{ gap: 5 }}>
+          <span className="piccolo tenue">Testa:</span>
+          {TESTE.map((t) => (
+            <button key={t.nome} className={`chip ${viso.gira === t.v.gira && viso.su === t.v.su && viso.inclina === t.v.inclina ? 'su' : ''}`} onClick={() => cambiaViso(t.v)}>{t.nome}</button>
+          ))}
+        </div>
+        <Cursore etichetta="Testa girata" valore={Math.round(viso.gira)} min={-90} max={90} passo={5} formato={(x) => (Math.abs(x) < 6 ? 'dritta' : x < 0 ? `◀ ${-x}°` : `${x}° ▶`)} cambia={(gira) => cambiaViso({ gira })} />
+        <Cursore etichetta="Testa su / giù" valore={Math.round(viso.su)} min={-45} max={45} passo={5} formato={(x) => (Math.abs(x) < 6 ? 'dritta' : x > 0 ? `su ${x}°` : `giù ${-x}°`)} cambia={(su) => cambiaViso({ su })} />
+        <Cursore etichetta="Testa inclinata" valore={Math.round(viso.inclina)} min={-40} max={40} passo={5} formato={(x) => (Math.abs(x) < 6 ? 'dritta' : x < 0 ? `◀ ${-x}°` : `${x}° ▶`)} cambia={(inclina) => cambiaViso({ inclina })} />
       </div>
 
       <div className="omino-mani">
@@ -128,6 +168,11 @@ export function Omino(p: { valore: Posa; cambia: (p: Posa) => void }): JSX.Eleme
             <Cursore etichetta="Polso piegato" valore={ms.polso} min={-80} max={80} passo={5} formato={(x) => `${x}°`} cambia={(x) => cambiaMano(mano, { polso: x })} />
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: 8 }}>
+        <button className="btn piccolo fantasma" onClick={() => setVedi(!vedi)}>{vedi ? 'Nascondi' : 'Mostra'} il manichino che vede il modello</button>
+        {vedi && <Anteprima posa={v} />}
       </div>
     </div>
   )

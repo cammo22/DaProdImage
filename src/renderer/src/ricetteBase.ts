@@ -21,7 +21,7 @@ const POSA_TUA_IN: Ingresso = { id: 'posa', tipo: 'posa', nome: 'Muovi l\'omino:
 const posaTua = (c: Ctx, intorno: string): PassoWf[] => {
   const po = leggiPosa(c.v.posa)
   if (!po) return []
-  // la mappa di posa è la prima immagine ({posa}), la foto del personaggio la seconda ({foto}): vedi richiestaPasso
+  // il manichino di posa è la prima immagine ({posa}), la foto del personaggio la seconda ({foto}): vedi richiestaPasso
   return [E(POSA_TUA, `${istruzionePosa(po, '{posa}', 'the same character from {foto}')} ${intorno}`, { posa: c.v.posa })]
 }
 const SFONDO: Ingresso = {

@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState, type JSX } from 'react'
 import { usaStato, scegliFoto, type FotoBase, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
+import { Casella } from '../componenti/Casella'
 import { Segmenti } from '../componenti/Controlli'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SceltaMisura, MISURA0, type Misura } from '../componenti/Misura'
+import { SceltaMisura, ScegliMp, MISURA0, type Misura } from '../componenti/Misura'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
@@ -278,7 +279,7 @@ export function Laboratorio(): JSX.Element {
                       <label key={g.id} className="campo-preset">
                         <span>{g.nome}</span>
                         {g.tipo === 'righe' ? (
-                          <textarea value={valori[g.id] ?? ''} onChange={(e) => setValori({ ...valori, [g.id]: e.target.value })} style={{ minHeight: 84 }} placeholder={g.esempio} />
+                          <Casella valore={valori[g.id] ?? ''} cambia={(v) => setValori({ ...valori, [g.id]: v })} minimo={84} placeholder={g.esempio} />
                         ) : (
                           <input type="text" value={valori[g.id] ?? ''} onChange={(e) => setValori({ ...valori, [g.id]: e.target.value })} placeholder={g.esempio} />
                         )}
@@ -333,7 +334,7 @@ export function Laboratorio(): JSX.Element {
               {passi.some((x) => !x.crea) && (
                 <div className="sezione">
                   <h3>Dimensioni <span className="dx">{misura.tipo === 'auto' ? 'come i megapixel' : misura.tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
-                  <SceltaMisura valore={misura} cambia={setMisura} base={foto} mp={mp} />
+                  <SceltaMisura valore={misura} cambia={setMisura} base={foto} mp={mp} cambiaMp={setMp} />
                 </div>
               )}
 
@@ -349,13 +350,12 @@ export function Laboratorio(): JSX.Element {
                   ]}
                 />
                 {qualita === 'turbo' && <AvvisoTurbo />}
-                <div style={{ marginTop: 10 }}>
-                  <Segmenti
-                    valore={mp}
-                    cambia={setMp}
-                    voci={[{ id: 0.5, nome: '0,5 MP', sotto: 'prova' }, { id: 1, nome: '1 MP', sotto: 'consigliato' }, { id: 2, nome: '2 MP', sotto: 'dettaglio' }]}
-                  />
-                </div>
+                {!passi.some((x) => !x.crea) && (
+                  <div style={{ marginTop: 10 }}>
+                    <span className="piccolo tenue">Grandezza della foto</span>
+                    <ScegliMp mp={mp} cambia={setMp} voci={[0.5, 1, 2]} />
+                  </div>
+                )}
               </div>
             </>
           )}

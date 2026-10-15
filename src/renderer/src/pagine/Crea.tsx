@@ -15,6 +15,7 @@ import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi }
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
+import { Casella } from '../componenti/Casella'
 import type { Lavoro, Opera } from '@shared/tipi'
 
 
@@ -189,11 +190,11 @@ export function Crea(): JSX.Element {
               {preset ? 'Prompt (lo scrive il preset)' : 'Cosa vuoi vedere'}
               <span className="dx">{crea.prompt.length > 0 && `${crea.prompt.length} car.`}</span>
             </h3>
-            <textarea
-              value={crea.prompt}
+            <Casella
+              valore={crea.prompt}
               placeholder="Descrivi l'immagine, anche in italiano. Più dettagli dai (luce, stile, inquadratura), meglio è."
-              onChange={(e) => setCrea({ prompt: e.target.value })}
-              style={{ minHeight: preset ? 110 : 150 }}
+              cambia={(prompt) => setCrea({ prompt })}
+              minimo={preset ? 110 : 150}
               disabled={scrivendo}
             />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
@@ -226,7 +227,7 @@ export function Crea(): JSX.Element {
                 )
               })}
             </div>
-            <h3 style={{ marginTop: 14 }}>Risoluzione <span className="dx">{((dim.w * dim.h) / 1e6).toFixed(2)} MP{bozza ? ' · bozza a metà pixel' : ''}</span></h3>
+            <h3 style={{ marginTop: 14 }}>Risoluzione <span className="dx">{dim.w} × {dim.h} px · {((dim.w * dim.h) / 1048576).toFixed(2).replace('.', ',')} MP{bozza ? ' · bozza' : ''}</span></h3>
             <div className="risoluzioni">
               {RISOLUZIONI.map((r) => (
                 <button key={r.id} className={`formato ${crea.ris === r.id ? 'su' : ''}`} onClick={() => setCrea({ ris: r.id })} title={r.titolo}>
@@ -236,7 +237,7 @@ export function Crea(): JSX.Element {
               ))}
             </div>
             <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
-            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} />
+            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} />
           </SezioneChiudibile>
 
           <SezioneChiudibile id="crea-qualita" titolo="Qualità" destra={`${passi} passi · ~${durata(stima)}`}>
@@ -302,7 +303,7 @@ export function Crea(): JSX.Element {
                 <Cursore etichetta="CFG (1 = percorso ufficiale)" valore={crea.cfg} min={1} max={6} passo={0.1} formato={(v) => v.toFixed(1)} cambia={(cfg) => setCrea({ cfg })} />
                 <div className="col" style={{ gap: 4 }}>
                   <span className="piccolo tenue">Prompt negativo {crea.cfg <= 1 && <span className="spento">(conta solo con CFG sopra 1, e raddoppia il tempo)</span>}</span>
-                  <textarea value={crea.negativo} onChange={(e) => setCrea({ negativo: e.target.value })} style={{ minHeight: 60 }} placeholder="es. sfocato, mani storte, testo" />
+                  <Casella valore={crea.negativo} cambia={(negativo) => setCrea({ negativo })} minimo={60} placeholder="es. sfocato, mani storte, testo" />
                 </div>
                 <div className="riga">
                   <div className="col flex1" style={{ gap: 4 }}>

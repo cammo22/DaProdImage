@@ -97,13 +97,14 @@ a 300 dpi con l'abbondanza.
 
 ## L'omino
 
-Un manichino con le ossa che muovi come vuoi (anche **mani e dita**, una per una) per dare una posa al personaggio: in Modifica →
-Personaggio e nelle ricette del Laboratorio. Diventa una mappa di posa che il modello segue.
+Un manichino con le ossa che muovi come vuoi (anche **mani e dita**, una per una, e la **testa**) per dare una posa al personaggio: in
+Modifica → Estrai e nelle ricette del Laboratorio. Diventa un manichino grigio che il modello usa solo come guida di posa.
 
-## Personaggio
+## Estrai
 
-In Modifica: una foto con più persone, clic su quella che vuoi (si illumina), **estraila a figura intera** (T-pose, A-pose…) e **muovi la
-camera** attorno a lei: una vista o il giro completo.
+In Modifica: dai una foto e il modello trova **persone e oggetti**; clicchi quello che vuoi (si illumina) e lo ottieni da solo su sfondo
+pulito: una persona a figura intera (T-pose, A-pose, disegnata con l'omino), fino alla vita o il volto; un oggetto intero, da davanti,
+di lato o dall'alto. Vedi sempre a che risoluzione esce.
 
 ## Laboratorio
 

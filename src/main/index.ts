@@ -1,6 +1,6 @@
 // DaProd Image — processo principale: finestra, protocollo daprod:// per le immagini, IPC verso l'interfaccia.
 import { execFile } from 'node:child_process'
-import { app, BrowserWindow, clipboard, ClipboardItem, dialog, ipcMain, nativeImage, net, protocol, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, clipboard, ClipboardItem, dialog, ipcMain, Menu, nativeImage, net, protocol, shell, type IpcMainInvokeEvent } from 'electron'
 import { copyFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, normalize } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -60,6 +60,23 @@ function creaFinestra(): void {
     }
   })
   finestra.once('ready-to-show', () => finestra?.show())
+  // tasto destro nei campi di testo (prompt, note, nomi): Electron non lo fa da solo
+  finestra.webContents.on('context-menu', (_e, p) => {
+    if (!p.isEditable && !p.selectionText) return
+    const voci: Electron.MenuItemConstructorOptions[] = p.isEditable
+      ? [
+          { label: 'Annulla', role: 'undo', enabled: p.editFlags.canUndo },
+          { label: 'Ripeti', role: 'redo', enabled: p.editFlags.canRedo },
+          { type: 'separator' },
+          { label: 'Taglia', role: 'cut', enabled: p.editFlags.canCut },
+          { label: 'Copia', role: 'copy', enabled: p.editFlags.canCopy },
+          { label: 'Incolla', role: 'paste', enabled: p.editFlags.canPaste },
+          { type: 'separator' },
+          { label: 'Seleziona tutto', role: 'selectAll', enabled: p.editFlags.canSelectAll }
+        ]
+      : [{ label: 'Copia', role: 'copy' }]
+    Menu.buildFromTemplate(voci).popup()
+  })
   finestra.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url)
     return { action: 'deny' }

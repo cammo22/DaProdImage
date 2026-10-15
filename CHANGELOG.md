@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.10.0 — 2026-10-15
+
+Estrai persone **e oggetti**, una casella di testo come si deve, la testa dell'omino e le risoluzioni sempre in vista.
+
+- **Estrai** (era «Personaggio»): il modello guarda **tutta la foto** e trova da solo persone e oggetti; clicchi quello che vuoi (si
+  illumina, il resto si abbassa; cliccando ancora nello stesso punto passi a quello più grande che lo contiene) o lo riquadri tu
+  trascinando. Niente più camera: la schermata è molto più pulita, con tre passi: **cosa estrarre**, **come lo vuoi**, **dimensioni e qualità**.
+  - Se è una **persona**: inquadratura (figura intera, fino alla vita, solo il volto) e posa (T-pose, A-pose, in piedi, come nella foto, disegnata con l'omino).
+  - Se è un **oggetto**: vista (come nella foto, davanti, ¾, dall'alto, di lato); se una parte è coperta o tagliata il modello la completa.
+  - Sfondo (bianco, grigio, trasparente, come la foto), ombra sul pavimento, note, e il pulsante «È una persona / È un oggetto» se il modello si sbaglia.
+- **La casella dei prompt**: **tasto destro** con Incolla, Copia, Taglia, Annulla e Seleziona tutto in tutte le caselle di testo; il
+  **cestino** cancella tutto il testo in un colpo; la casella **si allarga da sola** col testo, senza barra di scorrimento (Crea,
+  Modifica, Laboratorio, editor delle ricette, preset, piani del modello).
+- **L'omino**: la **testa** si regola (gira a sinistra/destra fino al profilo, su/giù, inclinata, con modi pronti) e va nel prompt a parole.
+  E la guida di posa non è più uno scheletro a linee (che il modello a volte lasciava nella foto): è un **manichino grigio pieno**, come
+  quello di legno degli artisti, con mani e dita; il prompt dice che è solo un riferimento da sostituire con la persona vera. Il
+  controllo automatico cerca anche tracce del manichino (parti grigie lisce) e, se le trova, le toglie. Un pulsante mostra il
+  manichino che vede il modello.
+- **Le risoluzioni si vedono sempre**: in Modifica, Fusion, Esempio, Laboratorio ed Estrai c'è la riga «La foto esce a **1024 × 1376 px**»,
+  le scelte dei megapixel mostrano la misura vera in pixel sotto ogni voce (e non sono più nascoste in «Avanzate»), il pulsante
+  principale dice a che misura esce, Crea mostra larghezza × altezza accanto alla risoluzione. In «Solo una zona» dice che la foto resta com'è.
+- **Skill di progetto** per chi sviluppa (`.claude/skills/`): `rilascio` (come si prepara una versione) e `prova-interfaccia` (come
+  vedere l'interfaccia senza motore, con `node test/interfaccia.mjs`).
+
 ## 0.9.1 — 2026-10-15
 
 Lo scheletro dell'omino non resta più nella foto.
