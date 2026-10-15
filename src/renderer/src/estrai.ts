@@ -91,16 +91,29 @@ export const impostaEstrai = (p: Partial<StatoEstrai>): void => usaEstrai.setSta
 // ---------------------------------------------------------------------------------------------------------------
 const SISTEMA_ELEMENTI =
   'You are an object detector. List every real person and every distinct, clearly visible object or item in the image that someone could want to cut out: people (full or partial, also small ones), animals, vehicles, furniture, products, bags, shoes, clothes or accessories that stand out, food, plants, toys, tools, devices, decorations. Do NOT list the background, the sky, the floor, walls, or people printed on posters or screens. ' +
-  'Output ONLY a JSON array, at most 16 items, the most prominent first: [{"bbox_2d":[x1,y1,x2,y2],"label":"short English description with color and material","kind":"person" or "object"}]. ' +
+  'Output ONLY a JSON array, at most 12 items, the most prominent first: [{"bbox_2d":[x1,y1,x2,y2],"label":"2-5 words: color and name","kind":"person" or "object"}]. ' +
   'Coordinates are integers from 0 to 1000, relative to the image width and height (x1,y1 = top-left corner, x2,y2 = bottom-right corner). A person box contains the whole visible body; an object box is tight around the whole object. No other text.'
 
+/** col rilevatore piccolo (Florence-2); con «Qwen3-VL» in Opzioni, o se il rilevatore non c'è, si chiede all'LLM (molto più lento) */
+async function chiediRiquadri(foto: FotoBase): Promise<string> {
+  if (usaStato.getState().imp?.trova !== 'llm') {
+    try {
+      return await api.testo.scrivi({ ...richiestaBase(), modalita: 'trova', prompt: '', immagini: [foto.percorso], etichetta: 'Cerco persone e oggetti' })
+    } catch (e) {
+      usaStato.getState().avvisa(`Il rilevatore non risponde (${(e as Error).message.split('\n')[0]}): uso il Qwen3-VL, più lento`, 'info')
+    }
+  }
+  return api.testo.scrivi({
+    ...richiestaBase(), modalita: 'descrivi', prompt: 'Detect all the people and objects in this image.', immagini: [foto.percorso],
+    sistema: SISTEMA_ELEMENTI, maxToken: 900, temperatura: 0.1, seed: 7, etichetta: 'Cerco persone e oggetti'
+  })
+}
+
+/** cerca persone e oggetti nella foto (solo quando premi il pulsante) */
 export async function trovaElementi(foto: FotoBase): Promise<void> {
   impostaEstrai({ cercando: true, foto: foto.percorso, elementi: [], scelto: null })
   try {
-    const t = await api.testo.scrivi({
-      ...richiestaBase(), modalita: 'descrivi', prompt: 'Detect all the people and objects in this image.', immagini: [foto.percorso],
-      sistema: SISTEMA_ELEMENTI, maxToken: 1400, temperatura: 0.1, seed: 7, etichetta: 'Cerco persone e oggetti'
-    })
+    const t = await chiediRiquadri(foto)
     const elementi = leggiElementi(t || '', foto.larghezza, foto.altezza)
     if (usaEstrai.getState().foto !== foto.percorso) return
     // se c'è una sola persona e nient'altro di grosso, è già scelta

@@ -25,7 +25,7 @@ export function BarraStato(): JSX.Element {
           <div className="col" style={{ gap: 0 }}>
             <b>{corrente.fase}</b>
             <span className="piccolo tenue">
-              {corrente.fase === 'Disegno' && corrente.passiTotali ? `passo ${corrente.passo}/${corrente.passiTotali}` : corrente.indice > 1 ? `immagine ${corrente.indice}` : 'in corso'}
+              {corrente.fase === 'Disegno' && corrente.passiTotali ? `passo ${corrente.passo}/${corrente.passiTotali}` : corrente.tokSec ? `${corrente.passo} token` : corrente.indice > 1 ? `immagine ${corrente.indice}` : 'in corso'}
             </span>
           </div>
         </div>
@@ -39,6 +39,7 @@ export function BarraStato(): JSX.Element {
           </div>
         </div>
         <div className="bs-destra">
+          {corrente.tokSec ? <span className="chip tok" title="Token al secondo: la velocità con cui scrive il modello di testo (LLM)">{String(corrente.tokSec).replace('.', ',')} tok/s</span> : null}
           {lenta && (
             <button className="chip lento" onClick={(e) => { e.stopPropagation(); vai('impostazioni') }} title={`${corrente.secondiPasso} s per passo: molto più del normale. Di solito la VRAM è piena e Windows usa la RAM (Opzioni → Prestazioni).`}>
               <I.tempo /> lento
@@ -75,7 +76,7 @@ export function BarraStato(): JSX.Element {
             <span className={`titolo ${ultimo.stato === 'errore' ? 'errore' : 'ok'}`} title={ultimo.errore || ultimo.richiesta.prompt}>
               {ultimo.stato === 'errore' ? `✗ ${(ultimo.errore || 'Errore').split('\n')[0]}` : `✓ ${ultimo.richiesta.etichetta || ultimo.richiesta.prompt || 'Fatto'}`}
             </span>
-            {ultimo.stato === 'fatto' && ultimo.inizio && ultimo.fine && <span className="inglese">{durata((ultimo.fine - ultimo.inizio) / 1000)}{ultimo.promptInglese ? ` · → ${ultimo.promptInglese}` : ''}</span>}
+            {ultimo.stato === 'fatto' && ultimo.inizio && ultimo.fine && <span className="inglese">{durata((ultimo.fine - ultimo.inizio) / 1000)}{ultimo.tokSec ? ` · ${String(ultimo.tokSec).replace('.', ',')} tok/s` : ''}{ultimo.promptInglese ? ` · → ${ultimo.promptInglese}` : ''}</span>}
           </div>
         ) : (
           <div className="bs-testi"><span className="inglese">Qui sotto compare tutto quello che fa il motore: fasi, passi, tempo che manca e il prompt tradotto in inglese.</span></div>

@@ -95,6 +95,9 @@ interfaccia**, installato e guidato dall'app.
   qualunque pagina la mandi (il `conParoleLora` del renderer fa la stessa cosa, non raddoppia). **Esempio** (`fusion.ts`): `pianificaEsempio` fa un foglio con l'esempio (image 1) e i riferimenti numerati e lo dà al Qwen3-VL (`descrivi`, `SISTEMA_PIANO`), che scrive l'istruzione di modifica decidendo da solo cosa sostituire con cosa (niente regole per persone o altro); il piano sta in `pianoEsempio` (con `chiaveEsempio`: foto + nota), si corregge nell'interfaccia, e `richiestaEsempio` lo manda come prompt con l'esempio come `image_1`. **Galleria**: tasto destro
   (`MenuContestuale`), `galleria:elimina` con `definitivo`, `galleria:copia` con più id = file negli appunti con PowerShell `Set-Clipboard`. **Laboratorio**:
   un `Ingresso` di tipo `camera` mostra il comando Camera (valore JSON, `leggiCamera`) e le ricette aggiungono il passo `VISTA_TUA`.
+- **Una cosa alla volta in VRAM** (`lavori.ts`, `fattiSpazio` + `cliente.scaricaModelli`, `impostazioni.unaCosaAllaVolta`): ogni lavoro è `immagine`, `testo` (LLM e rilevatore) o `cpu` (traduttore); quando cambia
+  si manda `/free` e si aspetta che `torch_vram_total` scenda (il motore scarica a coda ferma: senza l'attesa lo farebbe dopo il lavoro successivo). **Token/s**: il TextGenerate manda un `progress` per token,
+  `lavori.ts` ne ricava `Lavoro.tokSec` (media dal primo messaggio) e `BarraStato` lo mostra.
 - **Casella** (`componenti/Casella.tsx`): la textarea dei prompt (cresce col testo, cestino); il tasto destro nei campi di testo è nel main (`index.ts`, evento `context-menu`).
   **Risoluzioni**: `Misura.tsx` ha `dimMp()` (le stesse misure del motore), `ScegliMp` (megapixel con i pixel sotto) e `Uscita` (la riga «La foto esce a…»).
 - **Omino** (`omino.ts` puro + `componenti/Omino.tsx`, `ominoImmagine.ts`): scheletro di 15 giunti in un riquadro 280×300 (`Dx`/`Sx` sono della persona: la destra sta a sinistra dello schermo);
@@ -131,7 +134,9 @@ interfaccia**, installato e guidato dall'app.
   un modello fra i primi senza ripetere; `disegna.ts` disegna su canvas (schermo e stampa: cornice, ombra, z, elementi); `esporta.ts` JPEG/PDF
   (`pdf.ts`, senza librerie). Le foto grandi non restano in cache.
 - **Estrai** (modo di Modifica, `componenti/Estrai.tsx` + `estrai.ts` + `riquadri.ts`): a foto caricata `trovaElementi` chiede al Qwen3-VL (`descrivi` con la foto intera)
-  un JSON `{bbox_2d 0–1000, label, kind: person|object}` (`leggiElementi`, tollera fence e JSON troncato, toglie i riquadri doppi); si sceglie con un clic (più clic = il riquadro più grande
+  un JSON `{bbox_2d 0–1000, label, kind: person|object}` (`leggiElementi`, tollera fence e JSON troncato, toglie i riquadri doppi). La ricerca parte **solo col pulsante**. Di serie la fa il
+  **rilevatore piccolo** (`modalita: 'trova'` → nodo `DaProdTrova` in `engine/custom_nodes/DaProd-Nodi/trova.py`: Florence-2 base `<OD>`, legge i gettoni `<loc_N>` a mano, poi esce dalla VRAM; modello `trova-florence`
+  in `models/detect/florence-2-base-ft`, scaricato al primo uso da `lavori.ts`), con `impostazioni.trova` = `'llm'` o se il rilevatore fallisce si ripiega sul Qwen3-VL (`descrivi`, `SISTEMA_ELEMENTI`). Si sceglie con un clic (più clic = il riquadro più grande
   che contiene il punto) o riquadrando a mano; il tipo (persona/oggetto) si corregge. `richiestaEstrai` ritaglia la cosa (+12%) in un temp e fa una **Crea** con quella come `<image1>`:
   **persona** = inquadratura (intera/vita/volto) + posa (T/A/in piedi/come/omino: manichino `<image1>`, ritaglio `<image2>`); **oggetto** = vista (come/davanti/¾/alto/lato), completa le parti coperte.
   Proporzioni (`proporzioniEstrai`, auto = dal riquadro per gli oggetti) e `dimensioniEstrai` sono le stesse cifre che l'interfaccia mostra. I risultati stanno in `usaEstrai` (non nelle versioni).

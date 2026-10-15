@@ -76,6 +76,14 @@ export const CATALOGO: VoceCatalogo[] = [
     repo: 'Helsinki-NLP/opus-mt-it-en', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
     accanto: ['^config\\.json$', '^generation_config\\.json$', '^tokenizer_config\\.json$', '^source\\.spm$', '^target\\.spm$', '^vocab\\.json$']
   },
+  // --- rilevatore: un modello piccolo (Florence-2, 0,23 miliardi di parametri, MIT) che trova persone e oggetti in un secondo, al posto dell'LLM ---
+  {
+    id: 'trova-florence', tipo: 'rilevatore', nome: 'Rilevatore persone e oggetti (Florence-2 base)',
+    descrizione: 'Un modello piccolo che trova persone e oggetti in una foto in un attimo (Estrai). Prima lo faceva il Qwen3-VL, molto più lento. Si scarica da solo al primo uso.',
+    file: '', cartella: 'detect/florence-2-base-ft', url: '', byte: 460_000_000, circa: true, consigliato: true,
+    repo: 'florence-community/Florence-2-base-ft', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
+    accanto: ['^config\\.json$', '^generation_config\\.json$', '^preprocessor_config\\.json$', '^processor_config\\.json$', '^tokenizer_config\\.json$', '^tokenizer\\.json$', '^vocab\\.json$', '^merges\\.txt$', '^special_tokens_map\\.json$', '^added_tokens\\.json$', '^chat_template\\.json$']
+  },
   // --- VAE ---
   {
     id: 'vae-fix', tipo: 'vae', nome: 'Texture-Fix VAE (madebyollin)',

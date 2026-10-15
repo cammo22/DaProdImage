@@ -9,7 +9,7 @@ import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
 import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
-import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
+import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
 import { elencoLora } from '../lora'
@@ -114,6 +114,10 @@ let uscitaAttesa: { nodo: string; immagini: { filename: string; subfolder: strin
 let fasiCorrenti: Record<string, string> = {}
 let tempiPasso: number[] = []
 let ultimoPasso = 0
+// i token al secondo quando scrive l'LLM: il motore manda un 'progress' per ogni token generato
+let misuraToken = false
+let tokT0 = 0
+let tokV0 = 0
 
 suMessaggio((m) => {
   const l = corrente
@@ -141,6 +145,13 @@ suMessaggio((m) => {
           const t = tempiPasso.slice(2)
           l.secondiPasso = Math.round((t.reduce((a, b) => a + b, 0) / t.length) * 100) / 100
         }
+      }
+      if (misuraToken) {
+        // il primo messaggio segna l'inizio (prima c'è la lettura del prompt e della foto, che non conta)
+        if (!tokT0 || v < tokV0) {
+          tokT0 = ora
+          tokV0 = v
+        } else if (v > tokV0 && ora - tokT0 > 400) l.tokSec = Math.round(((v - tokV0) / ((ora - tokT0) / 1000)) * 10) / 10
       }
       l.passo = v
       l.passiTotali = max
@@ -198,8 +209,32 @@ async function prepara(q: Richiesta): Promise<Ingressi> {
 
 type Uscita = { nodo: string; immagini: { filename: string; subfolder: string; type: string }[]; testo?: string }
 
+/** che cosa occupa la scheda: il modello immagine, l'LLM (e il rilevatore), o niente di importante (il traduttore sta sul processore) */
+type Occupa = 'immagine' | 'testo' | 'cpu'
+let ultimoOccupa: Occupa | null = null
+
+/** una cosa alla volta in VRAM: passando dal modello immagine all'LLM (o viceversa) si scarica quello che non serve più */
+async function fattiSpazio(occupa: Occupa, l: Lavoro | null): Promise<void> {
+  if (occupa === 'cpu') return
+  const cambia = ultimoOccupa !== null && ultimoOccupa !== occupa
+  ultimoOccupa = occupa
+  if (!cambia || !impostazioni().unaCosaAllaVolta) return
+  const fase = l?.fase
+  if (l) {
+    l.fase = occupa === 'testo' ? 'Scarico il modello immagine' : 'Scarico l\'LLM'
+    avvisa(l)
+  }
+  await scaricaModelli()
+  if (l && fase) l.fase = fase
+}
+
 /** manda un grafo al motore e aspetta che finisca (le fasi e l'avanzamento arrivano dai messaggi) */
-async function lancia(grafo: GrafoPronto): Promise<Uscita> {
+async function lancia(grafo: GrafoPronto, occupa: Occupa = 'immagine', l: Lavoro | null = corrente, token = false): Promise<Uscita> {
+  await fattiSpazio(occupa, l)
+  misuraToken = token
+  tokT0 = 0
+  tokV0 = 0
+  if (l && !token) l.tokSec = undefined
   fasiCorrenti = grafo.fasi
   uscitaAttesa = { nodo: grafo.uscita, immagini: [] }
   const fine = new Promise<MessaggioComfy>((ok, ko) => {
@@ -237,6 +272,23 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
   }
 }
 
+/** il rilevatore (Florence-2) è sul disco? se manca lo scarica (una volta sola, ~460 MB); false se non ci riesce */
+async function rilevatorePronto(l: Lavoro): Promise<boolean> {
+  const stato = () => statoModelli().find((v) => v.id === 'trova-florence')?.presente
+  if (stato()) return true
+  try {
+    l.fase = 'Scarico il rilevatore'
+    avvisa(l)
+    await scaricaVoce('trova-florence', (r, t) => {
+      l.fase = `Scarico il rilevatore${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      avvisa(l, false)
+    })
+    return !!stato()
+  } catch {
+    return false
+  }
+}
+
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
 async function inInglese(l: Lavoro): Promise<string> {
   const q = l.richiesta
@@ -251,12 +303,12 @@ async function inInglese(l: Lavoro): Promise<string> {
   let t: string
   if (dedicato) {
     const g = costruisci({ ...q, modalita: 'traduci', prompt: p, immagini: [] }, imp, { immagini: [] }, 'traduci')
-    const u = await lancia(g)
+    const u = await lancia(g, 'cpu', l)
     t = (u.testo || '').trim() || p
   } else {
     const g = costruisci({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, imp, { immagini: [] }, 'traduci')
     g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
-    const u = await lancia(g)
+    const u = await lancia(g, 'testo', l, true)
     t = pulisciTraduzione(u.testo || '', p)
   }
   tradotti.set(p, t)
@@ -298,6 +350,7 @@ async function esegui(l: Lavoro): Promise<void> {
       await avviaMotore()
     }
     if (!collegato()) await connetti()
+    if (l.richiesta.modalita === 'trova' && !(await rilevatorePronto(l))) throw new Error('non riesco a scaricare il rilevatore: in Opzioni scegli «Qwen3-VL» per Estrai')
     const ing = await prepara(l.richiesta)
     const inglese = await inInglese(l)
     if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
@@ -310,8 +363,9 @@ async function esegui(l: Lavoro): Promise<void> {
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
-    const uscita = await lancia(grafo)
-    if (l.richiesta.modalita === 'descrivi') {
+    const testo = l.richiesta.modalita === 'descrivi' || l.richiesta.modalita === 'trova'
+    const uscita = await lancia(grafo, testo ? 'testo' : 'immagine', l, l.richiesta.modalita === 'descrivi')
+    if (testo) {
       l.testo = (uscita?.testo || '').trim()
     } else {
       if (!uscita?.immagini.length) throw new Error('il motore non ha restituito immagini')
@@ -372,7 +426,7 @@ async function esegui(l: Lavoro): Promise<void> {
 
 /** esegue subito un lavoro di testo e aspetta il risultato (migliora prompt, descrivi foto) */
 export async function scriviTesto(q: Richiesta): Promise<string> {
-  const [l] = accodaRichiesta({ ...q, modalita: 'descrivi', quante: 1 })
+  const [l] = accodaRichiesta({ ...q, modalita: q.modalita === 'trova' ? 'trova' : 'descrivi', quante: 1 })
   return new Promise((ok, ko) => {
     const via = suCambioLavori(() => {
       if (l.stato === 'fatto') {

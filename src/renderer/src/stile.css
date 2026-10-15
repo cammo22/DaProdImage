@@ -880,3 +880,8 @@ details.tipo-modelli > summary:hover { color: var(--oro); }
 .pers-box span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; padding: 0 8px 0 6px; font-size: 12.5px; }
 .pers-box span svg { width: 14px; height: 14px; }
 .pers-box.oggetto span { background: #5ec8ff; color: #04202c; }
+.lora-chip { display: inline-flex; align-items: center; gap: 6px; }
+.lora-chip button { display: grid; place-items: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: .7; }
+.lora-chip button:hover { opacity: 1; }
+.lora-chip button svg { width: 13px; height: 13px; }
+.chip.tok { height: 26px; color: var(--oro); border-color: var(--oro); cursor: default; font-variant-numeric: tabular-nums; }

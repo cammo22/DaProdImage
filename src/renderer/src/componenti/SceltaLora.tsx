@@ -28,6 +28,27 @@ export function Copertina({ l, grande }: { l: InfoLora; grande?: boolean }): JSX
   )
 }
 
+/** i LoRA accesi, sempre in vista (una riga di chip con la forza): così non si dimentica cosa è attivo anche con la sezione LoRA chiusa */
+export function LoraAttivi(): JSX.Element | null {
+  const { lore, loraAttive, toggleLora, imp } = usaStato()
+  const attive = loraAttive.filter((a) => a.file !== imp?.loraTurbo)
+  if (!attive.length) return null
+  return (
+    <div className="riga a-capo" style={{ gap: 6, marginTop: 8 }}>
+      <span className="piccolo tenue">LoRA attivi:</span>
+      {attive.map((a) => {
+        const info = lore.find((l) => l.file === a.file)
+        return (
+          <span key={a.file} className="chip su lora-chip" title={info?.parole ? 'Parole chiave (si aggiungono da sole al prompt): ' + info.parole : a.file}>
+            {info?.nome || a.file} · {a.forza.toFixed(2)}
+            <button onClick={() => toggleLora(a.file)} title="Spegni questo LoRA" aria-label="Spegni"><I.x /></button>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 export function SceltaLora(): JSX.Element {
   const { lore: tutte, loraAttive, setLoraAttive, toggleLora, vai, imp } = usaStato()
   // il Turbo si accende dalla Qualità, non da qui

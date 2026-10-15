@@ -353,7 +353,7 @@ export function Laboratorio(): JSX.Element {
                 {!passi.some((x) => !x.crea) && (
                   <div style={{ marginTop: 10 }}>
                     <span className="piccolo tenue">Grandezza della foto</span>
-                    <ScegliMp mp={mp} cambia={setMp} voci={[0.5, 1, 2]} />
+                    <ScegliMp mp={mp} cambia={setMp} />
                   </div>
                 )}
               </div>

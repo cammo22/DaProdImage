@@ -96,9 +96,9 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
   const [vedi, setVedi] = useState<string | null>(null)
   const scelto = ris.find((r) => r.opera.id === vedi) || ris[0]
   const vivo = inCorso?.anteprima
-  // una foto nuova: il modello cerca da solo cosa c'è dentro
+  // una foto nuova: le cose trovate in quella di prima non valgono più (la ricerca parte solo quando premi il pulsante)
   useEffect(() => {
-    if (p.base && usaEstrai.getState().foto !== p.base.percorso) void trovaElementi(p.base)
+    if (p.base && usaEstrai.getState().foto !== p.base.percorso) impostaEstrai({ foto: p.base.percorso, elementi: [], scelto: null })
   }, [p.base?.percorso])
 
   if (!p.base)
@@ -106,7 +106,7 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
       <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
         <div className="vuoto">
           <div className="grosso">ESTRAI <b>DA UNA FOTO</b></div>
-          <p>Dai una foto: il modello trova <b className="oro">le persone e gli oggetti</b>, tu clicchi quello che vuoi e lo ottieni da solo, su sfondo pulito.</p>
+          <p>Dai una foto e premi <b className="oro">Trova persone e oggetti</b>: clicchi quello che vuoi e lo ottieni da solo, su sfondo pulito.</p>
           <p className="piccolo">Una persona a figura intera (T-pose, A-pose, una posa disegnata), un busto o un volto; un oggetto intero, da davanti, di lato o dall'alto.</p>
           <div className="riga" style={{ justifyContent: 'center', marginTop: 14 }}>
             <button className="btn primario" onClick={p.daGalleria}><I.galleria /> Dalla galleria</button>
@@ -119,7 +119,7 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
   return (
     <div className="pers">
       <div className="pers-col">
-        <div className="fusion-testa"><b>LA FOTO</b><span className="piccolo tenue">clicca una persona o un oggetto · trascina per riquadrare a mano</span></div>
+        <div className="fusion-testa"><b>LA FOTO</b><span className="piccolo tenue">{usaEstrai.getState().elementi.length ? 'clicca una persona o un oggetto · trascina per riquadrare a mano' : 'premi «Trova persone e oggetti», oppure trascina per riquadrare a mano'}</span></div>
         <div className="pers-palco"><FotoElementi foto={p.base} /></div>
       </div>
       <div className="pers-col pers-ris">
@@ -202,7 +202,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
               <button className="btn fantasma piccolo icona" title="Toglie questa scelta" onClick={() => impostaEstrai({ scelto: null })}><I.x /></button>
             </div>
           ) : (
-            <div className="piccolo spento">{s.cercando ? 'Il modello sta guardando la foto…' : p.base ? 'Clicca sulla foto la persona o l\'oggetto che vuoi (cliccando ancora nello stesso punto passi a quello più grande che lo contiene).' : 'Prima scegli una foto.'}</div>
+            <div className="piccolo spento">{s.cercando ? 'Il modello sta guardando la foto…' : !p.base ? 'Prima scegli una foto.' : s.elementi.length ? 'Clicca sulla foto la persona o l\'oggetto che vuoi (cliccando ancora nello stesso punto passi a quello più grande che lo contiene).' : 'Premi il pulsante: il modello trova le persone e gli oggetti nella foto. Puoi anche riquadrare a mano trascinando.'}</div>
           )}
           {el && (
             <div className="riga" style={{ gap: 8, marginTop: 8 }}>
@@ -213,8 +213,8 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
               </div>
             </div>
           )}
-          <button className="btn piccolo fantasma" style={{ marginTop: 8 }} disabled={!p.base || s.cercando} onClick={() => p.base && void trovaElementi(p.base)}>
-            <I.occhio /> {s.cercando ? 'Cerco…' : 'Cerca di nuovo'}
+          <button className={`btn ${s.elementi.length ? 'piccolo fantasma' : 'primario'}`} style={{ marginTop: 8, width: s.elementi.length ? undefined : '100%' }} disabled={!p.base || s.cercando} onClick={() => p.base && void trovaElementi(p.base)}>
+            <I.occhio /> {s.cercando ? 'Cerco…' : s.elementi.length ? 'Cerca di nuovo' : 'Trova persone e oggetti'}
           </button>
         </div>
 
@@ -267,7 +267,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
           </div>
           <div style={{ marginTop: 10 }}>
             <span className="piccolo tenue">Grandezza della foto</span>
-            <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} ar={{ w: r[0], h: r[1] }} voci={[0.5, 1, 2, 4]} />
+            <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} ar={{ w: r[0], h: r[1] }} />
           </div>
           <Uscita w={dim.w} h={dim.h} />
           <div style={{ marginTop: 12 }}>

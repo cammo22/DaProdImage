@@ -226,6 +226,13 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: 1 }
   }
 
+  // il rilevatore piccolo (Florence-2): riquadri di persone e oggetti in un attimo, senza Qwen
+  if (q.modalita === 'trova') {
+    const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Guardo la foto'))
+    const uscita = g.add('DaProdTrova', { image: img, modello: 'florence-2-base-ft' }, 'Cerco persone e oggetti')
+    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: 1 }
+  }
+
   if (q.modalita === 'descrivi') {
     const clip = caricaClip(g, imp)
     const inputs: Record<string, unknown> = {

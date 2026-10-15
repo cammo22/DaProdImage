@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.11.0 — 2026-10-15
+
+Estrai senza partenze a sorpresa e molto più veloce, una cosa alla volta in VRAM, i token al secondo, i megapixel ovunque.
+
+- **Estrai parte solo quando premi**: mettendo una foto non succede niente; premi **Trova persone e oggetti** (o riquadri a mano trascinando).
+- **Il rilevatore piccolo**: persone e oggetti li trova ora **Florence-2** (0,23 miliardi di parametri, ~460 MB, si scarica da solo al
+  primo uso) invece del Qwen3-VL da 8 miliardi: meno di un secondo invece di mezzo minuto. In Opzioni puoi tornare al Qwen3-VL; se il
+  rilevatore non risponde, l'app ripiega da sola sul Qwen3-VL (con meno oggetti e etichette più corte, quindi più veloce di prima).
+  Per questo il **motore passa alla versione 6**: al primo avvio dopo l'aggiornamento l'app aggiorna il motore da sola.
+- **Una cosa alla volta in VRAM** (Opzioni → Prestazioni, acceso di serie): quando passi dal modello immagine all'LLM (migliora prompt,
+  descrivi foto, Idee, Esempio, Estrai…) o viceversa, l'app **scarica quello che non serve** e aspetta che la VRAM sia davvero libera
+  prima di far partire il lavoro dopo. Nella barra in basso si legge «Scarico il modello immagine» / «Scarico l'LLM».
+- **Token al secondo**: mentre scrive l'LLM, nella barra in basso compare **N tok/s** (e i token fatti); a lavoro finito resta nella riga dell'ultimo risultato.
+- **Megapixel ovunque**: il selettore (0,25 / 0,5 / 1 / 2 / **4 MP**, con la misura in pixel sotto ogni voce) c'è in Modifica (anche con «Originale» o
+  «Misura mia»: lavora a 4 MP e poi porta alla misura), Fusion, Esempio, Espandi, Laboratorio, Estrai e **Crea** («Oppure scegli per megapixel»).
+- **Crea: i LoRA attivi si vedono sempre**, in tutte le categorie: una riga di chip sotto il prompt (con la forza, la ✕ li spegne) e il
+  numero sulla testata della sezione LoRA anche quando è chiusa.
+
 ## 0.10.0 — 2026-10-15
 
 Estrai persone **e oggetti**, una casella di testo come si deve, la testa dell'omino e le risoluzioni sempre in vista.
