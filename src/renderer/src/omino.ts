@@ -1,5 +1,5 @@
 // L'omino: uno scheletro che si muove come un manichino (ossa di lunghezza fissa, si ruotano le articolazioni), con le mani
-// (aperta, chiusa, dita una per una). Serve a dare una posa al personaggio: l'omino si disegna in stile OpenPose (la mappa
+// (aperta, chiusa, dita una per una). Serve a dare una posa al personaggio: l'omino si disegna come un manichino grigio (la guida
 // di posa che il modello di modifica sa leggere) e si descrive anche a parole. Qui sta solo la parte pura, senza interfaccia.
 
 export type Giunto =
@@ -26,11 +26,23 @@ export interface Mano {
   polso: number
 }
 
+/** dove guarda la testa (gradi): `gira` + = faccia verso destra dello SCHERMO, `su` + = mento alzato, `inclina` + = orecchio verso la spalla destra dello schermo */
+export interface Viso {
+  gira: number
+  su: number
+  inclina: number
+}
+export const VISO0: Viso = { gira: 0, su: 0, inclina: 0 }
+
 export interface Posa {
   /** posizioni nel riquadro 280 × 300 */
   p: Record<Giunto, Punto>
   mani: { sx: Mano; dx: Mano }
+  /** la direzione della testa (se manca, guarda dritto) */
+  viso?: Viso
 }
+
+export const visoDi = (p: Posa): Viso => p.viso ?? VISO0
 
 export const LARGO = 280
 export const ALTO = 300
@@ -179,7 +191,8 @@ export function specchia(p: Posa, asse = LARGO / 2): Posa {
   const scambio = (g: Giunto): Giunto => (g.endsWith('Sx') ? ((g.slice(0, -2) + 'Dx') as Giunto) : g.endsWith('Dx') ? ((g.slice(0, -2) + 'Sx') as Giunto) : g)
   const np = {} as Record<Giunto, Punto>
   for (const g of GIUNTI) np[scambio(g)] = [2 * asse - p.p[g][0], p.p[g][1]]
-  return { p: np, mani: { sx: { ...p.mani.dx, dita: [...p.mani.dx.dita] }, dx: { ...p.mani.sx, dita: [...p.mani.sx.dita] } } }
+  const v = visoDi(p)
+  return { p: np, mani: { sx: { ...p.mani.dx, dita: [...p.mani.dx.dita] }, dx: { ...p.mani.sx, dita: [...p.mani.sx.dita] } }, viso: { gira: -v.gira, su: v.su, inclina: -v.inclina } }
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -200,7 +213,7 @@ const dentro = (v: number, a: number, b: number): number => Math.max(a, Math.min
 
 /** porta l'articolazione `g` verso `a`: il bacino si sposta (e porta tutto), le altre ruotano attorno al genitore con l'osso della stessa lunghezza */
 export function trascina(p: Posa, g: Giunto, a: Punto): Posa {
-  const np: Posa = { p: { ...p.p }, mani: p.mani }
+  const np: Posa = { p: { ...p.p }, mani: p.mani, viso: p.viso }
   if (g === 'bacino') {
     const dx = dentro(a[0], 20, LARGO - 20) - p.p.bacino[0]
     const dy = dentro(a[1], 40, ALTO - 20) - p.p.bacino[1]
@@ -222,7 +235,7 @@ export function trascina(p: Posa, g: Giunto, a: Punto): Posa {
 
 /** i punti della posa si tengono nel riquadro */
 export const dentroRiquadro = (p: Posa): Posa => {
-  const np: Posa = { p: { ...p.p }, mani: p.mani }
+  const np: Posa = { p: { ...p.p }, mani: p.mani, viso: p.viso }
   for (const g of GIUNTI) np.p[g] = [dentro(p.p[g][0], 4, LARGO - 4), dentro(p.p[g][1], 4, ALTO - 4)]
   return np
 }
@@ -230,12 +243,12 @@ export const dentroRiquadro = (p: Posa): Posa => {
 // ---------------------------------------------------------------------------------------------------------------
 // salvare e leggere
 // ---------------------------------------------------------------------------------------------------------------
-export const posaInTesto = (p: Posa): string => JSON.stringify({ p: Object.fromEntries(GIUNTI.map((g) => [g, p.p[g].map((v) => +v.toFixed(1))])), mani: p.mani })
+export const posaInTesto = (p: Posa): string => JSON.stringify({ p: Object.fromEntries(GIUNTI.map((g) => [g, p.p[g].map((v) => +v.toFixed(1))])), mani: p.mani, viso: p.viso })
 
 export function leggiPosa(s: string | undefined): Posa | null {
   if (!s) return null
   try {
-    const j = JSON.parse(s) as { p?: Record<string, number[]>; mani?: { sx?: Partial<Mano>; dx?: Partial<Mano> } }
+    const j = JSON.parse(s) as { p?: Record<string, number[]>; mani?: { sx?: Partial<Mano>; dx?: Partial<Mano> }; viso?: Partial<Viso> }
     if (!j.p) return null
     const pp = {} as Record<Giunto, Punto>
     for (const g of GIUNTI) {
@@ -248,7 +261,8 @@ export function leggiPosa(s: string | undefined): Posa | null {
       aperte: dentro(Number(m?.aperte) || 0, 0, 1),
       polso: dentro(Number(m?.polso) || 0, -90, 90)
     })
-    return { p: pp, mani: { sx: mano(j.mani?.sx), dx: mano(j.mani?.dx) } }
+    const viso: Viso = { gira: dentro(Number(j.viso?.gira) || 0, -90, 90), su: dentro(Number(j.viso?.su) || 0, -50, 50), inclina: dentro(Number(j.viso?.inclina) || 0, -45, 45) }
+    return { p: pp, mani: { sx: mano(j.mani?.sx), dx: mano(j.mani?.dx) }, viso }
   } catch {
     return null
   }
@@ -304,100 +318,174 @@ function mano(m: Mano): string {
   return 'a relaxed, slightly curled hand'
 }
 
+/** dove guarda la testa, in inglese ("left" e "right" sono della persona: guardandola di fronte, la sua sinistra sta a destra dello schermo) */
+export function descriviViso(v: Viso): string {
+  const a = Math.abs(v.gira)
+  const lato = v.gira > 0 ? 'left' : 'right'
+  let t: string
+  if (a < 12) t = 'The head faces the camera'
+  else if (a < 35) t = `The head is turned slightly to the person's ${lato}`
+  else if (a < 65) t = `The head is turned about halfway to the person's ${lato}, a three-quarter view of the face`
+  else t = `The head is turned in full profile, looking to the person's ${lato}`
+  if (v.su > 12) t += ', chin raised and looking up'
+  else if (v.su < -12) t += ', chin lowered and looking down'
+  if (Math.abs(v.inclina) > 10) t += `, tilted toward the person's ${v.inclina > 0 ? 'left' : 'right'} shoulder`
+  return t + '.'
+}
+
 /** la posa in inglese: "right" e "left" sono quelli della persona */
 export function descriviPosa(p: Posa): string {
   const busto = (Math.atan2(p.p.collo[0] - p.p.bacino[0], p.p.bacino[1] - p.p.collo[1]) * 180) / Math.PI
   const parti = [
     `The person's right arm is ${braccio(p, 'dx')}; the left arm is ${braccio(p, 'sx')}.`,
     `The right leg is ${gamba(p, 'dx')}; the left leg is ${gamba(p, 'sx')}.`,
-    `The right hand is ${mano(p.mani.dx)}; the left hand is ${mano(p.mani.sx)}.`
+    `The right hand is ${mano(p.mani.dx)}; the left hand is ${mano(p.mani.sx)}.`,
+    descriviViso(visoDi(p))
   ]
   if (Math.abs(busto) > 14) parti.push(`The body leans to the person's ${busto > 0 ? 'left' : 'right'}.`)
   return parti.join(' ')
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// il disegno in stile OpenPose (su un canvas): linee colorate per le ossa, punti, e le mani con le dita ad arcobaleno
+// il disegno: un manichino grigio pieno (come quello di legno degli artisti) su fondo chiaro. Niente linee né puntini da copiare:
+// al modello basta la forma, e non ha nulla di "scheletro" da lasciare nella foto.
 // ---------------------------------------------------------------------------------------------------------------
-const COLORI_CORPO: string[] = [
-  'rgb(255,0,0)', 'rgb(255,85,0)', 'rgb(255,170,0)', 'rgb(255,255,0)', 'rgb(170,255,0)', 'rgb(85,255,0)',
-  'rgb(0,255,0)', 'rgb(0,255,85)', 'rgb(0,255,170)', 'rgb(0,255,255)', 'rgb(0,170,255)', 'rgb(0,85,255)',
-  'rgb(0,0,255)', 'rgb(255,0,170)', 'rgb(255,0,255)', 'rgb(170,0,255)', 'rgb(85,0,255)'
-]
+const FONDO = '#ececf0'
+const SCURO = '#6c6c76'
+const CHIARO = '#a4a4b0'
+const OMBRA = '#4d4d57'
 
-/** i quattordici e passa punti del corpo in ordine OpenPose (0 naso, 1 collo, 2-4 braccio destro, 5-7 sinistro, 8-10 gamba destra, 11-13 sinistra, 14-17 occhi e orecchie) */
-export function puntiCorpo(p: Posa): Punto[] {
-  const t = p.p.testa
-  const c = p.p.collo
-  const d = norma([t[0] - c[0], t[1] - c[1]])
-  const n: Punto = [-d[1], d[0]]
-  // il naso sta al centro del viso, gli occhi sopra e ai lati, le orecchie di lato; "destra" della persona = lato sinistro dello schermo
-  const a = (l: number, h: number): Punto => [t[0] + n[0] * l + d[0] * h, t[1] + n[1] * l + d[1] * h]
-  return [t, c, p.p.spDx, p.p.gomDx, p.p.polDx, p.p.spSx, p.p.gomSx, p.p.polSx, p.p.ancaDx, p.p.ginDx, p.p.cavDx, p.p.ancaSx, p.p.ginSx, p.p.cavSx, a(-5.5, 4), a(5.5, 4), a(-11, -1), a(11, -1)]
-}
+type Ctx = CanvasRenderingContext2D
 
-const OSSA_CORPO: [number, number][] = [[1, 2], [1, 5], [2, 3], [3, 4], [5, 6], [6, 7], [1, 8], [8, 9], [9, 10], [1, 11], [11, 12], [12, 13], [1, 0], [0, 14], [14, 16], [0, 15], [15, 17]]
-
-/** disegna la posa su un canvas di `W × H` px (sfondo nero, omino al centro, il più grande possibile) */
-export function disegnaOpenPose(g: CanvasRenderingContext2D, p: Posa, W: number, H: number): void {
-  g.fillStyle = '#000'
-  g.fillRect(0, 0, W, H)
-  const s = Math.min(W / LARGO, H / ALTO)
-  const ox = (W - LARGO * s) / 2
-  const oy = (H - ALTO * s) / 2
-  const X = (q: Punto): number => ox + q[0] * s
-  const Y = (q: Punto): number => oy + q[1] * s
-  g.lineCap = 'round'
-  const pts = puntiCorpo(p)
-  OSSA_CORPO.forEach(([a, b], i) => {
-    g.strokeStyle = COLORI_CORPO[i]
-    g.globalAlpha = 0.65
-    g.lineWidth = Math.max(3, 3.4 * s)
+/** un osso: due cerchi (raggi ra e rb) uniti da un trapezio; sopra una striscia più chiara fa il rilievo */
+function osso(g: Ctx, a: Punto, b: Punto, ra: number, rb: number, rilievo = true): void {
+  const dx = b[0] - a[0]
+  const dy = b[1] - a[1]
+  const l = Math.hypot(dx, dy) || 1
+  const nx = -dy / l
+  const ny = dx / l
+  const disegna = (fa: number, fb: number, off: number, colore: string): void => {
+    const ox = nx * off
+    const oy = ny * off
+    g.fillStyle = colore
     g.beginPath()
-    g.moveTo(X(pts[a]), Y(pts[a]))
-    g.lineTo(X(pts[b]), Y(pts[b]))
-    g.stroke()
-  })
-  g.globalAlpha = 1
-  pts.forEach((q, i) => {
-    g.fillStyle = COLORI_CORPO[Math.min(i, COLORI_CORPO.length - 1)]
-    g.beginPath()
-    g.arc(X(q), Y(q), Math.max(3, 2.6 * s), 0, Math.PI * 2)
+    g.moveTo(a[0] + ox + nx * ra * fa, a[1] + oy + ny * ra * fa)
+    g.lineTo(b[0] + ox + nx * rb * fb, b[1] + oy + ny * rb * fb)
+    g.lineTo(b[0] + ox - nx * rb * fb, b[1] + oy - ny * rb * fb)
+    g.lineTo(a[0] + ox - nx * ra * fa, a[1] + oy - ny * ra * fa)
+    g.closePath()
     g.fill()
-  })
-  // le mani: dal polso a ogni nocca, poi le tre falangi; ogni dito ha il suo colore
-  for (const lato of ['sx', 'dx'] as const) {
-    const geo = geometriaMano(p, lato)
-    let k = 0
-    geo.dita.forEach((dito) => {
-      const catena: Punto[] = [geo.polso, ...dito.punti]
-      for (let j = 0; j < catena.length - 1; j++, k++) {
-        g.strokeStyle = `hsl(${(k / 20) * 360}, 100%, 50%)`
-        g.lineWidth = Math.max(1.6, 1.2 * s)
-        g.beginPath()
-        g.moveTo(X(catena[j]), Y(catena[j]))
-        g.lineTo(X(catena[j + 1]), Y(catena[j + 1]))
-        g.stroke()
-      }
-    })
-    g.fillStyle = 'rgb(0,0,255)'
-    for (const dito of geo.dita) for (const q of dito.punti) {
-      g.beginPath()
-      g.arc(X(q), Y(q), Math.max(1.6, 1.1 * s), 0, Math.PI * 2)
-      g.fill()
-    }
     g.beginPath()
-    g.arc(X(geo.polso), Y(geo.polso), Math.max(2, 1.6 * s), 0, Math.PI * 2)
+    g.arc(a[0] + ox, a[1] + oy, ra * fa, 0, Math.PI * 2)
+    g.arc(b[0] + ox, b[1] + oy, rb * fb, 0, Math.PI * 2)
     g.fill()
   }
+  disegna(1, 1, 0, SCURO)
+  if (rilievo) disegna(0.42, 0.42, -Math.min(ra, rb) * 0.22, CHIARO)
 }
 
-/** l'istruzione per il modello: la mappa di posa è solo un controllo (come una mappa di punti chiave), mai da disegnare nel risultato.
+/** disegna il manichino su un canvas di `W × H` px (fondo chiaro, il manichino al centro, il più grande possibile) */
+export function disegnaManichino(g: Ctx, p: Posa, W: number, H: number): void {
+  g.fillStyle = FONDO
+  g.fillRect(0, 0, W, H)
+  const s = Math.min(W / LARGO, H / ALTO)
+  g.save()
+  g.translate((W - LARGO * s) / 2, (H - ALTO * s) / 2)
+  g.scale(s, s)
+  g.lineJoin = 'round'
+  g.lineCap = 'round'
+  const q = p.p
+  // gambe e piedi (il piede guarda in basso e un po' in fuori)
+  const gambe: [Giunto, Giunto, Giunto, number][] = [['ancaSx', 'ginSx', 'cavSx', 1], ['ancaDx', 'ginDx', 'cavDx', -1]]
+  for (const [a, k, c, f] of gambe) {
+    osso(g, q[a], q[k], 8.2, 6.2)
+    osso(g, q[k], q[c], 6.2, 4.2)
+    osso(g, q[c], [q[c][0] + f * 7, q[c][1] + 6], 4.4, 3.4, false)
+  }
+  // busto: trapezio dalle spalle ai fianchi, poi bacino
+  g.fillStyle = SCURO
+  g.strokeStyle = SCURO
+  g.lineWidth = 8
+  g.beginPath()
+  g.moveTo(...q.spDx)
+  g.lineTo(...q.spSx)
+  g.lineTo(...q.ancaSx)
+  g.lineTo(...q.ancaDx)
+  g.closePath()
+  g.fill()
+  g.stroke()
+  osso(g, q.ancaDx, q.ancaSx, 7, 7, false)
+  osso(g, q.collo, q.bacino, 13, 10, false)
+  osso(g, q.spDx, q.spSx, 6, 6, false)
+  // collo
+  osso(g, q.collo, q.testa, 5.2, 4.6, false)
+  // braccia
+  for (const [s1, e1, w1] of [['spSx', 'gomSx', 'polSx'], ['spDx', 'gomDx', 'polDx']] as [Giunto, Giunto, Giunto][]) {
+    osso(g, q[s1], q[e1], 5.4, 4.4)
+    osso(g, q[e1], q[w1], 4.4, 3.4)
+  }
+  // mani: il palmo è il poligono polso → nocche, le dita sono ossicini sottili
+  for (const lato of ['sx', 'dx'] as const) {
+    const geo = geometriaMano(p, lato)
+    g.fillStyle = SCURO
+    g.strokeStyle = SCURO
+    g.lineWidth = 3
+    g.beginPath()
+    g.moveTo(...geo.polso)
+    for (const d of geo.dita) g.lineTo(...d.punti[0])
+    g.closePath()
+    g.fill()
+    g.stroke()
+    for (const d of geo.dita) for (let k = 0; k < 3; k++) osso(g, d.punti[k], d.punti[k + 1], 1.7 - k * 0.12, 1.5 - k * 0.12, false)
+  }
+  // testa: un ovale con le linee del viso (meridiano e fronte), che mostrano dove guarda
+  const v = visoDi(p)
+  const t = q.testa
+  const su = norma([t[0] - q.collo[0], t[1] - q.collo[1]])
+  g.save()
+  g.translate(t[0], t[1])
+  g.rotate(Math.atan2(su[0], -su[1]) + (v.inclina * Math.PI) / 180)
+  const RX = 12
+  const RY = 14.5
+  g.fillStyle = SCURO
+  g.beginPath()
+  g.ellipse(0, 0, RX, RY, 0, 0, Math.PI * 2)
+  g.fill()
+  g.fillStyle = CHIARO
+  g.globalAlpha = 0.55
+  g.beginPath()
+  g.ellipse(-RX * 0.28, -RY * 0.3, RX * 0.45, RY * 0.5, 0, 0, Math.PI * 2)
+  g.fill()
+  g.globalAlpha = 1
+  const gi = (v.gira * Math.PI) / 180
+  const sl = (v.su * Math.PI) / 180
+  g.strokeStyle = OMBRA
+  g.lineWidth = 1
+  // meridiano (la riga verticale del viso) e linea degli occhi
+  const cx = Math.sin(gi) * RX * 0.9
+  const cy = -Math.sin(sl) * RY * 0.7
+  g.beginPath()
+  g.ellipse(0, 0, Math.max(0.6, Math.abs(Math.cos(gi)) * RX), RY, 0, Math.PI / 2 - 0.0, (3 * Math.PI) / 2, false)
+  g.stroke()
+  g.beginPath()
+  g.ellipse(0, cy * 0.5, RX, Math.max(0.8, Math.abs(Math.cos(sl)) * RY * 0.22), 0, 0, Math.PI, Math.cos(gi) < 0)
+  g.stroke()
+  // il naso: un cuneo dalla parte in cui guarda la faccia
+  g.fillStyle = OMBRA
+  g.beginPath()
+  g.ellipse(cx, cy * 0.5 + 3, 2.3, 3, 0, 0, Math.PI * 2)
+  g.fill()
+  g.restore()
+  g.restore()
+}
+
+/** l'istruzione per il modello: il manichino è solo una guida per la posa, mai da lasciare nel risultato.
  *  `mappa` e `chi` sono i pezzi di testo che la indicano (es. `<image1>` e "the same character from <image2>") */
 export function istruzionePosa(p: Posa, mappa: string, chi: string): string {
   return (
-    `Generate an image that conforms to the keypoint map ${mappa}: it is only a pose control (the colored lines are the limbs, the dots are the joints, the thin colored lines are the fingers of each hand), showing ${chi} in exactly that pose. ` +
-    'Copy the position of every arm, leg, hand and finger exactly. The result must be a clean, natural image of the person: never draw the skeleton, the colored lines or the dots, and never leave any overlay or trace of the map. ' +
+    `${mappa} shows a plain gray posing mannequin on a light background: it is only a pose reference, like an artist's wooden manikin, never part of the result. ` +
+    `Generate ${chi} in exactly that pose: copy the position of the body, every arm, leg, hand and finger, and the direction of the head. ` +
+    'Replace the mannequin completely: the result is a natural image of the real person, with real skin, face, hair and clothes. It must not contain any mannequin, gray doll body, skeleton, stick figure, colored line or dot, and the reference image must not appear in it. ' +
     descriviPosa(p)
   )
 }

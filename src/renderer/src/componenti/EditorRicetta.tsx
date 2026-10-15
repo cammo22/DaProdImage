@@ -2,6 +2,7 @@
 // e per cambiare una copia di quelle che ci sono ({campo} nei prompt prende quello che scrivi, {riga} una riga alla volta).
 import { useRef, useState, type JSX } from 'react'
 import { I } from './Icone'
+import { Casella } from './Casella'
 import { Interruttore, Segmenti } from './Controlli'
 import { CATEGORIE_WF } from '../workflow'
 import type { PassoUtente, RicettaUtente } from '../ricette'
@@ -110,7 +111,7 @@ export function EditorRicetta(p: { ricetta: RicettaUtente; chiudi: () => void; s
                   <button className="btn piccolo icona fantasma" onClick={() => setR({ ...r, passi: [...r.passi.slice(0, i + 1), { ...x, etichetta: x.etichetta + ' (copia)' }, ...r.passi.slice(i + 1)] })} title="Duplica"><I.copia /></button>
                   <button className="btn piccolo icona fantasma pericolo" onClick={() => setR({ ...r, passi: r.passi.filter((_, j) => j !== i) })} title="Togli"><I.x /></button>
                 </div>
-                <textarea ref={(el) => { caselle.current[i] = el }} value={x.prompt} onChange={(e) => cambiaPasso(i, { prompt: e.target.value })} placeholder="Il prompt di questo passo" style={{ minHeight: 70, marginTop: 6 }} />
+                <div style={{ marginTop: 6 }}><Casella inputRef={(el) => { caselle.current[i] = el }} valore={x.prompt} cambia={(prompt) => cambiaPasso(i, { prompt })} placeholder="Il prompt di questo passo" minimo={70} /></div>
                 <div className="riga a-capo" style={{ gap: 5, marginTop: 6 }}>
                   <span className="piccolo tenue">Nel testo:</span>
                   {r.foto && <button className="chip principale" onClick={() => inserisci(i, '<image1>')} title="La foto principale, quella che la ricetta cambia">&lt;image1&gt; · principale</button>}

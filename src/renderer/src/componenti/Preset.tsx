@@ -4,6 +4,7 @@
 import type { JSX } from 'react'
 import { usaStato } from '../stato'
 import { I } from './Icone'
+import { Casella } from './Casella'
 import { PRESET, campiCon, componiPreset, presetDa, type Preset } from '../preset'
 
 const icona = (nome: string): JSX.Element => {
@@ -71,7 +72,7 @@ export function SchedaPreset(): JSX.Element | null {
           <label key={c.id} className="campo-preset">
             <span>{c.nome}</span>
             {c.tipo === 'righe' ? (
-              <textarea value={valori[c.id]} onChange={(e) => cambiaCampo(c.id, e.target.value)} style={{ minHeight: 84 }} placeholder={c.esempio} />
+              <Casella valore={valori[c.id]} cambia={(v) => cambiaCampo(c.id, v)} minimo={84} placeholder={c.esempio} />
             ) : (
               <input type="text" value={valori[c.id]} onChange={(e) => cambiaCampo(c.id, e.target.value)} placeholder={c.esempio} />
             )}

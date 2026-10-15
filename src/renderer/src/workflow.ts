@@ -44,7 +44,7 @@ export interface PassoWf {
   soloRif?: number
   /** il prompt lo inventa il modello al momento di partire (il passo "Sorpresa") */
   sorpresa?: boolean
-  /** la posa dell'omino (JSON): si disegna come mappa di posa e va fra le immagini; nel prompt `{posa}` diventa il suo <imageN> */
+  /** la posa dell'omino (JSON): si disegna come manichino grigio (guida di posa) e va fra le immagini; nel prompt `{posa}` diventa il suo <imageN> */
   posa?: string
 }
 
@@ -252,7 +252,7 @@ async function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null
   const base = baseCorrente || run.base
   const immagini = passo.crea ? rif.map((r) => r.percorso) : [base!.percorso, ...rif.map((r) => r.percorso)]
   let prompt = passo.prompt
-  // l'omino: la posa diventa una mappa di posa (punti chiave) e va per PRIMA, come un controllo: così il modello la segue senza
+  // l'omino: la posa diventa un manichino grigio (solo una guida) e va per PRIMA, come un controllo: così il modello la segue senza
   // disegnarla sulla foto. Le altre immagini scalano di una (<image1> diventa <image2>…); `{posa}` = la mappa, `{foto}` = la foto del personaggio
   const posa = leggiPosa(passo.posa)
   if (posa) {
@@ -289,7 +289,7 @@ async function accodaPasso(runId: string, i: number, base: FotoBase | null): Pro
     const corrente = usaLab.getState().runs.find((r) => r.id === runId)
     if (!corrente || corrente.fermata) return
     const ids = await api.lavori.accoda(await richiestaPasso(corrente, i, base))
-    // con l'omino si controlla che nella foto non sia rimasto lo scheletro: se c'è, la foto ripulita prende il posto
+    // con l'omino si controlla che nella foto non sia rimasta una traccia del manichino: se c'è, la foto ripulita prende il posto
     if (corrente.definizione[i].posa) controllaScheletro(ids[0], corrente.opzioni.qualita, (pulita) => aggiorna(runId, (r) => { r.passi[i].operaId = pulita.id }))
     aggiorna(runId, (r) => {
       r.passi[i].lavoroId = ids[0]

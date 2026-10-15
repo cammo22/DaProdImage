@@ -855,3 +855,28 @@ details.tipo-modelli > summary:hover { color: var(--oro); }
 .omino-mani { margin-top: 12px; }
 .omino-mano { margin-top: 8px; padding: 10px; border-radius: 10px; border: 1px solid var(--bordo); background: #0f0b1c; display: flex; flex-direction: column; gap: 4px; }
 .omino-zoom { width: 110px; height: 110px; flex: none; border-radius: 8px; border: 1px solid var(--bordo); }
+
+/* casella di testo che cresce col testo, col cestino */
+.casella { position: relative; }
+.casella textarea { resize: none; overflow: hidden; padding-right: 40px; display: block; }
+.casella-x {
+  position: absolute; top: 7px; right: 7px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; color: var(--tenue); cursor: pointer; opacity: .75;
+}
+.casella-x:hover { opacity: 1; color: #ff8a8a; background: rgba(255, 90, 90, .12); border-color: rgba(255, 90, 90, .3); }
+.casella-x svg { width: 16px; height: 16px; }
+.omino-anteprima { display: block; width: 100%; max-width: 280px; margin-top: 8px; border-radius: 10px; border: 1px solid var(--bordo); }
+.uscita { margin-top: 10px; padding: 7px 11px; border-radius: 9px; background: rgba(138, 44, 255, .12); border: 1px solid rgba(138, 44, 255, .35); font-size: 13.5px; }
+.uscita b { color: var(--oro); font-weight: 700; }
+
+/* Estrai: cosa è stato scelto */
+.est-scelta { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 10px; border: 1px solid var(--oro); background: #1d1730; }
+.est-scelta .ic { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; background: var(--oro); color: #1d1300; flex: none; }
+.est-scelta .ic svg { width: 16px; height: 16px; }
+.est-scelta .t { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pers-box.oggetto { border-color: rgba(94, 200, 255, .8); }
+.pers-box.sopra { border-color: #fff; box-shadow: 0 0 16px 2px rgba(255, 255, 255, .35); }
+.pers-foto.con-scelta .pers-box.sopra:not(.su) { opacity: .9; }
+.pers-box span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; padding: 0 8px 0 6px; font-size: 12.5px; }
+.pers-box span svg { width: 14px; height: 14px; }
+.pers-box.oggetto span { background: #5ec8ff; color: #04202c; }

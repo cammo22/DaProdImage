@@ -13,7 +13,8 @@ interfaccia**, installato e guidato dall'app.
   `engine/versioni.json`: al primo avvio dopo l'aggiornamento l'app vede che il motore non è alla versione giusta e lo
   aggiorna da sola (pagina di setup in modo "aggiorna", `mantieniModello`: niente scelta del modello, niente download).
 - **Prima di consegnare**: `npm run typecheck` e `npm run build`. Le prove con l'app vera: `node test/setup.mjs`
-  (foto della pagina di installazione, `--installa` la fa davvero) e `node test/foto.mjs` (foto delle pagine in `test/.out/`).
+  (foto della pagina di installazione, `--installa` la fa davvero) e `node test/foto.mjs` (foto delle pagine in `test/.out/`). Senza Electron né motore (qui nel container): `node test/interfaccia.mjs` (Chromium + finto `window.daprod` in `test/finto.js`), vedi `.claude/skills/prova-interfaccia`.
+  Per preparare una versione c'è la skill `.claude/skills/rilascio`.
 
 ## Il motore (src/main/installa, src/main/motore)
 - **Versioni fissate** in `engine/versioni.json`: ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
@@ -78,7 +79,7 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 6 modi: tutta la foto, zona, espandi, **Fusion**, **Esempio** e **Personaggio** (vedi sotto) (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
+- **Modifica** ha 6 modi: tutta la foto, zona, espandi, **Fusion**, **Esempio** e **Estrai** (vedi sotto) (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
   Fusion = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
   componente, non diventano versioni; il confronto prima/dopo usa sempre `versioni[0]`);
   `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura
@@ -94,10 +95,11 @@ interfaccia**, installato e guidato dall'app.
   qualunque pagina la mandi (il `conParoleLora` del renderer fa la stessa cosa, non raddoppia). **Esempio** (`fusion.ts`): `pianificaEsempio` fa un foglio con l'esempio (image 1) e i riferimenti numerati e lo dà al Qwen3-VL (`descrivi`, `SISTEMA_PIANO`), che scrive l'istruzione di modifica decidendo da solo cosa sostituire con cosa (niente regole per persone o altro); il piano sta in `pianoEsempio` (con `chiaveEsempio`: foto + nota), si corregge nell'interfaccia, e `richiestaEsempio` lo manda come prompt con l'esempio come `image_1`. **Galleria**: tasto destro
   (`MenuContestuale`), `galleria:elimina` con `definitivo`, `galleria:copia` con più id = file negli appunti con PowerShell `Set-Clipboard`. **Laboratorio**:
   un `Ingresso` di tipo `camera` mostra il comando Camera (valore JSON, `leggiCamera`) e le ricette aggiungono il passo `VISTA_TUA`.
+- **Casella** (`componenti/Casella.tsx`): la textarea dei prompt (cresce col testo, cestino); il tasto destro nei campi di testo è nel main (`index.ts`, evento `context-menu`).
+  **Risoluzioni**: `Misura.tsx` ha `dimMp()` (le stesse misure del motore), `ScegliMp` (megapixel con i pixel sotto) e `Uscita` (la riga «La foto esce a…»).
 - **Omino** (`omino.ts` puro + `componenti/Omino.tsx`, `ominoImmagine.ts`): scheletro di 15 giunti in un riquadro 280×300 (`Dx`/`Sx` sono della persona: la destra sta a sinistra dello schermo);
   `trascina()` ruota l'osso attorno al genitore (lunghezze fisse, si porta dietro i discendenti; il bacino sposta tutto); mani = 5 dita con piegamento 0–1 + divaricazione + polso
-  (`geometriaMano`); `disegnaOpenPose()` fa la mappa di posa (colori OpenPose, dita ad arcobaleno) e `descriviPosa()` la posa in inglese. In **Personaggio** posa `omino` (crop + scheletro come
-  `<image2>`); nel **Laboratorio** un `Ingresso` di tipo `posa` (JSON) e il passo `POSA_TUA` con `PassoWf.posa`: `richiestaPasso` (async) mette lo scheletro ultima immagine e sostituisce `{posa}` con il suo `<imageN>`.
+  (`geometriaMano`); `Posa.viso` (gira/su/inclina) è la testa; `disegnaManichino()` fa la guida di posa (manichino grigio pieno su fondo chiaro: niente linee da copiare) e `descriviPosa()` la posa in inglese. In **Estrai** posa `omino` (manichino come `<image1>`, ritaglio come `<image2>`); nel **Laboratorio** un `Ingresso` di tipo `posa` (JSON) e il passo `POSA_TUA` con `PassoWf.posa`: `richiestaPasso` (async) mette lo scheletro ultima immagine e sostituisce `{posa}` con il suo `<imageN>`.
   `pulisciOmino.ts`: `controllaScheletro(lavoroId…)` — a lavoro finito il Qwen3-VL risponde YES/NO se resta lo scheletro, e se sì parte una modifica (`PROMPT_PULIZIA`) che lo toglie; `SENZA_SCHELETRO` chiude i prompt che usano l'omino.
   **Idee** (`regista.ts`): le azioni rapide di Modifica sono idee a toggle (`idee`); `pianificaIdee` (Qwen3-VL, `SISTEMA_IDEE`, foto + eventuale foglio con i riferimenti) le mescola in un'istruzione sola
   (`fantasia`: temperatura), piano in `pianoIdee` (con chiave). **Esempio**: il piano è JSON `{instruction, crops}` (attributi a parole + riquadri 0–1000 sul foglio, `leggiPiano`, `riquadroNellaFoto`,
@@ -128,10 +130,11 @@ interfaccia**, installato e guidato dall'app.
   il vecchio `testo` del titolo si trasforma in elemento in `vecchioInNuovo()`. `costruisci.ts` raggruppa (densità aerea/normale/fitta) e sceglie
   un modello fra i primi senza ripetere; `disegna.ts` disegna su canvas (schermo e stampa: cornice, ombra, z, elementi); `esporta.ts` JPEG/PDF
   (`pdf.ts`, senza librerie). Le foto grandi non restano in cache.
-- **Personaggio** (modo di Modifica, `componenti/Personaggio.tsx` + `personaggio.ts` + `riquadri.ts`): `trovaPersone` chiede al Qwen3-VL (`descrivi` con la foto)
-  un JSON `bbox_2d` 0–1000 (`leggiPersone`, tollera fence e JSON troncato); si può riquadrare a mano. `richiestaEstrai` ritaglia la persona (+12%) in un temp
-  e fa una **Crea** con quella come `<image1>` (posa T/A/in piedi, sfondo, proporzioni); `richiestaVista` fa una **Modifica** del risultato con
-  `componiCamera` (come il comando Camera, LoRA camera se c'è). I risultati stanno in `usaPersonaggio` (non nelle versioni).
+- **Estrai** (modo di Modifica, `componenti/Estrai.tsx` + `estrai.ts` + `riquadri.ts`): a foto caricata `trovaElementi` chiede al Qwen3-VL (`descrivi` con la foto intera)
+  un JSON `{bbox_2d 0–1000, label, kind: person|object}` (`leggiElementi`, tollera fence e JSON troncato, toglie i riquadri doppi); si sceglie con un clic (più clic = il riquadro più grande
+  che contiene il punto) o riquadrando a mano; il tipo (persona/oggetto) si corregge. `richiestaEstrai` ritaglia la cosa (+12%) in un temp e fa una **Crea** con quella come `<image1>`:
+  **persona** = inquadratura (intera/vita/volto) + posa (T/A/in piedi/come/omino: manichino `<image1>`, ritaglio `<image2>`); **oggetto** = vista (come/davanti/¾/alto/lato), completa le parti coperte.
+  Proporzioni (`proporzioniEstrai`, auto = dal riquadro per gli oggetti) e `dimensioniEstrai` sono le stesse cifre che l'interfaccia mostra. I risultati stanno in `usaEstrai` (non nelle versioni).
 - Le impostazioni di ogni immagine stanno **dentro il PNG** (chunk iTXt `daprod`, `src/main/png.ts`): la galleria si
   ricostruisce dai file e un PNG trascinato in Galleria torna con prompt, seed e LoRA.
 - LoRA: dall'intestazione safetensors si capisce se sono per Qwen 2.1 (`transformer_blocks.N.attn.to_q`/`img_mlp`)

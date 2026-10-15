@@ -5,15 +5,16 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
+import { Casella } from '../componenti/Casella'
 import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
 import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { AvvisoLora } from '../componenti/AvvisoLora'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SceltaMisura, MISURA0, conMisura } from '../componenti/Misura'
+import { SceltaMisura, ScegliMp, MISURA0, conMisura, dimMp } from '../componenti/Misura'
 import { Fusion, MAX_FUSION } from '../componenti/Fusion'
-import { ControlliPersonaggio, PalcoPersonaggio } from '../componenti/Personaggio'
+import { ControlliEstrai, PalcoEstrai } from '../componenti/Estrai'
 import { FANTASIE, pianificaIdee, unisciRapide } from '../regista'
 import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
@@ -54,7 +55,7 @@ export function Modifica(): JSX.Element {
   const [ris, setRis] = useState<Opera[]>([])
   const fusion = m.modo === 'fusion'
   const esempioMode = m.modo === 'esempio'
-  const personaggio = m.modo === 'personaggio'
+  const estraiMode = m.modo === 'estrai'
   /** i modi con una griglia di foto al posto della tela: Fusion e Esempio */
   const griglia = fusion || esempioMode
 
@@ -69,6 +70,18 @@ export function Modifica(): JSX.Element {
   const fusInAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiFusion.has(l.id)).length
   const forzaRapida = rapida?.forza
   const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * forzaRapida)) : passi) * m.quante
+  /** a che risoluzione esce la foto (se si sa già) */
+  const dimOut = ((): { w: number; h: number } | null => {
+    const mis = m.misura ?? MISURA0
+    if (mis.tipo === 'custom' && m.modo !== 'espandi') return { w: mis.w, h: mis.h }
+    if (fusion) {
+      const [a, b] = FORMATI_FUSION.find((f) => f.id === (m.formatoFusion || 'prima'))?.r || (m.riferimenti[0] ? [m.riferimenti[0].larghezza, m.riferimenti[0].altezza] : [1, 1])
+      return dimMp(m.mp, a, b)
+    }
+    const rif = esempioMode ? m.esempio : base
+    if (!rif || m.modo === 'espandi') return null
+    return m.modo === 'zona' || mis.tipo === 'originale' ? { w: rif.larghezza, h: rif.altezza } : dimMp(m.mp, rif.larghezza, rif.altezza)
+  })()
   const categorie = categoriePer(m.modo === 'zona' ? 'zona' : 'tutta')
   const cat = categorie.find((c) => c.id === categoria) || categorie[0]
   const loraCamera = !!fileLoraCamera() && lore.length >= 0
@@ -475,7 +488,7 @@ export function Modifica(): JSX.Element {
                 { id: 'espandi', nome: 'Espandi' },
                 { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' },
                 { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' },
-                { id: 'personaggio', nome: 'Personaggio', titolo: 'Estrai una persona da una foto (T-pose…) e muovi la camera attorno a lei' }
+                { id: 'estrai', nome: 'Estrai', titolo: 'Dalla foto estrai una persona o un oggetto, su sfondo pulito' }
               ]}
             />
           </div>
@@ -514,8 +527,8 @@ export function Modifica(): JSX.Element {
           )}
         </div>
 
-        {personaggio ? <PalcoPersonaggio base={base} daGalleria={daGalleria} daPc={daPc} /> : null}
-        {personaggio ? null : griglia ? (
+        {estraiMode ? <PalcoEstrai base={base} daGalleria={daGalleria} daPc={daPc} /> : null}
+        {estraiMode ? null : griglia ? (
           <Fusion
             foto={m.riferimenti}
             cambia={(riferimenti) => setModifica({ riferimenti })}
@@ -531,7 +544,7 @@ export function Modifica(): JSX.Element {
             mostra={(o) => void api.galleria.mostra(o.id)}
           />
         ) : null}
-        {griglia || personaggio ? null : !base ? (
+        {griglia || estraiMode ? null : !base ? (
           <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
             <div className="vuoto">
               <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
@@ -588,7 +601,7 @@ export function Modifica(): JSX.Element {
           </TelaMaschera>
         )}
 
-        {!griglia && !personaggio && m.versioni.length > 0 && (
+        {!griglia && !estraiMode && m.versioni.length > 0 && (
           <div className="versioni">
             {m.versioni.map((v, i) => (
               <div key={v.percorso} className={`v ${v.percorso === base?.percorso ? 'su' : ''}`} style={{ ['--ar' as string]: `${v.larghezza} / ${v.altezza}` }} onClick={() => { setModifica({ base: v }); setConfronto(false) }} title={v.prompt}>
@@ -603,22 +616,22 @@ export function Modifica(): JSX.Element {
         )}
       </div>
 
-      {personaggio ? <ControlliPersonaggio base={base} /> : <div className="colonna destra">
+      {estraiMode ? <ControlliEstrai base={base} /> : <div className="colonna destra">
         <div className="scorri">
           <div className="sezione">
             <h3>
               {fusion ? 'Cosa creare con le foto' : esempioMode ? 'Cosa vuoi (facoltativo)' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
               {m.modo === 'zona' && <span className="dx">{haMaschera ? <span className="oro">zona segnata ✓</span> : 'segnala col pennello'}</span>}
             </h3>
-            <textarea
-              ref={prompt}
-              value={m.prompt}
-              onChange={(e) => {
-                setModifica({ prompt: e.target.value })
-                if (!e.target.value.trim()) setCameraRapida(null)
+            <Casella
+              inputRef={prompt}
+              valore={m.prompt}
+              cambia={(v) => {
+                setModifica({ prompt: v })
+                if (!v.trim()) setCameraRapida(null)
               }}
               placeholder={esempioMode ? 'Facoltativo, es. "sostituisci le iridi con quelle delle mie foto". Se lasci vuoto il modello capisce da solo cosa fare' : fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
-              style={{ minHeight: 96 }}
+              minimo={96}
               disabled={scrivendo}
             />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
@@ -651,7 +664,7 @@ export function Modifica(): JSX.Element {
               <h3>Il piano del modello {m.pianoEsempio && <button className="btn piccolo fantasma" style={{ marginLeft: 'auto' }} onClick={() => setModifica({ pianoEsempio: null })} title="Al prossimo lavoro il modello guarda di nuovo le foto e rifà il piano">Rifai</button>}</h3>
               {m.pianoEsempio && m.pianoEsempio.chiave === chiaveEsempio(m) ? (
                 <>
-                  <textarea value={m.pianoEsempio.testo} rows={6} onChange={(e) => setModifica({ pianoEsempio: { ...m.pianoEsempio!, testo: e.target.value } })} />
+                  <Casella valore={m.pianoEsempio.testo} minimo={120} senzaCestino cambia={(testo) => setModifica({ pianoEsempio: { ...m.pianoEsempio!, testo } })} />
                   {m.pianoEsempio.ritagli?.some(Boolean) && (
                     <div style={{ marginTop: 8 }}>
                       <span className="piccolo tenue">Le parti delle tue foto che contano (ritagliate dal modello)</span>
@@ -707,7 +720,7 @@ export function Modifica(): JSX.Element {
                   {m.pianoIdee && m.pianoIdee.chiave === chiaveIdee ? (
                     <div style={{ marginTop: 8 }}>
                       <div className="riga spazia"><span className="piccolo tenue">Il piano del modello (puoi correggerlo)</span><button className="btn piccolo fantasma" onClick={() => setModifica({ pianoIdee: null })} title="Al prossimo lavoro il modello rimescola le idee, con dettagli nuovi">Rifai</button></div>
-                      <textarea rows={5} value={m.pianoIdee.testo} onChange={(e) => setModifica({ pianoIdee: { chiave: m.pianoIdee!.chiave, testo: e.target.value } })} />
+                      <Casella minimo={110} senzaCestino valore={m.pianoIdee.testo} cambia={(testo) => setModifica({ pianoIdee: { chiave: m.pianoIdee!.chiave, testo } })} />
                     </div>
                   ) : (
                     <div className="piccolo spento" style={{ marginTop: 6 }}>Quando premi «Modifica» il modello guarda la foto, mescola le idee e inventa i dettagli. Qui vedrai cosa ha deciso.</div>
@@ -762,21 +775,22 @@ export function Modifica(): JSX.Element {
             return (
               <div className="sezione">
                 <h3>Dimensioni della foto nuova <span className="dx">{mis.tipo === 'custom' ? `${mis.w} × ${mis.h}` : 'automatiche'}</span></h3>
-                <SceltaMisura valore={mis} cambia={(misura) => setModifica({ misura })} base={prima} mp={m.mp} ammetti={['auto', 'custom']} />
+                <SceltaMisura valore={mis} cambia={(misura) => setModifica({ misura })} base={prima} mp={m.mp} ammetti={['auto', 'custom']} cambiaMp={(mp) => setModifica({ mp })} auto={(() => {
+                  const [a, b] = FORMATI_FUSION.find((f) => f.id === (m.formatoFusion || 'prima'))?.r || (prima ? [prima.larghezza, prima.altezza] : [1, 1])
+                  return dimMp(m.mp, a, b)
+                })()} />
                 {mis.tipo === 'auto' && (
                   <div style={{ marginTop: 10 }}>
                     <span className="piccolo tenue">Proporzioni</span>
                     <Segmenti valore={m.formatoFusion || 'prima'} cambia={(formatoFusion) => setModifica({ formatoFusion })} voci={FORMATI_FUSION.map((f) => ({ id: f.id, nome: f.nome }))} />
                   </div>
                 )}
-                <div style={{ marginTop: 10 }}>
-                  <span className="piccolo tenue">{mis.tipo === 'custom' ? 'Il modello lavora a' : 'Grandezza'}</span>
-                  <Segmenti
-                    valore={m.mp}
-                    cambia={(mp) => setModifica({ mp })}
-                    voci={[{ id: 0.5, nome: '0,5 MP', sotto: 'veloce' }, { id: 1, nome: '1 MP', sotto: 'consigliato' }, { id: 2, nome: '2 MP', sotto: 'dettaglio' }, { id: 4, nome: '4 MP', sotto: 'lento' }]}
-                  />
-                </div>
+                {mis.tipo === 'custom' && (
+                  <div style={{ marginTop: 10 }}>
+                    <span className="piccolo tenue">Il modello lavora a</span>
+                    <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} ar={{ w: mis.w, h: mis.h }} voci={[0.5, 1, 2, 4]} />
+                  </div>
+                )}
               </div>
             )
           })()}
@@ -784,7 +798,8 @@ export function Modifica(): JSX.Element {
           {m.modo !== 'espandi' && !fusion && (
             <div className="sezione">
               <h3>Dimensioni <span className="dx">{(m.misura ?? MISURA0).tipo === 'auto' ? 'come i megapixel' : (m.misura ?? MISURA0).tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
-              <SceltaMisura valore={m.misura ?? MISURA0} cambia={(misura) => setModifica({ misura })} base={esempioMode ? m.esempio : base} mp={m.mp} />
+              <SceltaMisura valore={m.misura ?? MISURA0} cambia={(misura) => setModifica({ misura })} base={esempioMode ? m.esempio : base} mp={m.mp} cambiaMp={(mp) => setModifica({ mp })}
+                senzaPx={m.modo === 'zona'} auto={m.modo === 'zona' && base ? { w: base.larghezza, h: base.altezza, nota: 'resta com\'è, cambia solo la zona' } : undefined} />
             </div>
           )}
 
@@ -807,21 +822,13 @@ export function Modifica(): JSX.Element {
               <span className="tenue">Quante versioni</span>
               <Contatore valore={m.quante} min={1} max={8} cambia={(quante) => setModifica({ quante })} />
             </div>
-            <h3 style={{ cursor: 'pointer', marginTop: 12, marginBottom: avanzate ? 9 : 0 }} onClick={() => setAvanzate(!avanzate)}>
-              {avanzate ? '▾' : '▸'} Avanzate <span className="dx">{m.mp === 1 ? '' : `${String(m.mp).replace('.', ',')} MP`}</span>
-            </h3>
-            {avanzate && (
-              <Segmenti
-                valore={m.mp}
-                cambia={(mp) => setModifica({ mp })}
-                voci={[
-                  { id: 0.25, nome: '0,25', sotto: 'lampo', titolo: '0,25 MP (512×512): per provare al volo' },
-                  { id: 0.5, nome: '0,5', sotto: 'veloce' },
-                  { id: 1, nome: '1 MP', sotto: 'consigliato' },
-                  { id: 2, nome: '2 MP', sotto: 'dettaglio' },
-                  { id: 4, nome: '4 MP', sotto: 'lento' }
-                ]}
-              />
+            {m.modo === 'espandi' && (
+              <>
+                <h3 style={{ cursor: 'pointer', marginTop: 12, marginBottom: avanzate ? 9 : 0 }} onClick={() => setAvanzate(!avanzate)}>
+                  {avanzate ? '▾' : '▸'} Grandezza <span className="dx">{m.mp === 1 ? '' : `${String(m.mp).replace('.', ',')} MP`}</span>
+                </h3>
+                {avanzate && <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} />}
+              </>
             )}
           </div>
 
@@ -835,7 +842,7 @@ export function Modifica(): JSX.Element {
             {m.modo === 'zona' ? <I.zona /> : m.modo === 'espandi' ? <I.espandi /> : griglia ? <I.crea /> : <I.modifica />}
             {m.modo === 'zona' ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : fusion ? 'Fusion · crea la foto nuova' : esempioMode ? 'Crea come l\'esempio' : 'Modifica'}
           </button>
-          <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>Ctrl+Invio · ~{durata(stima)}</div>
+          <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{dimOut ? `${dimOut.w} × ${dimOut.h} px · ` : ''}Ctrl+Invio · ~{durata(stima)}</div>
         </div>
       </div>}
     </div>

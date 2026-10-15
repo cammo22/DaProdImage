@@ -28,6 +28,41 @@ const RISOLUZIONI_USUALI: { nome: string; w: number; h: number; titolo: string }
   { nome: 'Foto 10×15', w: 1800, h: 1200, titolo: '1800 × 1200 (300 dpi)' }
 ]
 
+/** dimensioni (multipli di 32) di una foto con quelle proporzioni e quei megapixel: come le fa il motore */
+export function dimMp(mp: number, larghezza: number, altezza: number): { w: number; h: number } {
+  const s = Math.sqrt((mp * 1048576) / (larghezza * altezza))
+  const m = (x: number): number => Math.max(256, Math.round(x / 32) * 32)
+  return { w: m(larghezza * s), h: m(altezza * s) }
+}
+export const testoMp = (mp: number): string => String(Math.round(mp * 100) / 100).replace('.', ',')
+const MP_USUALI: { id: number; sotto: string }[] = [
+  { id: 0.25, sotto: 'lampo' }, { id: 0.5, sotto: 'veloce' }, { id: 1, sotto: 'consigliato' }, { id: 2, sotto: 'dettaglio' }, { id: 4, sotto: 'lento' }
+]
+
+/** quanto è grande la foto che il modello disegna, in megapixel: sotto ogni scelta c'è la misura vera in pixel (se si conoscono le proporzioni) */
+export function ScegliMp(p: { mp: number; cambia: (mp: number) => void; /** le proporzioni della foto che esce */ ar?: { w: number; h: number } | null; voci?: number[] }): JSX.Element {
+  const voci = MP_USUALI.filter((x) => !p.voci || p.voci.includes(x.id))
+  return (
+    <Segmenti
+      valore={p.mp}
+      cambia={p.cambia}
+      voci={voci.map((x) => {
+        const d = p.ar ? dimMp(x.id, p.ar.w, p.ar.h) : null
+        return { id: x.id, nome: `${testoMp(x.id)} MP`, sotto: d ? `${d.w}×${d.h}` : x.sotto, titolo: `${testoMp(x.id)} megapixel${d ? ` = ${d.w} × ${d.h} px` : ''} · ${x.sotto}` }
+      })}
+    />
+  )
+}
+
+/** la riga che dice a che risoluzione esce la foto */
+export function Uscita(p: { w: number; h: number; nota?: string }): JSX.Element {
+  return (
+    <div className="uscita">
+      <span className="tenue">La foto esce a</span> <b>{p.w} × {p.h} px</b> <span className="tenue">· {testoMp((p.w * p.h) / 1048576)} MP{p.nota ? ` · ${p.nota}` : ''}</span>
+    </div>
+  )
+}
+
 /** la parte della richiesta che dice la misura finale (niente se si lascia fare al modello) */
 export function conMisura(m: Misura | undefined, base: { larghezza: number; altezza: number } | null): Pick<Richiesta, 'uscita'> | Record<string, never> {
   if (!m || m.tipo === 'auto') return {}
@@ -46,6 +81,12 @@ export function SceltaMisura(p: {
   mp: number
   /** quali scelte offrire (Fusion non ha l'originale) */
   ammetti?: ('auto' | 'originale' | 'custom')[]
+  /** se c'è, sotto "Auto" si sceglie anche la grandezza (megapixel) */
+  cambiaMp?: (mp: number) => void
+  /** la misura a cui esce con "Auto", se non è quella dei megapixel sulla foto (es. Fusion, o la zona che lascia la foto com'è) */
+  auto?: { w: number; h: number; nota?: string }
+  /** niente misure in pixel sotto i megapixel (per le zone, dove non valgono per tutta la foto) */
+  senzaPx?: boolean
 }): JSX.Element {
   const [blocca, setBlocca] = useState(true)
   const ar = p.base ? p.base.larghezza / p.base.altezza : 1
@@ -78,6 +119,8 @@ export function SceltaMisura(p: {
     p.cambia({ tipo: 'custom', w: blocca && p.base ? limita(nh * ar) : custom.w, h: nh })
   }
   const taglia = !!p.base && v.tipo === 'custom' && Math.abs(v.w / v.h - ar) > 0.02
+  const dimAuto = p.auto ?? (p.base ? dimMp(p.mp, p.base.larghezza, p.base.altezza) : null)
+  const uscita = v.tipo === 'auto' ? dimAuto : v.tipo === 'originale' && p.base ? { w: p.base.larghezza, h: p.base.altezza } : v.tipo === 'custom' ? { w: v.w, h: v.h } : null
 
   return (
     <div className="misura">
@@ -85,11 +128,17 @@ export function SceltaMisura(p: {
         valore={v.tipo}
         cambia={(tipo) => p.cambia(tipo === 'auto' ? { tipo: 'auto' } : tipo === 'originale' ? { tipo: 'originale' } : custom)}
         voci={[
-          { id: 'auto' as const, nome: 'Auto', sotto: `${mpTesto} MP`, titolo: 'Esce grande quanto i megapixel scelti, con le proporzioni della foto' },
+          { id: 'auto' as const, nome: 'Auto', sotto: dimAuto ? `${dimAuto.w}×${dimAuto.h}` : `${mpTesto} MP`, titolo: 'Esce grande quanto i megapixel scelti, con le proporzioni della foto' },
           { id: 'originale' as const, nome: 'Originale', sotto: p.base ? `${p.base.larghezza}×${p.base.altezza}` : 'come la foto', titolo: 'Esce grande esattamente come la foto di partenza' },
           { id: 'custom' as const, nome: 'Misura mia', sotto: 'scelgo io' }
         ].filter((x) => (p.ammetti || ['auto', 'originale', 'custom']).includes(x.id))}
       />
+      {v.tipo === 'auto' && p.cambiaMp && (
+        <div style={{ marginTop: 10 }}>
+          <span className="piccolo tenue">{p.senzaPx ? 'Grandezza a cui lavora il modello' : 'Grandezza della foto'}</span>
+          <ScegliMp mp={p.mp} cambia={p.cambiaMp} ar={p.senzaPx ? null : p.auto ? { w: p.auto.w, h: p.auto.h } : p.base ? { w: p.base.larghezza, h: p.base.altezza } : null} />
+        </div>
+      )}
       {v.tipo === 'custom' && (
         <div className="misura-campi">
           <div className="riga" style={{ gap: 8 }}>
@@ -121,6 +170,7 @@ export function SceltaMisura(p: {
           </div>
         </div>
       )}
+      {uscita && <Uscita w={uscita.w} h={uscita.h} nota={v.tipo === 'auto' ? p.auto?.nota : undefined} />}
       {finale && (
         <div className="piccolo spento" style={{ marginTop: 6 }}>
           Lavora a ~{mpTesto} MP e porta a <b>{finale.larghezza} × {finale.altezza}</b> ({mpFinale.toFixed(1).replace('.', ',')} MP)

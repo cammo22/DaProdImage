@@ -6,7 +6,7 @@ import type { Misura } from './componenti/Misura'
 
 export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'lora' | 'impostazioni'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'personaggio'
+export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
 
@@ -146,7 +146,7 @@ function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
 }
 
 /** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion */
-const daVecchioMod = (m: StatoModifica): StatoModifica => ((m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : m)
+const daVecchioMod = (m: StatoModifica): StatoModifica => ((m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : (m.modo as string) === 'personaggio' ? { ...m, modo: 'estrai' } : m)
 
 let idAvviso = 0
 
