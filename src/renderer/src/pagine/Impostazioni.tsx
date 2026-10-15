@@ -10,7 +10,7 @@ import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
 
 const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
-  ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
+  ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['traduttore', 'Traduttore'], ['rilevatore', 'Rilevatore (Estrai)'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
 export function Impostazioni(): JSX.Element {
@@ -228,6 +228,17 @@ export function Impostazioni(): JSX.Element {
                 <Segmenti valore={imp.traduttore} cambia={(traduttore) => salva({ traduttore })} voci={[{ id: 'dedicato', nome: 'Traduttore' }, { id: 'llm', nome: 'Qwen3-VL' }]} />
               </div>
             )}
+            <div className="voce">
+              <div className="et"><b>Una cosa alla volta in VRAM</b><small>Quando passi dal modello immagine all'LLM (migliora prompt, descrivi foto, Idee, Esempio…) o viceversa, scarica quello che non serve: la scheda tiene un modello solo. Costa qualche secondo a ogni cambio, ma sulle schede da 6-8 GB evita di finire nella RAM</small></div>
+              <Interruttore acceso={imp.unaCosaAllaVolta} cambia={(unaCosaAllaVolta) => salva({ unaCosaAllaVolta })}>{imp.unaCosaAllaVolta ? 'Accesa' : 'Spenta'}</Interruttore>
+            </div>
+            <div className="voce">
+              <div className="et">
+                <b>Chi trova persone e oggetti (Estrai)</b>
+                <small>{imp.trova === 'veloce' ? 'Un modello piccolo fatto per riconoscere gli oggetti (Florence-2, ~460 MB): meno di un secondo. Si scarica da solo la prima volta' : 'Il Qwen3-VL: più preciso con le descrizioni, ma molto più lento'}</small>
+              </div>
+              <Segmenti valore={imp.trova} cambia={(trova) => salva({ trova })} voci={[{ id: 'veloce', nome: 'Rilevatore' }, { id: 'llm', nome: 'Qwen3-VL' }]} />
+            </div>
             <div className="voce">
               <div className="et"><b>Accelerazione fp16</b><small>--fast fp16_accumulation: qualche secondo in meno sulle RTX, qualità quasi uguale</small></div>
               <Interruttore acceso={imp.veloce} cambia={(veloce) => salva({ veloce })}>{imp.veloce ? 'Accesa' : 'Spenta'}</Interruttore>

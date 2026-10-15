@@ -5,8 +5,8 @@ import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { AdattaFoto } from '../componenti/AdattaFoto'
 import { Contatore, Cursore, Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
-import { SceltaMisura, MISURA0 } from '../componenti/Misura'
-import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
+import { SceltaMisura, ScegliMp, MISURA0 } from '../componenti/Misura'
+import { SceltaLora, LoraAttivi, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
 import { BarraPreset, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
@@ -25,7 +25,7 @@ const ar = (f: string): string => {
 }
 
 export function Crea(): JSX.Element {
-  const { crea, setCrea, imp, lavori, avvisa } = usaStato()
+  const { crea, setCrea, imp, lavori, avvisa, loraAttive } = usaStato()
   const turbo = useTurbo()
   const [precedente, setPrecedente] = useState<string | null>(null)
   const [scrivendo, setScrivendo] = useState(false)
@@ -197,6 +197,7 @@ export function Crea(): JSX.Element {
               minimo={preset ? 110 : 150}
               disabled={scrivendo}
             />
+            <LoraAttivi />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
               <button className="btn piccolo" onClick={migliora} disabled={scrivendo || !crea.prompt.trim()} title="Qwen3-VL riscrive il prompt in un paragrafo ricco, in inglese">
                 <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
@@ -236,6 +237,16 @@ export function Crea(): JSX.Element {
                 </button>
               ))}
             </div>
+            <span className="piccolo tenue" style={{ display: 'block', marginTop: 10 }}>Oppure scegli per megapixel (anche 4 MP con la risoluzione bassa che vuoi, poi sotto la porti alla misura)</span>
+            <ScegliMp
+              mp={[0.25, 0.5, 1, 2, 4].find((x) => Math.abs(x - (dim.w * dim.h) / 1048576) / x < 0.09) ?? -1}
+              cambia={(mp) => {
+                const f = FORMATI.find((x) => x.id === crea.formato) || FORMATI[0]
+                const lungo = Math.max(f.w, f.h) / Math.min(f.w, f.h)
+                setCrea({ ris: Math.max(256, Math.round(Math.sqrt((mp * 1048576) / lungo) / 16) * 16) })
+              }}
+              ar={{ w: dim.w, h: dim.h }}
+            />
             <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
             <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} />
           </SezioneChiudibile>
@@ -283,7 +294,7 @@ export function Crea(): JSX.Element {
             </div>
           </div>
 
-          <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false}>
+          <SezioneChiudibile id="crea-lora" titolo="LoRA" destra={loraAttive.filter((a) => a.file !== imp?.loraTurbo).length ? `${loraAttive.filter((a) => a.file !== imp?.loraTurbo).length} attivi` : undefined} aperta={false}>
             <SceltaLora />
           </SezioneChiudibile>
 

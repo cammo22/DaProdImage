@@ -154,6 +154,34 @@ export async function liberaMemoria(): Promise<void> {
   }).catch(() => undefined)
 }
 
+/** i byte che PyTorch tiene riservati sulla scheda adesso (null se il motore non lo dice) */
+async function vramRiservata(): Promise<number | null> {
+  try {
+    const j = (await (await fetch(`http://${indirizzo()}/system_stats`)).json()) as { devices?: { type?: string; torch_vram_total?: number; torch_vram_free?: number }[] }
+    const d = j.devices?.find((x) => x.type === 'cuda') || j.devices?.[0]
+    return d && d.torch_vram_total !== undefined ? d.torch_vram_total : null
+  } catch {
+    return null
+  }
+}
+
+/** scarica i modelli e aspetta che la VRAM si sia davvero liberata: il motore lo fa quando è fermo, e se il lavoro dopo parte subito
+ *  lo fa DOPO averlo eseguito (e non serve a niente). Quindi si manda /free, si aspetta un attimo, e si guarda la memoria finché non scende */
+export async function scaricaModelli(): Promise<void> {
+  const prima = await vramRiservata()
+  await liberaMemoria()
+  await new Promise((r) => setTimeout(r, 700))
+  let ultima = prima
+  for (let i = 0; i < 12; i++) {
+    const ora = await vramRiservata()
+    if (ora === null || prima === null) return
+    // scesa a poco, o ferma da due letture: fatto
+    if (ora < 1.2e9 || (ultima !== null && Math.abs(ora - ultima) < 5e7 && i > 0)) return
+    ultima = ora
+    await new Promise((r) => setTimeout(r, 500))
+  }
+}
+
 let nodiCache: Record<string, unknown> | null = null
 export async function nodiDisponibili(): Promise<Record<string, unknown>> {
   if (nodiCache) return nodiCache

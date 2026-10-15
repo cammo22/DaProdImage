@@ -33,7 +33,9 @@ const PREDEFINITE: Impostazioni = {
   vramMB: 0,
   veloce: false,
   traduci: true,
-  traduttore: 'dedicato'
+  traduttore: 'dedicato',
+  unaCosaAllaVolta: true,
+  trova: 'veloce'
 }
 
 let attuali: Impostazioni | null = null

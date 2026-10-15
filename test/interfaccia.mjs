@@ -1,5 +1,5 @@
 // Prova dell'interfaccia SENZA Electron né motore: apre la build (out/renderer) in Chromium con un finto window.daprod (test/finto.js),
-// apre Modifica → Estrai, sceglie un oggetto e una persona, e stampa i prompt e le dimensioni delle richieste. Foto in test/.out/.
+// apre Modifica → Estrai (la ricerca parte solo col pulsante), sceglie un oggetto e una persona, e stampa i prompt e le dimensioni delle richieste. Foto in test/.out/.
 //   npm run build && python3 -m http.server 8765 --directory out/renderer &   poi:   node test/interfaccia.mjs
 import { chromium } from 'playwright'
 import { readFileSync, mkdirSync } from 'node:fs'
@@ -23,7 +23,12 @@ await pg.fill('.colonna.destra textarea', 'sostituisci il cielo con un tramonto 
 await pg.screenshot({ path: `${out}/i1-casella-prompt.png` })
 
 await pg.click('.segmenti button:has-text("Estrai")')
-await pausa(1500)
+await pausa(1000)
+console.log('ricerca partita da sola?', await pg.evaluate(() => !!window.__testo), '(deve essere false)')
+await pg.screenshot({ path: `${out}/i2a-estrai-prima.png` })
+await pg.click('button:has-text("Trova persone e oggetti")')
+await pausa(1200)
+console.log('ricerca col pulsante:', await pg.evaluate(() => window.__testo?.modalita), '(deve essere trova)')
 await pg.screenshot({ path: `${out}/i2-estrai-trovati.png` })
 const f = await pg.locator('.pers-foto').boundingBox()
 await pg.mouse.click(f.x + f.width * 0.45, f.y + f.height * 0.7)

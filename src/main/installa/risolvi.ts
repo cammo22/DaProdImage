@@ -83,7 +83,7 @@ export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
   if (!v.repo || !v.cerca) throw new Error(`${v.nome}: non è una voce da cercare`)
   const files = await elenco(v.repo)
   // i pesi sono un .gguf (denoiser, encoder) o, per il traduttore, un .safetensors / .bin
-  const pesi = v.tipo === 'traduttore' ? /\.(safetensors|bin)$/i : /\.gguf$/i
+  const pesi = v.tipo === 'traduttore' || v.tipo === 'rilevatore' ? /\.(safetensors|bin)$/i : /\.gguf$/i
   const principale = scegli(files, v.cerca, true, pesi)
   if (!principale) throw new Error(`Nel repo ${v.repo} non trovo il file ${v.quant || ''} (${v.cerca.join(' / ')})`)
   const nome = tronco(principale.path)

@@ -133,10 +133,14 @@ export function SceltaMisura(p: {
           { id: 'custom' as const, nome: 'Misura mia', sotto: 'scelgo io' }
         ].filter((x) => (p.ammetti || ['auto', 'originale', 'custom']).includes(x.id))}
       />
-      {v.tipo === 'auto' && p.cambiaMp && (
+      {p.cambiaMp && (
         <div style={{ marginTop: 10 }}>
-          <span className="piccolo tenue">{p.senzaPx ? 'Grandezza a cui lavora il modello' : 'Grandezza della foto'}</span>
-          <ScegliMp mp={p.mp} cambia={p.cambiaMp} ar={p.senzaPx ? null : p.auto ? { w: p.auto.w, h: p.auto.h } : p.base ? { w: p.base.larghezza, h: p.base.altezza } : null} />
+          <span className="piccolo tenue">{v.tipo === 'auto' && !p.senzaPx ? 'Grandezza della foto' : 'Megapixel a cui lavora il modello (poi porta alla misura)'}</span>
+          <ScegliMp
+            mp={p.mp}
+            cambia={p.cambiaMp}
+            ar={v.tipo === 'custom' ? { w: v.w, h: v.h } : p.senzaPx ? null : p.auto ? { w: p.auto.w, h: p.auto.h } : p.base ? { w: p.base.larghezza, h: p.base.altezza } : null}
+          />
         </div>
       )}
       {v.tipo === 'custom' && (

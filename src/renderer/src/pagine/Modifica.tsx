@@ -38,7 +38,6 @@ export function Modifica(): JSX.Element {
   const [pennello, setPennello] = useState(60)
   const [haMaschera, setHaMaschera] = useState(false)
   const [confronto, setConfronto] = useState(false)
-  const [avanzate, setAvanzate] = useState(false)
   // le idee scelte (azioni rapide, si sommano) e la posizione della camera: insieme portano forza, trasparenza, riferimenti e i LoRA da accendere
   const [idee, setIdee] = useState<Rapida[]>([])
   const [cameraRapida, setCameraRapida] = useState<Rapida | null>(null)
@@ -785,12 +784,7 @@ export function Modifica(): JSX.Element {
                     <Segmenti valore={m.formatoFusion || 'prima'} cambia={(formatoFusion) => setModifica({ formatoFusion })} voci={FORMATI_FUSION.map((f) => ({ id: f.id, nome: f.nome }))} />
                   </div>
                 )}
-                {mis.tipo === 'custom' && (
-                  <div style={{ marginTop: 10 }}>
-                    <span className="piccolo tenue">Il modello lavora a</span>
-                    <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} ar={{ w: mis.w, h: mis.h }} voci={[0.5, 1, 2, 4]} />
-                  </div>
-                )}
+
               </div>
             )
           })()}
@@ -823,12 +817,10 @@ export function Modifica(): JSX.Element {
               <Contatore valore={m.quante} min={1} max={8} cambia={(quante) => setModifica({ quante })} />
             </div>
             {m.modo === 'espandi' && (
-              <>
-                <h3 style={{ cursor: 'pointer', marginTop: 12, marginBottom: avanzate ? 9 : 0 }} onClick={() => setAvanzate(!avanzate)}>
-                  {avanzate ? '▾' : '▸'} Grandezza <span className="dx">{m.mp === 1 ? '' : `${String(m.mp).replace('.', ',')} MP`}</span>
-                </h3>
-                {avanzate && <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} />}
-              </>
+              <div style={{ marginTop: 12 }}>
+                <span className="piccolo tenue">Megapixel a cui lavora il modello</span>
+                <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} />
+              </div>
             )}
           </div>
 

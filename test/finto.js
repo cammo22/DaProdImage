@@ -1,4 +1,4 @@
-// finto window.daprod per vedere l'interfaccia nel browser senza motore (lo carica test/interfaccia.mjs). testo.scrivi risponde con un elenco di riquadri
+// finto window.daprod per vedere l'interfaccia nel browser senza motore (lo carica test/interfaccia.mjs). testo.scrivi risponde con un elenco di riquadri (e ricorda l'ultima richiesta in window.__testo)
 (() => {
   const mappa = (window.__mappa = {})
   const disegna = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c.toDataURL('image/png') }

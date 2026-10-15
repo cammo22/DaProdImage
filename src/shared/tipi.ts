@@ -11,6 +11,7 @@ export type Modalita =
   | 'ingrandisci' // ingrandimento col modello di upscaling, senza ridisegnare
   | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
   | 'traduci' // il prompt dall'italiano all'inglese con il traduttore dedicato (sul processore, senza Qwen)
+  | 'trova' // persone e oggetti di una foto (riquadri) col rilevatore piccolo (Florence-2), al posto del Qwen3-VL
   | 'importa' // (solo in galleria) una foto portata dentro da fuori
 
 export interface LoraAttiva {
@@ -114,6 +115,8 @@ export interface Lavoro {
   secondiPasso?: number
   /** megapixel su cui lavora il campionatore */
   megapixel?: number
+  /** quando scrive l'LLM: token al secondo (media mobile) */
+  tokSec?: number
   risultati: string[]
   testo?: string
   errore?: string
@@ -210,6 +213,10 @@ export interface Impostazioni {
   traduci: boolean
   /** chi traduce: 'dedicato' = un modello di sola traduzione (Opus-MT, sul processore); 'llm' = lo stesso Qwen3-VL */
   traduttore: 'dedicato' | 'llm'
+  /** una cosa alla volta in VRAM: quando passa dal modello immagine all'LLM (o viceversa) scarica quello che non serve */
+  unaCosaAllaVolta: boolean
+  /** chi trova persone e oggetti in Estrai: 'veloce' = il rilevatore piccolo (Florence-2); 'llm' = il Qwen3-VL */
+  trova: 'veloce' | 'llm'
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
@@ -238,7 +245,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'rilevatore'
   nome: string
   descrizione: string
   file: string
