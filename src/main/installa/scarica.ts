@@ -32,19 +32,41 @@ export async function sha256File(percorso: string): Promise<string> {
   return h.digest('hex')
 }
 
-export async function scarica(o: OpzioniScarica): Promise<void> {
+// due richieste per lo stesso file (doppio clic, idle + primo uso) scriverebbero nello stesso .part: la seconda aspetta la prima
+const inCorso = new Map<string, Promise<void>>()
+
+export function scarica(o: OpzioniScarica): Promise<void> {
+  const k = o.destinazione.toLowerCase()
+  const gia = inCorso.get(k)
+  if (gia) return gia
+  const p = scaricaVero(o).finally(() => inCorso.delete(k))
+  inCorso.set(k, p)
+  return p
+}
+
+/** il messaggio per l'utente di un errore di scrittura sul disco */
+function erroreDiScrittura(e: NodeJS.ErrnoException): Error {
+  if (e.code === 'ENOSPC') return new Error('Non c\'è più spazio sul disco: libera un po\' di spazio e riprova (il download riparte da dove si era fermato).')
+  if (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'EACCES') return new Error('Non riesco a scrivere il file: è in uso o protetto (l\'antivirus?). Riprova fra un attimo.')
+  return new Error('Non riesco a scrivere il file sul disco: ' + e.message)
+}
+
+async function scaricaVero(o: OpzioniScarica): Promise<void> {
   assicura(dirname(o.destinazione))
   const parte = o.destinazione + '.part'
   let gia = existsSync(parte) ? statSync(parte).size : 0
   const hash = createHash('sha256')
 
-  const intestazioni: Record<string, string> = { 'User-Agent': 'DaProdImage/0.1', ...(o.intestazioni || {}) }
+  const intestazioni: Record<string, string> = { 'User-Agent': 'DaProdImage', ...(o.intestazioni || {}) }
   if (gia > 0) intestazioni.Range = `bytes=${gia}-`
   const r = await fetch(o.url, { headers: intestazioni, redirect: 'follow', signal: o.segnale })
   if (r.status === 416) {
     // il .part è già completo
   } else if (!r.ok) {
-    throw new Error(`download non riuscito (${r.status} ${r.statusText}) da ${new URL(o.url).host}`)
+    const host = new URL(o.url).host
+    if (r.status === 401 || r.status === 403) throw new Error(`${host} non mi lascia scaricare questo file (${r.status}): se è un modello con licenza da accettare, accettala sul sito e metti il tuo token in Opzioni.`)
+    if (r.status === 404) throw new Error(`Il file non c'è più su ${host} (404): serve un aggiornamento dell'app.`)
+    throw new Error(`Download non riuscito (${r.status} ${r.statusText}) da ${host}`)
   }
   if (r.status === 200 && gia > 0) {
     // il server non riprende: si ricomincia
@@ -56,6 +78,11 @@ export async function scarica(o: OpzioniScarica): Promise<void> {
 
   if (r.status !== 416 && r.body) {
     const scrivi = createWriteStream(parte, { flags: gia > 0 && r.status === 206 ? 'a' : 'w' })
+    // senza questo, un disco pieno diventa un errore non gestito nel processo principale
+    let erroreDisco: NodeJS.ErrnoException | null = null
+    scrivi.on('error', (e) => {
+      erroreDisco = e
+    })
     let ricevuti = gia
     let ultimo = Date.now()
     let byteFinestra = 0
@@ -65,10 +92,11 @@ export async function scarica(o: OpzioniScarica): Promise<void> {
       for (;;) {
         const { done, value } = await lettore.read()
         if (done) break
+        if (erroreDisco) throw erroreDiScrittura(erroreDisco)
         hash.update(value)
         ricevuti += value.length
         byteFinestra += value.length
-        if (!scrivi.write(value)) await new Promise<void>((ok) => scrivi.once('drain', () => ok()))
+        if (!scrivi.write(value)) await new Promise<void>((ok) => { scrivi.once('drain', () => ok()); scrivi.once('error', () => ok()) })
         const ora = Date.now()
         if (ora - ultimo >= 400) {
           const v = (byteFinestra * 1000) / (ora - ultimo)
@@ -79,8 +107,14 @@ export async function scarica(o: OpzioniScarica): Promise<void> {
         }
       }
     } finally {
-      await new Promise<void>((ok) => scrivi.end(() => ok()))
+      await new Promise<void>((ok) => {
+        if (scrivi.destroyed) return ok()
+        scrivi.once('close', () => ok())
+        scrivi.once('error', () => ok())
+        scrivi.end()
+      })
     }
+    if (erroreDisco) throw erroreDiScrittura(erroreDisco)
     o.avanzamento?.(ricevuti, totali, velocita)
     if (totali && ricevuti < totali) throw new Error('download interrotto: riprova, riparte da dove si era fermato')
   }

@@ -2,7 +2,7 @@
 // i modelli di partenza accanto (la cartella si può cambiare), la galleria in Immagini\DaProd Image.
 import { app } from 'electron'
 import { join } from 'node:path'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 
 const locale = process.env.LOCALAPPDATA || join(app.getPath('home'), 'AppData', 'Local')
 
@@ -30,6 +30,19 @@ const BASE = app.isPackaged ? process.resourcesPath : app.getAppPath()
 export const UV = join(BASE, app.isPackaged ? 'bin' : join('resources', 'bin'), 'uv.exe')
 export const NODI = join(BASE, 'engine', 'custom_nodes')
 export const VERSIONI = join(BASE, 'engine', 'versioni.json')
+
+/** scrive un file di testo in modo che un'interruzione non lo lasci a metà: prima un file a parte, poi lo si rinomina */
+export function scriviAtomico(percorso: string, testo: string): void {
+  const tmp = percorso + '.tmp'
+  writeFileSync(tmp, testo)
+  try {
+    renameSync(tmp, percorso)
+  } catch {
+    // su Windows il rename può fallire se qualcuno tiene aperto il file: si scrive diretto
+    writeFileSync(percorso, testo)
+    rmSync(tmp, { force: true })
+  }
+}
 
 export function assicura(...cartelle: string[]): void {
   for (const c of cartelle) mkdirSync(c, { recursive: true })

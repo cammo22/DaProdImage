@@ -3,9 +3,9 @@
 //   Python 3.13 (con uv) → ComfyUI (zip al commit fissato) → nodi GGUF (la nostra copia corretta)
 //   → venv con PyTorch CUDA e i pacchetti → modelli → prova del motore.
 import { spawn, execFile } from 'node:child_process'
-import { cpSync, existsSync, linkSync, readFileSync, readdirSync, renameSync, rmSync, statSync, statfsSync, writeFileSync, createReadStream, createWriteStream } from 'node:fs'
+import { cpSync, existsSync, linkSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, statfsSync, writeFileSync, createReadStream, createWriteStream } from 'node:fs'
 import { totalmem } from 'node:os'
-import { basename, join, parse } from 'node:path'
+import { basename, dirname, join, parse } from 'node:path'
 import { app } from 'electron'
 import type { ControlloSistema, PassoSetup, StatoVoce, VoceCatalogo } from '@shared/tipi'
 import { CATALOGO, voce } from './catalogo'
@@ -214,6 +214,37 @@ function esegui(cmd: string, args: string[], riga: (s: string) => void, cwd = MO
   })
 }
 
+/** apre uno zip di GitHub e mette il progetto in `dest`. Si estrae in una cartella tutta sua e si prende quella che c'è dentro: il nome
+ *  della cartella radice dipende da GitHub (maiuscole, commit corto o intero), indovinarlo ha già fatto fallire un'installazione.
+ *  Su Windows Defender a volte tiene bloccata la cartella appena estratta: se il rename fallisce si riprova, e alla fine si copia. */
+async function estraiZip(zip: string, dest: string, riga: (s: string) => void): Promise<void> {
+  const tmp = join(MOTORE, '_estratto-' + basename(dest))
+  rmSync(tmp, { recursive: true, force: true })
+  mkdirSync(tmp, { recursive: true })
+  // il tar.exe di Windows (bsdtar) apre gli zip; un altro tar nel PATH (es. quello di Git) no
+  await esegui(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', tmp], riga)
+  const cartelle = readdirSync(tmp, { withFileTypes: true }).filter((d) => d.isDirectory())
+  const radice = cartelle.length === 1 ? join(tmp, cartelle[0].name) : tmp
+  riga(`estratto in ${basename(radice)} (${readdirSync(radice).length} voci)`)
+  if (readdirSync(radice).length === 0) throw new Error('lo zip è vuoto')
+  rmSync(dest, { recursive: true, force: true })
+  mkdirSync(dirname(dest), { recursive: true })
+  for (let t = 0; ; t++) {
+    try {
+      renameSync(radice, dest)
+      break
+    } catch (e) {
+      if (t >= 4) {
+        riga('rename non riuscito (' + (e as Error).message + '): copio')
+        cpSync(radice, dest, { recursive: true })
+        break
+      }
+      await new Promise((r) => setTimeout(r, 700))
+    }
+  }
+  rmSync(tmp, { recursive: true, force: true })
+}
+
 let inCorso: AbortController | null = null
 
 export function annullaSetup(): void {
@@ -290,12 +321,8 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
       })
       p('comfyui').dettaglio = 'estraggo…'
       notifica(passi)
-      const estratto = join(MOTORE, `ComfyUI-${v.comfyui.commit}`)
-      rmSync(estratto, { recursive: true, force: true })
-      // il tar.exe di Windows (bsdtar) apre gli zip; un altro tar nel PATH (es. quello di Git) no
-      await esegui(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', MOTORE], riga('comfyui'))
-      rmSync(COMFY, { recursive: true, force: true })
-      renameSync(estratto, COMFY)
+      await estraiZip(zip, COMFY, riga('comfyui'))
+      if (!existsSync(join(COMFY, 'main.py'))) throw new Error('lo zip di ComfyUI non contiene main.py')
       rmSync(zip, { force: true })
       scriviStato({ ...leggiStato(), comfyui: v.comfyui.commit, nodi: 0 })
       finisci('comfyui')
@@ -349,11 +376,8 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
           notifica(passi)
           const zip = join(TEMP, `rtx-${rtx.commit.slice(0, 7)}.zip`)
           await scarica({ url: `https://codeload.github.com/${rtx.repo}/zip/${rtx.commit}`, destinazione: zip, segnale })
-          const estratto = join(MOTORE, `${rtx.nome}-${rtx.commit}`)
-          rmSync(estratto, { recursive: true, force: true })
-          await esegui(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', MOTORE], riga('pacchetti'))
-          rmSync(cartellaRtx, { recursive: true, force: true })
-          renameSync(estratto, cartellaRtx)
+          await estraiZip(zip, cartellaRtx, riga('pacchetti'))
+          if (!existsSync(join(cartellaRtx, '__init__.py'))) throw new Error('lo zip non contiene il nodo (manca __init__.py)')
           rmSync(zip, { force: true })
           await esegui(UV, ['pip', 'install', '--python', PYTHON, rtx.pacchetto], riga('pacchetti'))
           scriviStato({ ...leggiStato(), rtx: rtx.commit })

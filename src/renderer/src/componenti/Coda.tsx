@@ -18,7 +18,7 @@ export function percentuale(l: Lavoro): number | null {
 export function RigaLavoro({ l }: { l: Lavoro }): JSX.Element {
   const p = percentuale(l)
   const mostra = l.anteprima || (l.risultati[0] ? null : null)
-  const titolo = l.richiesta.etichetta || l.richiesta.prompt || ETICHETTE_MODALITA[l.richiesta.modalita]
+  const titolo = l.richiesta.etichetta || l.richiesta.prompt || (ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita)
   return (
     <div className={`lavoro ${l.stato === 'in corso' ? 'in-corso' : l.stato}`}>
       <div className="anteprima">
@@ -26,7 +26,7 @@ export function RigaLavoro({ l }: { l: Lavoro }): JSX.Element {
       </div>
       <div className="testo">
         <div className="p" title={titolo}>
-          <span className="oro" style={{ fontWeight: 700 }}>{ETICHETTE_MODALITA[l.richiesta.modalita]}</span> · {titolo}
+          <span className="oro" style={{ fontWeight: 700 }}>{(ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita)}</span> · {titolo}
         </div>
         {l.stato === 'in corso' && (
           <div className={`barra-progresso ${p === null ? 'indeterminata' : ''}`}>
@@ -116,7 +116,7 @@ export function Coda(): JSX.Element | null {
 
 function TesseraLavoro({ l, opera, apri }: { l: Lavoro; opera?: Opera; apri: () => void }): JSX.Element {
   const p = percentuale(l)
-  const titolo = l.richiesta.etichetta || l.richiesta.prompt || ETICHETTE_MODALITA[l.richiesta.modalita]
+  const titolo = l.richiesta.etichetta || l.richiesta.prompt || (ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita)
   const attivo = l.stato === 'in coda' || l.stato === 'in corso'
   const src = opera ? urlFile(opera.miniatura || opera.file) : l.anteprima || (l.richiesta.immagini[0] ? urlFile(l.richiesta.immagini[0]) : '')
   return (
@@ -143,7 +143,7 @@ function TesseraLavoro({ l, opera, apri }: { l: Lavoro; opera?: Opera; apri: () 
       <div className="did">
         <span className="t">{titolo}</span>
         <span className="f">
-          {l.stato === 'errore' ? l.errore?.split('\n')[0] : l.stato === 'in corso' ? (l.fase === 'Disegno' && l.passiTotali ? `passo ${l.passo}/${l.passiTotali}${l.stima ? ` · ~${durata(l.stima)}` : ''}` : l.fase) : l.stato === 'fatto' && l.fine && l.inizio ? durata((l.fine - l.inizio) / 1000) : ETICHETTE_MODALITA[l.richiesta.modalita]}
+          {l.stato === 'errore' ? l.errore?.split('\n')[0] : l.stato === 'in corso' ? (l.fase === 'Disegno' && l.passiTotali ? `passo ${l.passo}/${l.passiTotali}${l.stima ? ` · ~${durata(l.stima)}` : ''}` : l.fase) : l.stato === 'fatto' && l.fine && l.inizio ? durata((l.fine - l.inizio) / 1000) : (ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita)}
         </span>
       </div>
     </div>
@@ -160,7 +160,7 @@ function Grande({ l, opera, chiudi }: { l: Lavoro; opera?: Opera; chiudi: () => 
     return () => window.removeEventListener('keydown', t)
   }, [])
   const src = opera ? urlFile(opera.file) : l.anteprima || (l.richiesta.immagini[0] ? urlFile(l.richiesta.immagini[0]) : '')
-  const titolo = l.richiesta.etichetta || l.richiesta.prompt || ETICHETTE_MODALITA[l.richiesta.modalita]
+  const titolo = l.richiesta.etichetta || l.richiesta.prompt || (ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita)
   return (
     <div className="visore coda-grande" style={{ gridTemplateColumns: '1fr 320px' }} onClick={(e) => e.target === e.currentTarget && chiudi()}>
       <div className="immagine" onClick={(e) => e.target === e.currentTarget && chiudi()}>
@@ -168,7 +168,7 @@ function Grande({ l, opera, chiudi }: { l: Lavoro; opera?: Opera; chiudi: () => 
       </div>
       <div className="info">
         <div className="riga spazia sezione">
-          <b className="oro" style={{ fontFamily: 'var(--titolo)', letterSpacing: 1.5, fontSize: 13 }}>{ETICHETTE_MODALITA[l.richiesta.modalita].toUpperCase()}</b>
+          <b className="oro" style={{ fontFamily: 'var(--titolo)', letterSpacing: 1.5, fontSize: 13 }}>{(ETICHETTE_MODALITA[l.richiesta.modalita] ?? l.richiesta.modalita).toUpperCase()}</b>
           <button className="btn fantasma piccolo icona" onClick={chiudi} title="Chiudi (Esc)"><I.x /></button>
         </div>
         <div className="scorri">

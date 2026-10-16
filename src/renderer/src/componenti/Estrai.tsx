@@ -2,21 +2,23 @@
 // riquadrarne uno a mano), a destra quello che hai estratto. I comandi stanno nella colonna di destra e cambiano se hai scelto
 // una persona (posa, inquadratura) o un oggetto (vista).
 import { useEffect, useRef, useState, type JSX } from 'react'
-import { usaStato, type FotoBase, type Qualita, PASSI_QUALITA } from '../stato'
+import { usaStato, passiDi, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from './Icone'
 import { VistaZoom } from './VistaZoom'
 import { AdattaFoto } from './AdattaFoto'
 import { percentuale } from './Coda'
 import { Contatore, Interruttore, Segmenti } from './Controlli'
-import { AvvisoTurbo, useTurbo } from './Turbo'
+import { useTurbo } from './Turbo'
+import { ScegliQualita } from './ScegliQualita'
+import { ScegliModello } from './ScegliModello'
 import { ScegliMp, Uscita } from './Misura'
 import { Omino } from './Omino'
 import { controllaScheletro } from '../pulisciOmino'
 import { apriInModifica, fotoDaOpera } from '../azioni'
 import { durata, stimaSecondi } from '../util'
 import {
-  FORMATI_ESTRAI, INQUADRATURE, POSE_ESTRAI, SFONDI_ESTRAI, VISTE_OGGETTO, attesiEstrai, dimensioniEstrai, impostaEstrai, proporzioniEstrai, richiestaEstrai,
+  FORMATI_ESTRAI, INQUADRATURE, misuraEstrai, POSE_ESTRAI, SFONDI_ESTRAI, VISTE_OGGETTO, attesiEstrai, dimensioniEstrai, impostaEstrai, proporzioniEstrai, richiestaEstrai,
   trovaElementi, usaEstrai, type Elemento
 } from '../estrai'
 
@@ -164,9 +166,10 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
   const { modifica: m, setModifica, avvisa } = usaStato()
   const turbo = useTurbo()
   const el = s.elementi.find((x) => x.id === s.scelto)
-  const stima = stimaSecondi(usaStato.getState().imp?.tempi, m.mp, PASSI_QUALITA[m.qualita]) * m.quante
+  const stima = stimaSecondi(usaStato.getState().imp?.tempi, m.mp, passiDi(m.qualita)) * m.quante
   const r = proporzioniEstrai(s, el, p.base)
   const dim = dimensioniEstrai(m.mp, r)
+  const fin = misuraEstrai(s.lato, dim)
   const persona = el?.tipo === 'persona'
 
   const estrai = async (): Promise<void> => {
@@ -193,6 +196,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
   return (
     <div className="colonna destra">
       <div className="scorri">
+        <div className="sezione"><ScegliModello /></div>
         <div className="sezione">
           <h3><span className="num-passo">1</span> Cosa estrarre <span className="dx">{s.elementi.length ? `${s.elementi.length} trovati` : ''}</span></h3>
           {el ? (
@@ -269,20 +273,18 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
             <span className="piccolo tenue">Grandezza della foto</span>
             <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} ar={{ w: r[0], h: r[1] }} />
           </div>
-          <Uscita w={dim.w} h={dim.h} />
+          <div style={{ marginTop: 10 }}>
+            <span className="piccolo tenue">Misura finale (lato lungo)</span>
+            <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
+              {[0, 480, 720, 1024, 1536, 2048].map((l) => (
+                <button key={l} className={`chip ${s.lato === l ? 'su' : ''}`} onClick={() => impostaEstrai({ lato: l })} title={l ? `La foto esce con il lato lungo a ${l} px: il modello la disegna ai megapixel scelti e poi la porta lì` : 'Esce com\'è disegnata dal modello'}>{l ? `${l} px` : 'Come disegna'}</button>
+              ))}
+            </div>
+          </div>
+          <Uscita w={fin.w} h={fin.h} nota={fin.w !== dim.w || fin.h !== dim.h ? `disegnata a ${dim.w}×${dim.h} e poi portata qui` : undefined} />
           <div style={{ marginTop: 12 }}>
-            <span className="piccolo tenue">Qualità · {PASSI_QUALITA[m.qualita]} passi · ~{durata(stima)}</span>
-            <Segmenti<Qualita>
-              valore={m.qualita}
-              cambia={(qualita) => setModifica({ qualita })}
-              voci={[
-                { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi', titolo: 'LoRA Turbo8: circa 5 volte più veloce' },
-                { id: 'bozza', nome: 'Veloce', sotto: '20 passi' },
-                { id: 'alta', nome: 'Alta', sotto: '40 passi' },
-                { id: 'massima', nome: 'Massima', sotto: '50 passi' }
-              ]}
-            />
-            {m.qualita === 'turbo' && <AvvisoTurbo />}
+            <span className="piccolo tenue">Qualità · {passiDi(m.qualita)} passi · ~{durata(stima)}</span>
+            <ScegliQualita valore={m.qualita} cambia={(qualita) => setModifica({ qualita })} />
           </div>
           <div className="riga spazia" style={{ marginTop: 10 }}>
             <span className="tenue">Quante versioni</span>
@@ -294,7 +296,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
         <button className="btn primario grande" style={{ width: '100%' }} disabled={!p.base || !el} onClick={() => void estrai()}>
           {persona ? <I.ritratto /> : <I.prodotto />} {el ? `Estrai ${persona ? 'la persona' : 'l\'oggetto'}` : 'Scegli cosa estrarre'}
         </button>
-        <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{dim.w} × {dim.h} px · ~{durata(stima)}</div>
+        <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{fin.w} × {fin.h} px · ~{durata(stima)}</div>
       </div>
     </div>
   )

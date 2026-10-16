@@ -1,10 +1,10 @@
 // Il processo di ComfyUI: lo avvia, guarda quando è pronto, tiene le ultime righe del log, lo chiude.
 import { spawn, execFile, type ChildProcess } from 'node:child_process'
 import { createServer } from 'node:net'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { InfoMotore } from '@shared/tipi'
-import { COMFY, ENTRATA, LOG, PYTHON, TEMP, USCITA, UTENTE_COMFY, assicura } from '../percorsi'
+import { COMFY, ENTRATA, LOG, MOTORE, PYTHON, TEMP, USCITA, UTENTE_COMFY, assicura } from '../percorsi'
 import { impostazioni, profiloMemoria, salvaImpostazioni } from '../impostazioni'
 import { motoreInstallato } from '../installa/installatore'
 
@@ -62,10 +62,43 @@ async function trovaPorta(da: number): Promise<number> {
 
 const attendi = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
+// il numero del processo del motore si scrive su disco: se l'app viene chiusa a forza (Task Manager, crash, installer) il motore resta vivo
+// con la scheda occupata; al prossimo avvio lo si riconosce e lo si chiude, invece di lanciarne un secondo
+const FILE_PID = join(MOTORE, 'motore.pid')
+function chiudiOrfano(): Promise<void> {
+  return new Promise((ok) => {
+    let pid = 0
+    try {
+      pid = Number(readFileSync(FILE_PID, 'utf8').trim()) || 0
+    } catch {
+      /* nessun motore precedente */
+    }
+    rmSync(FILE_PID, { force: true })
+    if (!pid) return ok()
+    execFile('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { windowsHide: true }, (_e, out) => {
+      if (!/python/i.test(String(out))) return ok()
+      aggiungiRiga(`> un motore rimasto acceso da prima (pid ${pid}): lo chiudo`)
+      execFile('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true }, () => ok())
+    })
+  })
+}
+
+/** il registro del motore non cresce per sempre: oltre 5 MB si archivia (e si tiene solo l'ultimo) */
+function ruotaLog(): void {
+  const f = join(LOG, 'motore.log')
+  try {
+    if (existsSync(f) && statSync(f).size > 5 * 1024 * 1024) {
+      rmSync(join(LOG, 'motore.old.log'), { force: true })
+      renameSync(f, join(LOG, 'motore.old.log'))
+    }
+  } catch {
+    /* niente */
+  }
+}
 export async function aggiornaVram(): Promise<void> {
   if (info.stato !== 'pronto') return
   try {
-    const r = await fetch(`http://${indirizzo()}/system_stats`)
+    const r = await fetch(`http://${indirizzo()}/system_stats`, { signal: AbortSignal.timeout(5000) })
     const j = (await r.json()) as { system: { comfyui_version: string }; devices: { name: string; vram_total: number; vram_free: number }[] }
     const d = j.devices[0]
     // la VRAM della scheda si ricorda: serve a scegliere il profilo di memoria prima del prossimo avvio
@@ -92,6 +125,8 @@ export function avviaMotore(): Promise<void> {
     }
     const imp = impostazioni()
     assicura(ENTRATA, USCITA, UTENTE_COMFY, LOG, join(TEMP, 'comfy'), imp.cartellaModelli)
+    ruotaLog()
+    await chiudiOrfano()
     const porta = await trovaPorta(imp.porta)
     cambia({ stato: 'avvio', porta, messaggio: 'Avvio il motore…' })
     const args = [
@@ -115,12 +150,24 @@ export function avviaMotore(): Promise<void> {
     if (imp.veloce && !/--fast\b/.test(imp.argomentiExtra)) args.push('--fast', 'fp16_accumulation')
     if (imp.argomentiExtra.trim()) args.push(...imp.argomentiExtra.trim().split(/\s+/))
     aggiungiRiga('> python ' + args.join(' '))
-    const p = spawn(PYTHON, args, {
-      cwd: COMFY,
-      windowsHide: true,
-      env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
-    })
+    // un altro Python installato dall'utente non deve influenzare quello del motore
+    const ambiente = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' } as NodeJS.ProcessEnv
+    delete ambiente.PYTHONPATH
+    delete ambiente.PYTHONHOME
+    const p = spawn(PYTHON, args, { cwd: COMFY, windowsHide: true, env: ambiente })
     proc = p
+    if (p.pid) {
+      try {
+        writeFileSync(FILE_PID, String(p.pid))
+      } catch {
+        /* niente */
+      }
+    }
+    let erroreAvvio = ''
+    // se python.exe manca o l'antivirus lo ha messo in quarantena, spawn dà un errore: senza questo si aspetterebbero 4 minuti per niente
+    p.on('error', (e) => {
+      erroreAvvio = e.message
+    })
     let coda = ''
     const leggi = (b: Buffer): void => {
       coda += b.toString('utf8')
@@ -133,6 +180,7 @@ export function avviaMotore(): Promise<void> {
     let uscito = false
     p.on('exit', (c) => {
       uscito = true
+      rmSync(FILE_PID, { force: true })
       if (proc === p) {
         proc = null
         const ultime = righe.slice(-6).join('\n')
@@ -142,10 +190,16 @@ export function avviaMotore(): Promise<void> {
     // pronto quando risponde
     const inizio = Date.now()
     for (;;) {
+      if (erroreAvvio) throw new Error(`Non riesco ad avviare il motore (Python non parte): ${erroreAvvio}`)
+      // fermato apposta mentre partiva (Opzioni, chiusura dell'app): non è un errore
+      if (proc !== p && !uscito) throw new Error('annullato')
       if (uscito) throw new Error('il motore si è chiuso all\'avvio: guarda il log del motore')
-      if (Date.now() - inizio > 240_000) throw new Error('il motore non risponde dopo 4 minuti')
+      if (Date.now() - inizio > 600_000) {
+        await fermaMotore()
+        throw new Error('il motore non risponde dopo 10 minuti: l\'ho fermato, riprova (il primo avvio dopo un aggiornamento può essere lento)')
+      }
       try {
-        const r = await fetch(`http://127.0.0.1:${porta}/system_stats`)
+        const r = await fetch(`http://127.0.0.1:${porta}/system_stats`, { signal: AbortSignal.timeout(4000) })
         if (r.ok) break
       } catch {
         /* ancora no */
@@ -157,7 +211,8 @@ export function avviaMotore(): Promise<void> {
   })()
   return avvioInCorso
     .catch((e) => {
-      if (info.stato !== 'non installato') cambia({ stato: 'errore', messaggio: (e as Error).message })
+      // se l'arresto l'ha voluto l'utente lo stato resta «spento»
+      if (info.stato !== 'non installato' && info.stato !== 'spento') cambia({ stato: 'errore', messaggio: (e as Error).message })
       throw e
     })
     .finally(() => {
@@ -176,6 +231,8 @@ export async function fermaMotore(): Promise<void> {
 
 export async function riavviaMotore(): Promise<void> {
   await fermaMotore()
+  // se il motore stava ancora partendo, si aspetta che quel tentativo finisca prima di ripartire
+  await avvioInCorso?.catch(() => undefined)
   await attendi(800)
   await avviaMotore()
 }

@@ -20,7 +20,14 @@ export async function scaricaTurbo(): Promise<void> {
     })
   }
   usaDl.setState({ dl: { id: '', nome: 'Turbo', ricevuti: 0, totali: 0, velocita: 0, stato: 'in corso' } })
-  const d = await api.modelli.scarica('lora-turbo')
+  let d: Download
+  try {
+    d = await api.modelli.scarica('lora-turbo')
+  } catch (e) {
+    usaDl.setState({ dl: null })
+    usaStato.getState().avvisa(e instanceof Error ? e.message : 'Download non riuscito', 'errore')
+    return
+  }
   usaDl.setState({ dl: d })
   if (d.stato === 'fatto') {
     await ricaricaLore()

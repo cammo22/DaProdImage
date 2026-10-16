@@ -137,6 +137,21 @@ export function candidati(ars: number[], r: Rett, o: OpzioniLayout, quanti = 16)
   const chiave = [ars.map((a) => a.toFixed(3)).join(','), r.w.toFixed(1), r.h.toFixed(1), o.spazio, o.stile, o.piega, o.regina, o.taglioMax].join('|')
   const gia = cache.get(chiave)
   if (gia) return gia
+  // oltre 8 foto gli alberi sono centinaia di migliaia (più di un secondo di attesa a ogni modifica): si usa una griglia ordinata
+  if (n > 8) {
+    const colonne = Math.max(1, Math.round(Math.sqrt((n * r.w) / r.h)))
+    const righe = Math.ceil(n / colonne)
+    const celle: Cella[] = []
+    for (let i = 0; i < n; i++) {
+      const riga = Math.floor(i / colonne)
+      const dentro = Math.min(colonne, n - riga * colonne)
+      const w = r.w / dentro
+      celle.push({ x: r.x + (i - riga * colonne) * w, y: r.y + (riga * r.h) / righe, w, h: r.h / righe, foto: i })
+    }
+    const g = [celle]
+    cache.set(chiave, g)
+    return g
+  }
   const tutti = alberi(0, n - 1, ars, new Map())
   const trovati: { c: number; celle: Cella[]; firma: string }[] = []
   for (const t of tutti) {

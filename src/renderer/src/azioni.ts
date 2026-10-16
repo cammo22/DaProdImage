@@ -2,7 +2,7 @@
 import { modelloTurbo } from '@shared/tipi'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
-import { PASSI_QUALITA, usaStato, type FotoBase, type Qualita } from './stato'
+import { famigliaCorrente, passiDi, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
 import type { ChiaveLora } from './rapide'
 
@@ -26,8 +26,10 @@ export const SISTEMA_DESCRIVI =
 export function richiestaBase(): Richiesta {
   const { imp, loraAttive } = usaStato.getState()
   const d = imp?.predefiniti || { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }
+  const famiglia = imp?.famiglia || 'qwen'
   return {
     modalita: 'crea',
+    famiglia,
     prompt: '',
     negativo: '',
     seed: -1,
@@ -39,7 +41,8 @@ export function richiestaBase(): Richiesta {
     altezza: 1024,
     megapixel: d.megapixel,
     immagini: [],
-    lora: loraAttive.filter((l) => l.forza !== 0),
+    // i LoRA sono fatti per Qwen: con Klein non valgono
+    lora: famiglia === 'qwen' ? loraAttive.filter((l) => l.forza !== 0) : [],
     quante: 1
   }
 }
@@ -47,14 +50,18 @@ export function richiestaBase(): Richiesta {
 /** il LoRA Turbo è fra i LoRA? */
 export function turboPresente(): boolean {
   const { imp, lore } = usaStato.getState()
+  // Klein non usa il LoRA Turbo (è già distillato): per lui non manca niente
+  if (imp && imp.famiglia !== 'qwen') return true
   if (imp && modelloTurbo(imp.modello)) return true
   return !!imp?.loraTurbo && lore.some((l) => l.file === imp.loraTurbo)
 }
 
 /** passi (e Turbo) per una qualità; il Turbo vuole CFG 1, euler, simple */
 export function perQualita(q: Qualita): Pick<Richiesta, 'passi' | 'turbo'> & Partial<Pick<Richiesta, 'cfg' | 'sampler' | 'scheduler'>> {
-  if (q === 'turbo') return { passi: PASSI_QUALITA.turbo, turbo: true, cfg: 1, sampler: 'euler', scheduler: 'simple' }
-  return { passi: PASSI_QUALITA[q], turbo: false }
+  // Klein: niente Turbo (è già distillato), il CFG e il sampler li decide il motore
+  if (famigliaCorrente() !== 'qwen') return { passi: passiDi(q), turbo: false }
+  if (q === 'turbo') return { passi: passiDi('turbo'), turbo: true, cfg: 1, sampler: 'euler', scheduler: 'simple' }
+  return { passi: passiDi(q), turbo: false }
 }
 
 /** la qualità per i lavori "di servizio" (rifinisci, varia): Turbo se è acceso in Crea */

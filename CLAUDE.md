@@ -1,6 +1,6 @@
 # DaProd Image — leggi questo per primo
 
-App desktop (Electron + React + TypeScript) per **Qwen-Image-2.1** in locale su una NVIDIA da 6-8 GB: crea, modifica
+App desktop (Electron + React + TypeScript) per **Qwen-Image-2.1** (e **FLUX 3 Klein**) in locale su una NVIDIA da 6-8 GB: crea, modifica
 tutta la foto o solo una zona, espande, rifinisce, LoRA con un clic, galleria. Il motore è **ComfyUI senza la sua
 interfaccia**, installato e guidato dall'app.
 
@@ -17,11 +17,11 @@ interfaccia**, installato e guidato dall'app.
   Per preparare una versione c'è la skill `.claude/skills/rilascio`.
 
 ## Il motore (src/main/installa, src/main/motore)
-- **Versioni fissate** in `engine/versioni.json`: ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
+- **Versioni fissate** in `engine/versioni.json` (ora **ComfyUI 0.41.2**, motore 7): ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
   di Windows: il tar di Git non apre gli zip), Python 3.13 e PyTorch cu130 via **uv** (`resources/bin/uv.exe`,
   `npm run prendi-uv`). Tutto in `%LOCALAPPDATA%\DaProdImage\engine`; `stato.json` lì dentro dice quali passi sono fatti.
 - **ComfyUI-GGUF è copiato in `engine/custom_nodes/ComfyUI-GGUF`** (fork di leejet al commit `373048b`, l'unico che
-  conosce l'architettura `qwen_image21`) **con una correzione nostra** in `ops.py`: da ComfyUI 0.39 la Linear riceve
+  conosce l'architettura `qwen_image21`) **con una correzione nostra** in `ops.py` (più `comfy_force_forward = True` per 0.41): da ComfyUI 0.39 la Linear riceve
   `input_act`/`residual`, senza la correzione il KSampler si ferma. Vedi `DAPROD.md` lì dentro. Se si alza ComfyUI,
   si riprova una generazione vera prima di pubblicare.
 - I modelli (catalogo con sha256 in `src/main/installa/catalogo.ts`) stanno in `%LOCALAPPDATA%\DaProdImage\models`
@@ -47,6 +47,18 @@ interfaccia**, installato e guidato dall'app.
   originale più `promptInglese`.
 - `lavori.ts` è **la coda**: un lavoro alla volta al motore, fasi dai nodi (`fasi` del grafo), stima dai secondi per
   passo misurati (`impostazioni.tempi`), risultato spostato in galleria.
+
+## FLUX 3 Klein (famiglie di modelli)
+- `Famiglia = 'qwen' | 'klein' | 'klein-base'` (`shared/tipi.ts`, `FAMIGLIE` = passi per qualità), `Richiesta.famiglia`, `impostazioni.famiglia`.
+  Il selettore è `componenti/ScegliModello.tsx` (3 schede, "da scaricare", download di modello + `klein-te` + `klein-vae`), la qualità `ScegliQualita.tsx`.
+- Catalogo: `klein-int8/bf16`, `klein-base-int8/bf16`, `klein-te` (Qwen3-VL 4B), `klein-vae` dal repo `black-forest-labs/flux-3-image-klein-comfy`
+  (`repo` + `cerca` regex, risolti a runtime da `installa/risolvi.ts`: **i nomi vengono dai template ufficiali, vanno confermati con i file veri**).
+  `motore/klein.ts` (`fileKlein`) trova i file (impostazioni → `risolti.json` → scansione cartelle, int8 prima di bf16) o dà un errore in italiano.
+- Grafo (`grafi.ts`, `condiziona`/`latenteVuota`/`campiona`): `UNETLoader` + `CLIPLoader` tipo `flux3` + `VAELoader`, `CLIPTextEncode`, foto di riferimento
+  `VAEEncode` → `ReferenceLatent` (positivo e negativo, in catena), `EmptyFlux2LatentImage`, KSampler euler/simple (distillato cfg 1, base cfg 3,5).
+  Niente LoRA, Turbo, cache KV; i tag `<imageN>` diventano ordinali. **I grafi Qwen non devono cambiare**: si controlla con un confronto sul grafo vecchio prima di ogni modifica.
+- `motore/pup.ts` = i prompt upsampler ufficiali; `lavori.ts` `potenzia()` li manda al Qwen3-VL prima del disegno (`impostazioni.potenziaKlein`, cache per prompt).
+- Non provato con la GPU qui: qualità, INT8 su 6-8 GB, `ReferenceLatent` in catena (alternativa `ReferenceMultiLatent`).
 
 ## I grafi (src/main/motore/grafi.ts)
 - Pipeline ufficiale: `UnetLoaderGGUF` → LoRA (`LoraLoaderModelOnly`) → `QwenImage21Cache`; `CLIPLoader` tipo `qwen_image`
@@ -95,7 +107,7 @@ interfaccia**, installato e guidato dall'app.
   qualunque pagina la mandi (il `conParoleLora` del renderer fa la stessa cosa, non raddoppia). **Esempio** (`fusion.ts`): `pianificaEsempio` fa un foglio con l'esempio (image 1) e i riferimenti numerati e lo dà al Qwen3-VL (`descrivi`, `SISTEMA_PIANO`), che scrive l'istruzione di modifica decidendo da solo cosa sostituire con cosa (niente regole per persone o altro); il piano sta in `pianoEsempio` (con `chiaveEsempio`: foto + nota), si corregge nell'interfaccia, e `richiestaEsempio` lo manda come prompt con l'esempio come `image_1`. **Galleria**: tasto destro
   (`MenuContestuale`), `galleria:elimina` con `definitivo`, `galleria:copia` con più id = file negli appunti con PowerShell `Set-Clipboard`. **Laboratorio**:
   un `Ingresso` di tipo `camera` mostra il comando Camera (valore JSON, `leggiCamera`) e le ricette aggiungono il passo `VISTA_TUA`.
-- **Una cosa alla volta in VRAM** (`lavori.ts`, `fattiSpazio` + `cliente.scaricaModelli`, `impostazioni.unaCosaAllaVolta`): ogni lavoro è `immagine`, `testo` (LLM e rilevatore) o `cpu` (traduttore); quando cambia
+- **Una cosa alla volta in VRAM** (`lavori.ts`, `fattiSpazio` + `cliente.scaricaModelli`, `impostazioni.unaCosaAllaVolta`): ogni lavoro è `immagine`, `testo` (LLM) o `cpu` (traduttore); quando cambia
   si manda `/free` e si aspetta che `torch_vram_total` scenda (il motore scarica a coda ferma: senza l'attesa lo farebbe dopo il lavoro successivo). **Token/s**: il TextGenerate manda un `progress` per token,
   `lavori.ts` ne ricava `Lavoro.tokSec` (media dal primo messaggio) e `BarraStato` lo mostra.
 - **Casella** (`componenti/Casella.tsx`): la textarea dei prompt (cresce col testo, cestino); il tasto destro nei campi di testo è nel main (`index.ts`, evento `context-menu`).
@@ -134,9 +146,7 @@ interfaccia**, installato e guidato dall'app.
   un modello fra i primi senza ripetere; `disegna.ts` disegna su canvas (schermo e stampa: cornice, ombra, z, elementi); `esporta.ts` JPEG/PDF
   (`pdf.ts`, senza librerie). Le foto grandi non restano in cache.
 - **Estrai** (modo di Modifica, `componenti/Estrai.tsx` + `estrai.ts` + `riquadri.ts`): a foto caricata `trovaElementi` chiede al Qwen3-VL (`descrivi` con la foto intera)
-  un JSON `{bbox_2d 0–1000, label, kind: person|object}` (`leggiElementi`, tollera fence e JSON troncato, toglie i riquadri doppi). La ricerca parte **solo col pulsante**. Di serie la fa il
-  **rilevatore piccolo** (`modalita: 'trova'` → nodo `DaProdTrova` in `engine/custom_nodes/DaProd-Nodi/trova.py`: Florence-2 base `<OD>`, legge i gettoni `<loc_N>` a mano, poi esce dalla VRAM; modello `trova-florence`
-  in `models/detect/florence-2-base-ft`, scaricato al primo uso da `lavori.ts`), con `impostazioni.trova` = `'llm'` o se il rilevatore fallisce si ripiega sul Qwen3-VL (`descrivi`, `SISTEMA_ELEMENTI`). Si sceglie con un clic (più clic = il riquadro più grande
+  un JSON `{bbox_2d 0–1000, label, kind: person|object}` (`leggiElementi`, tollera fence e JSON troncato, toglie i riquadri doppi). La ricerca parte **solo col pulsante** e la fa il Qwen3-VL (`descrivi`, `SISTEMA_ELEMENTI`, `maxToken 800`; niente rilevatore a parte: Florence è stato provato e tolto). Si sceglie con un clic (più clic = il riquadro più grande
   che contiene il punto) o riquadrando a mano; il tipo (persona/oggetto) si corregge. `richiestaEstrai` ritaglia la cosa (+12%) in un temp e fa una **Crea** con quella come `<image1>`:
   **persona** = inquadratura (intera/vita/volto) + posa (T/A/in piedi/come/omino: manichino `<image1>`, ritaglio `<image2>`); **oggetto** = vista (come/davanti/¾/alto/lato), completa le parti coperte.
   Proporzioni (`proporzioniEstrai`, auto = dal riquadro per gli oggetti) e `dimensioniEstrai` sono le stesse cifre che l'interfaccia mostra. I risultati stanno in `usaEstrai` (non nelle versioni).
@@ -144,3 +154,9 @@ interfaccia**, installato e guidato dall'app.
   ricostruisce dai file e un PNG trascinato in Galleria torna con prompt, seed e LoRA.
 - LoRA: dall'intestazione safetensors si capisce se sono per Qwen 2.1 (`transformer_blocks.N.attn.to_q`/`img_mlp`)
   o per altro (txt_mlp = Qwen 1.x, lora_unet = SD/SDXL, double_blocks = Flux). Link Hugging Face e Civitai.
+
+## Robustezza (1.0.0)
+- Zip in `installatore.ts` `estraiZip` (cartella di lavoro, rename con tentativi poi copia); `percorsi.ts` `scriviAtomico` per impostazioni, indice galleria, album (+`.bak`).
+- `index.ts`: istanza unica, `errori.log` in DATI, pulizia dei temp vecchi; `processo.ts`: `motore.pid` + `chiudiOrfano`, log a rotazione. `impostazioni.scaricaDopo` = secondi di quiete prima di liberare la VRAM.
+- Renderer: `main.tsx` ha il `Salvagente` (ErrorBoundary) e il gestore `unhandledrejection`; `leggiLocale`/`leggiLista` tollerano localStorage rovinato.
+- `test/finto.js` deve avere gli stessi campi del vero main (es. `modelli.file` con `klein*`): se mancano, l'avviso di errore compare e si vede.

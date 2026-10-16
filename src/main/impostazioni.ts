@@ -13,6 +13,11 @@ const PREDEFINITE: Impostazioni = {
   encoder: 'qwen3vl_8b_int8_convrot.safetensors',
   vae: 'texture_fix_vae_for_qwen_image_2.1_bf16.safetensors',
   upscaler: '4x-UltraSharp.pth',
+  famiglia: 'qwen',
+  kleinModello: '',
+  kleinBase: '',
+  kleinEncoder: '',
+  kleinVae: '',
   upscalerRtx: true,
   scaricaInIdle: true,
   porta: 8818,
@@ -35,7 +40,8 @@ const PREDEFINITE: Impostazioni = {
   traduci: true,
   traduttore: 'dedicato',
   unaCosaAllaVolta: true,
-  trova: 'veloce'
+  potenziaKlein: true,
+  scaricaDopo: 120
 }
 
 let attuali: Impostazioni | null = null

@@ -99,6 +99,7 @@ const MAX_PIXEL = 24e6
  * sa aprire (HEIC, RAW, TIFF, JXL…) lo converte WIC di Windows nel processo principale. Oltre i 24 MP si riduce.
  */
 export async function normalizza(percorso: string): Promise<FotoBase> {
+  if (/\.(safetensors|ckpt|pt|pth|gguf|json|txt|zip|exe|msi|dll|bin)$/i.test(percorso)) throw new Error('Questo file non è una foto')
   const [dentro] = await api.file.portaDentro([percorso])
   let im: HTMLImageElement
   try {
@@ -147,5 +148,5 @@ export function immagineDaIncolla(e: ClipboardEvent): Promise<string> | null {
 }
 
 export const ETICHETTE_MODALITA: Record<string, string> = {
-  crea: 'Creata', modifica: 'Modificata', zona: 'Zona', espandi: 'Espansa', rifinisci: 'Rifinita', varia: 'Variazione', ingrandisci: 'Ingrandita', descrivi: 'Testo', importa: 'Importata'
+  crea: 'Creata', modifica: 'Modificata', zona: 'Zona', espandi: 'Espansa', rifinisci: 'Rifinita', varia: 'Variazione', ingrandisci: 'Ingrandita', descrivi: 'Testo', traduci: 'Traduzione', importa: 'Importata'
 }

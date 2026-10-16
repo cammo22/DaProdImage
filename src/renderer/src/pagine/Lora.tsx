@@ -102,7 +102,7 @@ export function Lora(): JSX.Element {
         )}
 
         <div className="riga spazia">
-          <h3 className="tenue" style={{ margin: 0, letterSpacing: 1.4, fontSize: 12 }}>I TUOI LORA · {lore.length} · {loraAttive.length} ACCESI</h3>
+          <h3 className="tenue" style={{ margin: 0, letterSpacing: 1.4, fontSize: 12 }}>I TUOI LORA · {lore.length} · {loraAttive.length} {loraAttive.length === 1 ? 'ACCESO' : 'ACCESI'}</h3>
           <div className="riga">
             {loraAttive.length > 0 && <button className="btn piccolo fantasma" onClick={() => setLoraAttive([])}>Spegni tutti</button>}
             <input type="search" placeholder="Cerca…" value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ width: 220 }} />

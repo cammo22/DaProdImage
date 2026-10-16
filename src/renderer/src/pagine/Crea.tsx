@@ -5,8 +5,8 @@ import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { AdattaFoto } from '../componenti/AdattaFoto'
 import { Contatore, Cursore, Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
-import { SceltaMisura, ScegliMp, MISURA0 } from '../componenti/Misura'
-import { SceltaLora, LoraAttivi, conParoleLora } from '../componenti/SceltaLora'
+import { SceltaMisura, ScegliMp, Uscita, MISURA0, dimMp } from '../componenti/Misura'
+import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
 import { BarraPreset, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
@@ -15,7 +15,10 @@ import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi }
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
+import { passiDi } from '../stato'
 import { Casella } from '../componenti/Casella'
+import { ScegliQualita } from '../componenti/ScegliQualita'
+import { ScegliModello } from '../componenti/ScegliModello'
 import type { Lavoro, Opera } from '@shared/tipi'
 
 
@@ -25,7 +28,7 @@ const ar = (f: string): string => {
 }
 
 export function Crea(): JSX.Element {
-  const { crea, setCrea, imp, lavori, avvisa, loraAttive } = usaStato()
+  const { crea, setCrea, imp, lavori, avvisa } = usaStato()
   const turbo = useTurbo()
   const [precedente, setPrecedente] = useState<string | null>(null)
   const [scrivendo, setScrivendo] = useState(false)
@@ -42,9 +45,20 @@ export function Crea(): JSX.Element {
   const bozza = crea.qualita === 'bozza'
   // la bozza lavora a metà dei pixel (lato corto / √2)
   const dim = dimensioniRis(crea.formato, bozza ? Math.max(256, Math.round(crea.ris / Math.SQRT2)) : crea.ris)
+  // la foto che esce (la misura precisa se c'è, se no la risoluzione scelta) e le dimensioni a cui la disegna il modello: con i megapixel
+  // scelti il modello lavora a quelli (anche 4 MP per una foto da 480p) e poi la riduce alla misura finale
+  const mis = crea.misura?.tipo === 'custom' ? crea.misura : null
+  const finale = mis ? { w: mis.w, h: mis.h } : dim
+  const mpLav = crea.mpLavoro ? Math.min(crea.mpLavoro * (bozza ? 0.5 : 1), 4.19) : 0
+  const m16 = (x: number): number => Math.max(256, Math.round(x / 16) * 16)
+  const lav = mpLav
+    ? dimMp(mpLav, finale.w, finale.h)
+    : mis
+      ? { w: m16(Math.sqrt(dim.w * dim.h * (mis.w / mis.h))), h: m16(Math.sqrt((dim.w * dim.h) / (mis.w / mis.h))) }
+      : dim
   const { passi } = perQualita(crea.qualita)
   const preset = presetDa(crea.preset)
-  const stima = stimaSecondi(imp?.tempi, (dim.w * dim.h) / 1048576, passi) * crea.quante
+  const stima = stimaSecondi(imp?.tempi, (lav.w * lav.h) / 1048576, passi) * crea.quante
 
   // i lavori di questa pagina (creati, rifiniti, variati)
   const miei = useMemo(() => lavori.filter((l) => ['crea', 'rifinisci', 'varia'].includes(l.richiesta.modalita)), [lavori])
@@ -79,15 +93,12 @@ export function Crea(): JSX.Element {
       avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
       return
     }
-    // misura precisa: il modello lavora ai megapixel scelti con le proporzioni di quella misura, poi si porta lì
-    const mis = crea.misura?.tipo === 'custom' ? crea.misura : null
-    const px = dim.w * dim.h
-    const m16 = (x: number): number => Math.max(256, Math.round(x / 16) * 16)
-    const lav = mis ? { w: m16(Math.sqrt(px * (mis.w / mis.h))), h: m16(Math.sqrt(px / (mis.w / mis.h))) } : dim
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
       prompt: conParoleLora(crea.prompt.trim()),
+      // Klein: la richiesta breve si espande in una didascalia dettagliata (se non è un preset, che il prompt lo scrive già lungo)
+      potenzia: !preset,
       negativo: crea.negativo,
       seed: crea.casuale ? -1 : crea.seed,
       cfg: crea.cfg,
@@ -96,7 +107,8 @@ export function Crea(): JSX.Element {
       larghezza: lav.w,
       altezza: lav.h,
       megapixel: (lav.w * lav.h) / 1048576,
-      ...(mis ? { uscita: { w: mis.w, h: mis.h } } : {}),
+      // se il modello lavora a una misura diversa da quella che vuoi, il motore porta la foto alla misura finale
+      ...(Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? { uscita: { w: finale.w, h: finale.h } } : {}),
       quante: crea.quante,
       immagini: crea.riferimenti.map((r) => r.percorso),
       trasparente: crea.trasparente,
@@ -184,6 +196,7 @@ export function Crea(): JSX.Element {
       <BarraPreset prima={setPrecedente} />
       <div className="colonna">
         <div className="scorri">
+          <div className="sezione"><ScegliModello /></div>
           <SchedaPreset />
           <div className="sezione">
             <h3>
@@ -197,7 +210,6 @@ export function Crea(): JSX.Element {
               minimo={preset ? 110 : 150}
               disabled={scrivendo}
             />
-            <LoraAttivi />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
               <button className="btn piccolo" onClick={migliora} disabled={scrivendo || !crea.prompt.trim()} title="Qwen3-VL riscrive il prompt in un paragrafo ricco, in inglese">
                 <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
@@ -214,6 +226,7 @@ export function Crea(): JSX.Element {
                 </button>
               )}
             </div>
+            {(imp?.famiglia || 'qwen') === 'qwen' && <div style={{ marginTop: 10 }}><SceltaLora /></div>}
           </div>
 
           <SezioneChiudibile id="crea-formato" titolo="Formato e risoluzione" destra={crea.misura?.tipo === 'custom' ? `${crea.misura.w} × ${crea.misura.h}` : `${dim.w} × ${dim.h}`}>
@@ -228,7 +241,7 @@ export function Crea(): JSX.Element {
                 )
               })}
             </div>
-            <h3 style={{ marginTop: 14 }}>Risoluzione <span className="dx">{dim.w} × {dim.h} px · {((dim.w * dim.h) / 1048576).toFixed(2).replace('.', ',')} MP{bozza ? ' · bozza' : ''}</span></h3>
+            <h3 style={{ marginTop: 14 }}>Risoluzione finale <span className="dx">{dim.w} × {dim.h} px{bozza ? ' · bozza' : ''}</span></h3>
             <div className="risoluzioni">
               {RISOLUZIONI.map((r) => (
                 <button key={r.id} className={`formato ${crea.ris === r.id ? 'su' : ''}`} onClick={() => setCrea({ ris: r.id })} title={r.titolo}>
@@ -237,32 +250,16 @@ export function Crea(): JSX.Element {
                 </button>
               ))}
             </div>
-            <span className="piccolo tenue" style={{ display: 'block', marginTop: 10 }}>Oppure scegli per megapixel (anche 4 MP con la risoluzione bassa che vuoi, poi sotto la porti alla misura)</span>
-            <ScegliMp
-              mp={[0.25, 0.5, 1, 2, 4].find((x) => Math.abs(x - (dim.w * dim.h) / 1048576) / x < 0.09) ?? -1}
-              cambia={(mp) => {
-                const f = FORMATI.find((x) => x.id === crea.formato) || FORMATI[0]
-                const lungo = Math.max(f.w, f.h) / Math.min(f.w, f.h)
-                setCrea({ ris: Math.max(256, Math.round(Math.sqrt((mp * 1048576) / lungo) / 16) * 16) })
-              }}
-              ar={{ w: dim.w, h: dim.h }}
-            />
+            <h3 style={{ marginTop: 14 }}>Megapixel del modello <span className="dx">{crea.mpLavoro ? `${(lav.w * lav.h / 1048576).toFixed(2).replace('.', ',')} MP` : 'come la misura finale'}</span></h3>
+            <span className="piccolo spento" style={{ display: 'block', marginBottom: 6 }}>A quanti megapixel disegna il modello. Con più megapixel della risoluzione finale disegna grande e poi riduce: più dettagli e linee più pulite anche per una foto piccola (es. 480p disegnata a 4 MP).</span>
+            <ScegliMp mp={crea.mpLavoro} cambia={(mpLavoro) => setCrea({ mpLavoro })} ar={{ w: finale.w, h: finale.h }} auto="come la misura" />
+            <Uscita w={finale.w} h={finale.h} nota={Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? `disegnata a ${lav.w}×${lav.h} e poi portata qui` : undefined} />
             <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
-            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} />
+            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} senzaUscita />
           </SezioneChiudibile>
 
           <SezioneChiudibile id="crea-qualita" titolo="Qualità" destra={`${passi} passi · ~${durata(stima)}`}>
-            <Segmenti<Qualita>
-              valore={crea.qualita}
-              cambia={(qualita) => setCrea({ qualita })}
-              voci={[
-                { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi · 5× veloce', titolo: 'LoRA Turbo8: 8 passi invece di 40, CFG 1. Il modo più veloce, anche su 6 GB' },
-                { id: 'bozza', nome: 'Bozza', sotto: '20 passi, ½ pixel', titolo: 'Per esplorare: poi "Rifinisci" porta la bozza scelta in alta qualità' },
-                { id: 'alta', nome: 'Alta', sotto: '40 passi' },
-                { id: 'massima', nome: 'Massima', sotto: '50 passi' }
-              ]}
-            />
-            {crea.qualita === 'turbo' && <AvvisoTurbo />}
+            <ScegliQualita valore={crea.qualita} cambia={(qualita) => setCrea({ qualita })} bozza={{ nome: 'Bozza', sotto: `${passiDi('bozza')} passi, ½ pixel`, titolo: 'Per esplorare: poi "Rifinisci" porta la bozza scelta in alta qualità' }} />
             {bozza && <div className="piccolo tenue" style={{ marginTop: 8 }}>Esplori più idee in poco tempo; sulla bozza che ti piace premi <b className="oro">Rifinisci</b>.</div>}
           </SezioneChiudibile>
 
@@ -293,10 +290,6 @@ export function Crea(): JSX.Element {
               </div>
             </div>
           </div>
-
-          <SezioneChiudibile id="crea-lora" titolo="LoRA" destra={loraAttive.filter((a) => a.file !== imp?.loraTurbo).length ? `${loraAttive.filter((a) => a.file !== imp?.loraTurbo).length} attivi` : undefined} aperta={false}>
-            <SceltaLora />
-          </SezioneChiudibile>
 
           <div className="sezione">
             <Interruttore acceso={crea.trasparente} cambia={(trasparente) => setCrea({ trasparente })} sotto="PNG con sfondo trasparente (canale alfa nativo di Qwen-Image 2.1)">

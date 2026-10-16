@@ -1,6 +1,7 @@
 // La tela della pagina Modifica: la foto, e sopra la maschera che si disegna (pennello, gomma,
 // rettangolo, lazo). Rotella = zoom, spazio o tasto centrale = sposta. La maschera ha la
 // grandezza vera della foto, così combacia al pixel con quello che riceve il motore.
+import { usaStato } from '../stato'
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type JSX, type ReactNode, type Ref } from 'react'
 import type { Bordi, Riquadro } from '@shared/tipi'
 
@@ -110,6 +111,9 @@ export function TelaMaschera(p: Props): JSX.Element {
 
   useEffect(() => {
     const giu = (e: KeyboardEvent): void => {
+      // Modifica resta sempre montata: fuori da lì (o su un pulsante) lo Spazio deve fare quello che fa di solito
+      const su = e.target as HTMLElement | null
+      if (usaStato.getState().pagina !== 'modifica' || su?.closest('button, select, [role="button"], a')) return
       if (e.code === 'Space' && !(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) {
         setSpazio(true)
         e.preventDefault()
@@ -130,6 +134,9 @@ export function TelaMaschera(p: Props): JSX.Element {
     const t = tela.current!
     storia.current.push(ctx().getImageData(0, 0, t.width, t.height))
     if (storia.current.length > 15) storia.current.shift()
+    // una foto da 24 MP pesa 96 MB per passo: si tiene la storia entro ~256 MB
+    let tot = storia.current.reduce((a, d) => a + d.data.byteLength, 0)
+    while (storia.current.length > 1 && tot > 256e6) tot -= storia.current.shift()!.data.byteLength
     futuro.current = []
   }
 

@@ -68,11 +68,16 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     void (async () => {
-      await collegaEventi()
-      const s = await api.setup.stato()
-      setInstallato(s.installato)
-      setAggiornaMotore(!s.installato && !!usaStato.getState().imp?.installato)
-      setPronto(true)
+      try {
+        await collegaEventi()
+        const s = await api.setup.stato()
+        setInstallato(s.installato)
+        setAggiornaMotore(!s.installato && !!usaStato.getState().imp?.installato)
+      } catch (e) {
+        usaStato.getState().avvisa(`Non riesco a leggere lo stato dell'app: ${e instanceof Error ? e.message : e}`, 'errore')
+      } finally {
+        setPronto(true)
+      }
     })()
   }, [])
 

@@ -88,6 +88,15 @@ export function Galleria(): JSX.Element {
   }
   useEffect(carica, [filtro])
   useEffect(() => api.su.galleria(carica), [filtro])
+  // le scelte seguono quello che si vede: filtrando o cercando, le foto nascoste non restano scelte (e non si eliminano senza vederle)
+  useEffect(() => {
+    setScelte((s) => {
+      if (!s.size) return s
+      const visibili = new Set(opere.map((o) => o.id))
+      const n = new Set([...s].filter((i) => visibili.has(i)))
+      return n.size === s.size ? s : n
+    })
+  }, [opere])
 
   const gruppi = useMemo(() => {
     const g: { titolo: string; opere: Opera[] }[] = []
@@ -214,14 +223,14 @@ export function Galleria(): JSX.Element {
           <span className="flex1" />
           {scelte.size > 0 ? (
             <>
-              <span className="oro">{scelte.size} scelte</span>
+              <span className="oro">{scelte.size} {scelte.size === 1 ? 'scelta' : 'scelte'}</span>
               <button className="btn piccolo" onClick={() => void copia([...scelte])} title="Ctrl+C"><I.copia /> Copia</button>
               <button className="btn piccolo" onClick={() => void elimina([...scelte])}><I.cestino /> Nel Cestino</button>
               <button className="btn piccolo pericolo" onClick={() => void elimina([...scelte], true)} title="Canc"><I.cestino /> Elimina</button>
               <button className="btn piccolo" onClick={() => setScelte(new Set())}>Annulla scelta</button>
             </>
           ) : (
-            <span className="spento piccolo" title="Ctrl+clic per sceglierne più · Maiusc+clic per un intervallo · tasto destro per copiare o eliminare · Ctrl+rotella per la grandezza delle miniature">{importo ? `Importo ${importo} file…` : `${opere.length} immagini`}</span>
+            <span className="spento piccolo" title="Ctrl+clic per sceglierne più · Maiusc+clic per un intervallo · tasto destro per copiare o eliminare · Ctrl+rotella per la grandezza delle miniature">{importo ? `Importo ${importo} file…` : `${opere.length} ${opere.length === 1 ? 'immagine' : 'immagini'}`}</span>
           )}
           <input type="range" min={110} max={460} value={lato} style={{ width: 110, ['--p' as string]: `${((lato - 110) / 350) * 100}%` }} onChange={(e) => cambiaLato(Number(e.target.value))} title="Grandezza delle miniature (anche Ctrl+rotella)" />
           <button className="btn piccolo" onClick={async () => { const ps = await api.file.scegliImmagini(true); if (ps.length) await importaFile(ps) }} title="Porta dentro foto dal PC (diventano PNG)"><I.piu /> Importa</button>
@@ -293,7 +302,7 @@ function GruppoGiorno(p: { titolo: string; opere: Opera[]; scelte: Set<string>; 
               >
                 <img src={urlFile(o.miniatura || o.file)} alt="" loading="lazy" />
                 {p.scelte.has(o.id) && <span className="spunta">✓</span>}
-                <span className="tipo">{o.etichetta === 'Bozza' ? 'BOZZA' : ETICHETTE_MODALITA[o.modalita]?.toUpperCase()}</span>
+                <span className="tipo">{o.etichetta === 'Bozza' ? 'BOZZA' : (ETICHETTE_MODALITA[o.modalita] ?? o.modalita).toUpperCase()}</span>
                 <div className="stelle">
                   <button
                     className={o.preferita ? 'si' : ''}
@@ -363,7 +372,7 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
       </div>
       <div className="info">
         <div className="riga spazia sezione">
-          <b className="oro" style={{ fontFamily: 'var(--titolo)', letterSpacing: 1.5, fontSize: 13 }}>{(attuale.etichetta === 'Bozza' ? 'BOZZA' : ETICHETTE_MODALITA[attuale.modalita]).toUpperCase()}</b>
+          <b className="oro" style={{ fontFamily: 'var(--titolo)', letterSpacing: 1.5, fontSize: 13 }}>{(attuale.etichetta === 'Bozza' ? 'BOZZA' : (ETICHETTE_MODALITA[attuale.modalita] ?? attuale.modalita)).toUpperCase()}</b>
           <button className="btn fantasma piccolo icona" onClick={() => apriVisore(null)} title="Chiudi (Esc)"><I.x /></button>
         </div>
         <div className="scorri">
@@ -379,7 +388,7 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
           <div className="sezione">
             <dl className="dati">
               {attuale.etichetta && attuale.etichetta !== 'Bozza' && <><dt>Effetto</dt><dd>{attuale.etichetta}</dd></>}
-              <dt>Tipo</dt><dd>{ETICHETTE_MODALITA[attuale.modalita]}</dd>
+              <dt>Tipo</dt><dd>{(ETICHETTE_MODALITA[attuale.modalita] ?? attuale.modalita)}</dd>
               <dt>Dimensioni</dt><dd>{attuale.larghezza} × {attuale.altezza}</dd>
               <dt>Seed</dt><dd>{attuale.seed}</dd>
               <dt>Passi</dt><dd>{attuale.passi} · cfg {attuale.cfg} · {attuale.sampler}/{attuale.scheduler}</dd>

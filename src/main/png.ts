@@ -1,5 +1,6 @@
 // Le impostazioni di ogni immagine viaggiano dentro il PNG (chunk iTXt "daprod", UTF-8):
 // trascini una foto fatta con DaProd Image e ritrovi prompt, seed, LoRA.
+import { closeSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs'
 import { crc32 } from 'node:zlib'
 
 const FIRMA = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -32,6 +33,38 @@ export function scriviMetadati(png: Buffer, meta: unknown): Buffer {
     if (tipo === 'IEND') break
   }
   return Buffer.concat(pezzi)
+}
+
+/** le impostazioni e le dimensioni di un PNG leggendo solo l'inizio e la fine del file (il chunk `daprod` sta prima di IEND):
+ *  ricostruire la galleria non deve caricare in memoria centinaia di PNG interi */
+export function leggiMetadatiDaFile(percorso: string): { meta: Record<string, unknown> | null; larghezza: number; altezza: number } | null {
+  let fd = -1
+  try {
+    fd = openSync(percorso, 'r')
+    const grandezza = fstatSync(fd).size
+    const testa = Buffer.alloc(Math.min(32, grandezza))
+    readSync(fd, testa, 0, testa.length, 0)
+    const dim = dimensioniPng(testa)
+    if (!dim) return null
+    const n = Math.min(grandezza, 256 * 1024)
+    const coda = Buffer.alloc(n)
+    readSync(fd, coda, 0, n, grandezza - n)
+    const i = coda.lastIndexOf(Buffer.from('iTXtdaprod\0', 'latin1'))
+    if (i >= 4) {
+      // il chunk comincia 4 byte prima del suo tipo (la lunghezza): lo si rimette in piedi per leggerlo come un PNG normale
+      const lung = coda.readUInt32BE(i - 4)
+      const chunkIntero = coda.subarray(i - 4, i + 8 + lung + 4)
+      const finto = Buffer.concat([FIRMA, chunkIntero])
+      return { meta: leggiMetadati(finto), larghezza: dim.larghezza, altezza: dim.altezza }
+    }
+    // chunk non trovato nella coda (file strano): si legge tutto
+    const tutto = readFileSync(percorso)
+    return { meta: leggiMetadati(tutto), larghezza: dim.larghezza, altezza: dim.altezza }
+  } catch {
+    return null
+  } finally {
+    if (fd >= 0) closeSync(fd)
+  }
 }
 
 export function leggiMetadati(png: Buffer): Record<string, unknown> | null {

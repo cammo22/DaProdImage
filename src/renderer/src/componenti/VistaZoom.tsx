@@ -17,6 +17,8 @@ export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactN
   const [vista, setVista] = useState<Vista | null>(null)
   const trascina = useRef<{ cx: number; cy: number; x: number; y: number } | null>(null)
   const mosso = useRef(false)
+  // con la cattura del puntatore il target del pointerup è sempre il contenitore: si ricorda dove è cominciato il clic
+  const daSfondo = useRef(false)
   const margine = p.margine ?? 24
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactN
       ref={box}
       onPointerDown={(e) => {
         if (e.button !== 0 && e.button !== 1) return
+        daSfondo.current = e.target === e.currentTarget
         ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
         trascina.current = { cx: e.clientX, cy: e.clientY, x: v.x, y: v.y }
         mosso.current = false
@@ -79,7 +82,7 @@ export function VistaZoom(p: { src: string; scacchi?: boolean; children?: ReactN
         const era = trascina.current
         trascina.current = null
         // un clic (senza trascinare) sullo sfondo vuoto, non sulla foto né sui comandi
-        if (era && !mosso.current && p.onFuori && e.target === e.currentTarget) p.onFuori()
+        if (era && !mosso.current && p.onFuori && daSfondo.current) p.onFuori()
       }}
       onDoubleClick={(e) => {
         const r = box.current!.getBoundingClientRect()

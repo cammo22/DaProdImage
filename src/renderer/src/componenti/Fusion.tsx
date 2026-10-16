@@ -33,7 +33,7 @@ export function Fusion(p: {
   useEffect(() => {
     if (p.risultati[0]) setSel(p.risultati[0].id)
   }, [p.risultati[0]?.id])
-  const vedo = p.risultati.find((o) => o.id === sel)
+  const vedo = p.risultati.find((o) => o.id === sel) ?? p.risultati[0]
   const vivo = p.inCorso?.anteprima
   const sposta = (i: number, d: number): void => {
     const l = [...p.foto]

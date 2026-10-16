@@ -52,7 +52,8 @@ interface StatoRicette {
 
 const leggi = <T,>(k: string): T[] => {
   try {
-    return JSON.parse(localStorage.getItem(k) || '[]')
+    const j = JSON.parse(localStorage.getItem(k) || '[]')
+    return Array.isArray(j) ? j : []
   } catch {
     return []
   }
