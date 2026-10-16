@@ -9,9 +9,11 @@ import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
 import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
-import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
+import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nodiDisponibili, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
+import { PUP_I2I, PUP_T2I } from './pup'
+import { fileKlein } from './klein'
 import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
@@ -38,7 +40,7 @@ const casuale = (): number => Math.floor(Math.random() * 2 ** 48)
 
 /** i LoRA accesi si usano sempre: la loro parola chiave entra nel prompt da sola (se non c'è già), da qualsiasi pagina arrivi la richiesta */
 function conParoleLora(q: Richiesta): Richiesta {
-  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length) return q
+  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length || (q.famiglia ?? impostazioni().famiglia) !== 'qwen') return q
   let info
   try {
     info = elencoLora()
@@ -209,7 +211,7 @@ async function prepara(q: Richiesta): Promise<Ingressi> {
 
 type Uscita = { nodo: string; immagini: { filename: string; subfolder: string; type: string }[]; testo?: string }
 
-/** che cosa occupa la scheda: il modello immagine, l'LLM (e il rilevatore), o niente di importante (il traduttore sta sul processore) */
+/** che cosa occupa la scheda: il modello immagine, l'LLM, o niente di importante (il traduttore sta sul processore) */
 type Occupa = 'immagine' | 'testo' | 'cpu'
 let ultimoOccupa: Occupa | null = null
 
@@ -272,21 +274,40 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
   }
 }
 
-/** il rilevatore (Florence-2) è sul disco? se manca lo scarica (una volta sola, ~460 MB); false se non ci riesce */
-async function rilevatorePronto(l: Lavoro): Promise<boolean> {
-  const stato = () => statoModelli().find((v) => v.id === 'trova-florence')?.presente
-  if (stato()) return true
-  try {
-    l.fase = 'Scarico il rilevatore'
-    avvisa(l)
-    await scaricaVoce('trova-florence', (r, t) => {
-      l.fase = `Scarico il rilevatore${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
-      avvisa(l, false)
-    })
-    return !!stato()
-  } catch {
-    return false
-  }
+// le didascalie già scritte (più immagini dallo stesso prompt = un'espansione sola)
+const potenziati = new Map<string, string>()
+
+/** Klein: espande una richiesta breve in una didascalia dettagliata (come l'upsampler ufficiale); in inglese anche se la richiesta era in italiano.
+ *  Se non riesce si ripiega sulla traduzione normale. */
+async function potenzia(l: Lavoro, ing: Ingressi): Promise<string> {
+  const q = l.richiesta
+  const p = q.prompt.trim()
+  const conFoto = ing.immagini.length > 0
+  const chiave = `${conFoto}|${q.larghezza}x${q.altezza}|${p}`
+  const gia = potenziati.get(chiave)
+  if (gia) return gia
+  const imp = impostazioni()
+  l.fase = 'Potenzio il prompt'
+  avvisa(l)
+  // il testo che l'upsampler vede: con foto, la richiesta di modifica; da zero, la richiesta e la forma della tela (TARGET CANVAS)
+  const mcd = (a: number, b: number): number => (b ? mcd(b, a % b) : a)
+  const g0 = mcd(q.larghezza || 1, q.altezza || 1)
+  const utente = conFoto
+    ? `Reference images follow in order (the first image, the second image, ...).\nUser request: ${p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)}\nOutput the caption.`
+    : `${q.larghezza > 0 && q.modalita === 'crea' ? `TARGET CANVAS: ${Math.round(q.larghezza / g0)}:${Math.round(q.altezza / g0)}\n` : ''}${p}`
+  const g = costruisci(
+    { ...q, modalita: 'descrivi', prompt: utente, sistema: conFoto ? PUP_I2I : PUP_T2I, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: 0, immagini: [] },
+    imp, { immagini: ing.immagini.slice(0, 1) }, 'pup'
+  )
+  g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Potenzio il prompt']))
+  const u = await lancia(g, 'testo', l, true)
+  const t = (u.testo || '').trim().replace(/^["“]+|["”]+$/g, '').replace(/^(caption|instruction)\s*:\s*/i, '')
+  if (t.length < 20) throw new Error('didascalia vuota')
+  potenziati.set(chiave, t)
+  if (potenziati.size > 100) potenziati.delete(potenziati.keys().next().value as string)
+  l.passo = 0
+  l.passiTotali = 0
+  return t
 }
 
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
@@ -318,6 +339,21 @@ async function inInglese(l: Lavoro): Promise<string> {
   return t
 }
 
+// quando non c'è niente da fare, dopo un po' i modelli escono dalla VRAM (la scheda torna libera per gli altri programmi)
+let timerScarico: ReturnType<typeof setTimeout> | null = null
+function programmaScarico(): void {
+  if (timerScarico) clearTimeout(timerScarico)
+  timerScarico = null
+  const sec = impostazioni().scaricaDopo
+  if (!sec || sec <= 0) return
+  timerScarico = setTimeout(() => {
+    timerScarico = null
+    if (corrente || lavori.some((x) => x.stato === 'in coda') || infoMotore().stato !== 'pronto') return
+    ultimoOccupa = null
+    void scaricaModelli().then(() => aggiornaVram())
+  }, sec * 1000)
+}
+
 let girando = false
 async function prossimo(): Promise<void> {
   if (girando) return
@@ -330,10 +366,13 @@ async function prossimo(): Promise<void> {
     }
   } finally {
     girando = false
+    programmaScarico()
   }
 }
 
 async function esegui(l: Lavoro): Promise<void> {
+  if (timerScarico) clearTimeout(timerScarico)
+  timerScarico = null
   corrente = l
   l.stato = 'in corso'
   l.inizio = Date.now()
@@ -350,21 +389,40 @@ async function esegui(l: Lavoro): Promise<void> {
       await avviaMotore()
     }
     if (!collegato()) await connetti()
-    if (l.richiesta.modalita === 'trova' && !(await rilevatorePronto(l))) throw new Error('non riesco a scaricare il rilevatore: in Opzioni scegli «Qwen3-VL» per Estrai')
     const ing = await prepara(l.richiesta)
-    const inglese = await inInglese(l)
+    // FLUX 3 Klein: i suoi file (scelti, scaricati dall'app o messi a mano) e, se serve, il prompt espanso
+    const fam = l.richiesta.famiglia ?? imp.famiglia
+    let impLavoro = imp
+    const usaKlein = fam !== 'qwen' && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci' && l.richiesta.modalita !== 'ingrandisci'
+    if (usaKlein) {
+      const f = fileKlein(imp, fam)
+      if (typeof f === 'string') throw new Error(f)
+      // FLUX 3 vuole ComfyUI 0.41 o più: se il motore è ancora quello vecchio si dice chiaro
+      const nodi = await nodiDisponibili().catch(() => ({}) as Record<string, unknown>)
+      if (!nodi['EmptyFlux2LatentImage'] || !nodi['ReferenceLatent']) throw new Error('Il motore è ancora della versione vecchia e non conosce FLUX 3: chiudi e riapri l\'app, si aggiorna da solo.')
+      impLavoro = { ...imp, kleinModello: f.modello, kleinBase: f.modello, kleinEncoder: f.encoder, kleinVae: f.vae }
+    }
+    let inglese: string
+    if (usaKlein && imp.potenziaKlein && l.richiesta.potenzia && l.richiesta.prompt.trim() && (l.richiesta.modalita === 'crea' || l.richiesta.modalita === 'modifica')) {
+      try {
+        inglese = await potenzia(l, ing)
+      } catch (e) {
+        if ((e as Error).message === 'annullato') throw e
+        inglese = await inInglese(l)
+      }
+    } else inglese = await inInglese(l)
     if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
     tempiPasso = []
     ultimoPasso = 0
     // l'ingranditore NVIDIA RTX, se il motore ce l'ha e non l'hai spento in Opzioni
     const rtx = imp.upscalerRtx ? await chiaviRtx().catch(() => null) : null
-    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, imp, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
+    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
-    const testo = l.richiesta.modalita === 'descrivi' || l.richiesta.modalita === 'trova'
-    const uscita = await lancia(grafo, testo ? 'testo' : 'immagine', l, l.richiesta.modalita === 'descrivi')
+    const testo = l.richiesta.modalita === 'descrivi'
+    const uscita = await lancia(grafo, testo ? 'testo' : 'immagine', l, testo)
     if (testo) {
       l.testo = (uscita?.testo || '').trim()
     } else {
@@ -384,7 +442,7 @@ async function esegui(l: Lavoro): Promise<void> {
           sampler: q.sampler,
           scheduler: q.scheduler,
           lora: q.lora,
-          modello: imp.modello,
+          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
           forza: q.forza,
           trasparente: q.trasparente,
           origine: q.origine,
@@ -426,7 +484,7 @@ async function esegui(l: Lavoro): Promise<void> {
 
 /** esegue subito un lavoro di testo e aspetta il risultato (migliora prompt, descrivi foto) */
 export async function scriviTesto(q: Richiesta): Promise<string> {
-  const [l] = accodaRichiesta({ ...q, modalita: q.modalita === 'trova' ? 'trova' : 'descrivi', quante: 1 })
+  const [l] = accodaRichiesta({ ...q, modalita: 'descrivi', quante: 1 })
   return new Promise((ok, ko) => {
     const via = suCambioLavori(() => {
       if (l.stato === 'fatto') {

@@ -17,7 +17,17 @@ async function scarica(v: StatoVoce): Promise<void> {
     api.su.download((d) => usaScarichi.setState((s) => ({ dl: { ...s.dl, [d.nome]: d } })))
   }
   usaScarichi.setState((s) => ({ dl: { ...s.dl, [v.nome]: { id: '', nome: v.nome, ricevuti: 0, totali: 0, velocita: 0, stato: 'in corso' } } }))
-  const d = await api.modelli.scarica(v.id)
+  let d: Download
+  try {
+    d = await api.modelli.scarica(v.id)
+  } catch (e) {
+    usaScarichi.setState((s) => {
+      const { [v.nome]: _tolto, ...resto } = s.dl
+      return { dl: resto }
+    })
+    usaStato.getState().avvisa(e instanceof Error ? e.message : 'Download non riuscito', 'errore')
+    return
+  }
   usaScarichi.setState((s) => ({ dl: { ...s.dl, [v.nome]: d } }))
   await ricaricaLore()
   if (d.stato === 'fatto') usaStato.getState().avvisa(`${v.nome}: pronto`, 'ok')
@@ -29,8 +39,8 @@ export function AvvisoLora(p: { id: string; perche: string }): JSX.Element | nul
   const dl = usaScarichi((s) => s.dl)
   usaStato((s) => s.lore)
   useEffect(() => {
-    void api.modelli.stato().then((l) => setVoce(l.find((x) => x.id === p.id) || null))
-  }, [p.id, dl])
+    void api.modelli.stato().then((l) => setVoce(l.find((x) => x.id === p.id) || null)).catch(() => undefined)
+  }, [p.id, dl[voce?.nome ?? '']?.stato])
   if (!voce || voce.presente) return null
   const d = dl[voce.nome]
   const va = d?.stato === 'in corso' || d?.stato === 'verifica'

@@ -40,7 +40,7 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
       const presente = s.modelli.find((m) => m.tipo === 'diffusione' && m.presente)
       if (presente) setScelta(presente.id)
       else if (t[0]) setScelta('file:' + t[0].percorso)
-    })()
+    })().catch(() => undefined)
     return api.su.setup((p, r) => {
       setPassi(p)
       if (r) setRighe((x) => [...x.slice(-200), r])
@@ -79,7 +79,12 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
     setRighe([])
     const fileEsistente = scelta.startsWith('file:') ? scelta.slice(5) : undefined
     const id = fileEsistente ? trovati.find((t) => t.percorso === fileEsistente)?.id || 'q4km' : scelta
-    const ok = await api.setup.avvia({ cartellaModelli: cartella, modello: id, fileEsistente, extra })
+    let ok = false
+    try {
+      ok = await api.setup.avvia({ cartellaModelli: cartella, modello: id, fileEsistente, extra })
+    } catch (e) {
+      setRighe((x) => [...x, `Errore: ${e instanceof Error ? e.message : e}`])
+    }
     setEsito(ok)
     if (ok) await ricaricaImp()
   }

@@ -1,6 +1,6 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import type { Download, Impostazioni, InfoLora, InfoMotore, Lavoro, LoraAttiva, Opera, Bordi, Risorse, StatoAggiornamento } from '@shared/tipi'
+import { FAMIGLIE, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
@@ -9,6 +9,11 @@ export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
 export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
+
+/** il modello che disegna adesso (Qwen, Klein veloce, Klein Base) */
+export const famigliaCorrente = (): Famiglia => usaStato.getState().imp?.famiglia || 'qwen'
+/** i passi per una qualità col modello scelto (Klein non ha il Turbo: lì «turbo» vale come bozza) */
+export const passiDi = (q: Qualita, f: Famiglia = famigliaCorrente()): number => FAMIGLIE[f].passi[q]
 
 export interface FotoBase {
   percorso: string
@@ -24,6 +29,8 @@ export interface StatoCrea {
   formato: string
   /** risoluzione: il lato corto in pixel (256p … 2048, il massimo nativo) */
   ris: number
+  /** megapixel a cui lavora il modello (0 = come la misura finale); più alti della misura = disegna grande e poi riduce */
+  mpLavoro: number
   qualita: Qualita
   quante: number
   seed: number
@@ -115,21 +122,24 @@ interface Stato {
 const leggiLocale = <T,>(k: string, d: T): T => {
   try {
     const v = localStorage.getItem(k)
-    return v ? { ...d, ...JSON.parse(v) } : d
+    const j = v ? JSON.parse(v) : null
+    // un valore rovinato (non un oggetto) non deve rompere l'avvio
+    return j && typeof j === 'object' && !Array.isArray(j) ? { ...d, ...j } : d
   } catch {
     return d
   }
 }
 const leggiLista = <T,>(k: string): T[] => {
   try {
-    return JSON.parse(localStorage.getItem(k) || '[]')
+    const j = JSON.parse(localStorage.getItem(k) || '[]')
+    return Array.isArray(j) ? j : []
   } catch {
     return []
   }
 }
 
 const CREA0: StatoCrea = {
-  prompt: '', negativo: '', formato: '1:1', ris: 1024, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
+  prompt: '', negativo: '', formato: '1:1', ris: 1024, mpLavoro: 0, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
   cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
 }
 const MOD0: StatoModifica = {

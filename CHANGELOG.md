@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.0 — 2026-10-16
+
+La versione fine: **FLUX 3 Klein**, meno sorprese ovunque, e tutto quello che era rimasto trascurato messo a posto. Niente funzioni nuove oltre a Klein: solo cose che già c'erano, più solide.
+
+- **FLUX 3 Klein** accanto a Qwen: in cima a Crea, Modifica ed Estrai c'è il selettore **Modello che disegna** con tre schede, **Qwen-Image 2.1** (40 passi, LoRA),
+  **Klein** (la versione veloce, distillata: 16 passi) e **Klein Base** (quella normale: 50 passi e CFG). Le schede dicono quali sono già scaricate; se manca qualcosa,
+  un clic scarica il modello, il suo text encoder (Qwen3-VL 4B) e il VAE. Con Klein le foto di riferimento entrano come immagini di riferimento, il prompt viene
+  **potenziato** dal Qwen3-VL (come consiglia BFL; si spegne in Opzioni) e la qualità (Bozza → Massima) sceglie i passi della famiglia. Klein non usa i LoRA di Qwen
+  né il Turbo: l'app li nasconde. Il **motore passa alla versione 7** con **ComfyUI 0.41.2**: al primo avvio si aggiorna da solo.
+- **Estrai col Qwen3-VL**: il rilevatore piccolo (Florence) è tolto, a identificare persone e oggetti torna il Qwen3-VL (di nuovo con solo il pulsante).
+- **Crea: i LoRA si aggiungono**, non solo si tolgono: il selettore completo è sempre sotto il prompt (con Qwen).
+- **Megapixel e misura finale separati ovunque**: puoi lavorare a 4 MP e far uscire la foto a 480p (o all'inverso), in Crea, Modifica, Estrai, Fusion, Laboratorio.
+  Sotto il selettore si legge sempre «La foto esce a…».
+- **Ingranditore NVIDIA RTX**: l'installazione non fallisce più con «ENOENT… rename»: lo zip si estrae in una cartella di lavoro, si prende la cartella giusta e si
+  sposta con più tentativi (e, se Windows la tiene occupata, si copia). Stesso metodo per ComfyUI.
+- **Modelli scaricati quando non servono**: dopo 120 secondi senza lavori (Opzioni → Prestazioni, cambiabile) l'app libera la VRAM; il lavoro dopo li riporta su.
+- **Più robusta, in tutto**: una sola finestra dell'app alla volta; un errore in una pagina non lascia la finestra bianca (si vede cosa è successo e si ricarica);
+  gli errori nascosti diventano avvisi in italiano; file di impostazioni, indice della galleria e album scritti in modo atomico (con copia di riserva dell'album);
+  la galleria si ricostruisce dai PNG senza perdere i preferiti; il motore non resta orfano se l'app si chiude male; log del motore a rotazione; download che non
+  si pestano i piedi (e con messaggi chiari su spazio, permessi e 401/403/404); rete con timeout; localStorage rovinato che non blocca più l'avvio; ricette tue
+  senza foto che creano davvero; esportazione album fermata che dice «Fermato»; Fusion che mostra sempre l'ultimo risultato; file che non sono foto rifiutati subito.
+- **Galleria e interfaccia**: miniature generate a gruppi (non blocca), selezione che segue i filtri, plurali giusti, storia della maschera con un tetto di memoria,
+  Spazio per spostare solo in Modifica, album con più di 8 foto per spread a griglia.
+
 ## 0.11.0 — 2026-10-15
 
 Estrai senza partenze a sorpresa e molto più veloce, una cosa alla volta in VRAM, i token al secondo, i megapixel ovunque.

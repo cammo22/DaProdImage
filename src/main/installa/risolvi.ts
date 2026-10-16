@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoceCatalogo } from '@shared/tipi'
-import { DATI } from '../percorsi'
+import { DATI, scriviAtomico } from '../percorsi'
 import { impostazioni } from '../impostazioni'
 
 export interface FileRisolto {
@@ -34,7 +34,7 @@ function leggi(): Record<string, Risolto> {
 export const risoltoSalvato = (id: string): Risolto | undefined => leggi()[id]
 
 function ricorda(id: string, r: Risolto): void {
-  writeFileSync(FILE, JSON.stringify({ ...leggi(), [id]: r }, null, 2))
+  scriviAtomico(FILE, JSON.stringify({ ...leggi(), [id]: r }, null, 2))
 }
 
 /** il nome senza la quantizzazione, come lo toglie ComfyUI-GGUF (`strip_quant_suffix`) per cercare l'mmproj */
@@ -65,7 +65,8 @@ function scegli(files: VoceHF[], cerca: string[], escludiMmproj: boolean, ext = 
   const candidati = files.filter((f) => ext.test(f.path) && (/mmproj/i.test(f.path) ? !escludiMmproj : escludiMmproj))
   for (const re of cerca) {
     const r = new RegExp(re, 'i')
-    const trovato = candidati.find((f) => r.test(tronco(f.path)))
+    // si prova col nome del file e poi col percorso intero (alcuni repo mettono il tipo nella cartella: int8/…)
+    const trovato = candidati.find((f) => r.test(tronco(f.path))) || candidati.find((f) => r.test(f.path))
     if (trovato) return trovato
   }
   return undefined
@@ -83,9 +84,12 @@ export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
   if (!v.repo || !v.cerca) throw new Error(`${v.nome}: non è una voce da cercare`)
   const files = await elenco(v.repo)
   // i pesi sono un .gguf (denoiser, encoder) o, per il traduttore, un .safetensors / .bin
-  const pesi = v.tipo === 'traduttore' || v.tipo === 'rilevatore' ? /\.(safetensors|bin)$/i : /\.gguf$/i
+  const pesi = v.tipo === 'traduttore' || v.tipo === 'klein' || v.tipo === 'klein-te' || v.tipo === 'klein-vae' ? /\.(safetensors|bin)$/i : /\.gguf$/i
   const principale = scegli(files, v.cerca, true, pesi)
-  if (!principale) throw new Error(`Nel repo ${v.repo} non trovo il file ${v.quant || ''} (${v.cerca.join(' / ')})`)
+  if (!principale) {
+    const elencoFile = files.filter((f) => pesi.test(f.path)).map((f) => f.path).slice(0, 40).join(', ')
+    throw new Error(`Nel repo ${v.repo} non trovo il file giusto per «${v.nome}». File del repo: ${elencoFile || '(nessuno)'}`)
+  }
   const nome = tronco(principale.path)
   const r: Risolto = aFile(v.repo, principale, nome)
   if (v.cercaMmproj) {

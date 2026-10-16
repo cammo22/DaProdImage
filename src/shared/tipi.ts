@@ -11,7 +11,6 @@ export type Modalita =
   | 'ingrandisci' // ingrandimento col modello di upscaling, senza ridisegnare
   | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
   | 'traduci' // il prompt dall'italiano all'inglese con il traduttore dedicato (sul processore, senza Qwen)
-  | 'trova' // persone e oggetti di una foto (riquadri) col rilevatore piccolo (Florence-2), al posto del Qwen3-VL
   | 'importa' // (solo in galleria) una foto portata dentro da fuori
 
 export interface LoraAttiva {
@@ -33,9 +32,23 @@ export interface Riquadro {
   h: number
 }
 
+/** il modello che disegna: Qwen-Image 2.1, o FLUX 3 Klein (veloce, distillato) o FLUX 3 Klein Base (50 passi con CFG) */
+export type Famiglia = 'qwen' | 'klein' | 'klein-base'
+
+/** quello che distingue i modelli: passi per qualità (il Turbo è solo di Qwen), CFG e cosa sanno fare */
+export const FAMIGLIE: Record<Famiglia, { nome: string; corto: string; sotto: string; passi: { turbo: number; bozza: number; alta: number; massima: number }; cfg: number | null; lora: boolean }> = {
+  qwen: { nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA · Turbo', passi: { turbo: 8, bozza: 20, alta: 40, massima: 50 }, cfg: null, lora: true },
+  klein: { nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '16 passi · senza CFG · il più veloce', passi: { turbo: 8, bozza: 8, alta: 16, massima: 24 }, cfg: 1, lora: false },
+  'klein-base': { nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', passi: { turbo: 25, bozza: 25, alta: 50, massima: 64 }, cfg: 3.5, lora: false }
+}
+
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
 export interface Richiesta {
   modalita: Modalita
+  /** il modello che disegna (se manca: quello scelto nelle impostazioni) */
+  famiglia?: Famiglia
+  /** Klein: il prompt è una richiesta breve scritta dall'utente (non un'istruzione già costruita dall'app): il Qwen3-VL la espande in una didascalia dettagliata */
+  potenzia?: boolean
   prompt: string
   negativo: string
   seed: number // -1 = casuale
@@ -84,6 +97,8 @@ export interface Richiesta {
   maxToken?: number
   /** descrivi: quanto è creativo (0.7 di solito; bassa per tradurre) */
   temperatura?: number
+  /** descrivi: penalità di presenza (l'upsampler di Klein usa 1,5 per le didascalie da zero) */
+  presenza?: number
   /** per la galleria: da quale opera nasce */
   origine?: string
   /** etichetta corta per la coda (es. "Rimuovi sfondo") */
@@ -184,6 +199,13 @@ export interface Impostazioni {
   encoder: string
   vae: string
   upscaler: string
+  /** il modello che disegna adesso */
+  famiglia: Famiglia
+  /** i file di FLUX 3 Klein (vuoto = li trova da solo nelle cartelle dei modelli) */
+  kleinModello: string
+  kleinBase: string
+  kleinEncoder: string
+  kleinVae: string
   /** quando l'app è ferma scarica da sola i file consigliati che mancano (LoRA Turbo, traduttore…) */
   scaricaInIdle: boolean
   /** ingrandisce con l'ingranditore NVIDIA RTX (se c'è); se no con quello a modello (4x-UltraSharp) */
@@ -215,8 +237,10 @@ export interface Impostazioni {
   traduttore: 'dedicato' | 'llm'
   /** una cosa alla volta in VRAM: quando passa dal modello immagine all'LLM (o viceversa) scarica quello che non serve */
   unaCosaAllaVolta: boolean
-  /** chi trova persone e oggetti in Estrai: 'veloce' = il rilevatore piccolo (Florence-2); 'llm' = il Qwen3-VL */
-  trova: 'veloce' | 'llm'
+  /** Klein: espande i prompt brevi in didascalie dettagliate col Qwen3-VL (come l'upsampler ufficiale; +circa mezzo minuto per immagine) */
+  potenziaKlein: boolean
+  /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
+  scaricaDopo: number
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
@@ -245,7 +269,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'rilevatore'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'klein' | 'klein-te' | 'klein-vae'
   nome: string
   descrizione: string
   file: string

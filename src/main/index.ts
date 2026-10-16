@@ -1,7 +1,7 @@
 // DaProd Image — processo principale: finestra, protocollo daprod:// per le immagini, IPC verso l'interfaccia.
 import { execFile } from 'node:child_process'
 import { app, BrowserWindow, clipboard, ClipboardItem, dialog, ipcMain, Menu, nativeImage, net, protocol, shell, type IpcMainInvokeEvent } from 'electron'
-import { copyFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, copyFileSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, normalize } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
@@ -23,6 +23,47 @@ import { avviaAggiornamenti, controllaAggiornamenti, installaAggiornamento, stat
 
 // corsEnabled: le <img crossOrigin> (canvas) e la mask-image della zona leggono da qui con il CORS
 protocol.registerSchemesAsPrivileged([{ scheme: 'daprod', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }])
+
+// una sola copia dell'app alla volta: due copie lancerebbero due motori sulla scheda (VRAM doppia) e scriverebbero la stessa galleria
+const unica = app.requestSingleInstanceLock()
+if (!unica) app.quit()
+else
+  app.on('second-instance', () => {
+    if (!finestra) return
+    if (finestra.isMinimized()) finestra.restore()
+    finestra.focus()
+  })
+
+// un errore che nessuno ha gestito non deve aprire il riquadro «A JavaScript error occurred»: si scrive nel registro e si va avanti
+const registraErrore = (e: unknown): void => {
+  try {
+    appendFileSync(join(DATI, 'errori.log'), `${new Date().toISOString()} ${(e as Error)?.stack || String(e)}\n`)
+  } catch {
+    /* niente */
+  }
+}
+process.on('uncaughtException', registraErrore)
+process.on('unhandledRejection', registraErrore)
+
+/** toglie dalle cartelle temporanee i file più vecchi di qualche giorno (fogli, maschere, copie delle foto): senza, crescono per sempre */
+function pulisciVecchi(cartella: string, giorni: number, salta: string[] = []): void {
+  const limite = Date.now() - giorni * 86_400_000
+  let voci: string[] = []
+  try {
+    voci = readdirSync(cartella)
+  } catch {
+    return
+  }
+  for (const n of voci) {
+    if (salta.includes(n)) continue
+    const p = join(cartella, n)
+    try {
+      if (statSync(p).mtimeMs < limite) rmSync(p, { recursive: true, force: true })
+    } catch {
+      /* in uso: la prossima volta */
+    }
+  }
+}
 
 let finestra: BrowserWindow | null = null
 /** true quando si sta già chiudendo (il motore è fermo o si sta fermando) */
@@ -122,7 +163,16 @@ function registraIpc(): void {
     const nuove = salvaImpostazioni(m)
     const motore = ['cartellaModelli', 'anteprimaLive', 'riservaVram', 'argomentiExtra', 'porta', 'memoria', 'veloce'] as const
     if (motore.some((k) => k in m && JSON.stringify(m[k]) !== JSON.stringify(prima[k])) && infoMotore().stato === 'pronto') {
-      void riavviaMotore().then(() => connetti())
+      // le impostazioni del motore valgono al riavvio: se sta lavorando, si aspetta la fine del lavoro (non lo si uccide a metà)
+      const riavviaQuandoLibero = (): void => {
+        if (elencoLavori().some((l) => l.stato === 'in corso')) {
+          setTimeout(riavviaQuandoLibero, 1500)
+          return
+        }
+        scollega()
+        void riavviaMotore().then(() => connetti()).catch(() => undefined)
+      }
+      riavviaQuandoLibero()
     }
     if ('cartellaGalleria' in m && m.cartellaGalleria !== prima.cartellaGalleria) ricaricaGalleria()
     return nuove
@@ -154,11 +204,21 @@ function registraIpc(): void {
         return []
       }
     }
+    const tutti = [...leggi('diffusion_models', /\.(gguf|safetensors)$/i), ...leggi('unet', /\.(gguf|safetensors)$/i)]
+    const enc = leggi('text_encoders', /\.(safetensors|gguf)$/i)
+    const vae = leggi('vae', /\.safetensors$/i)
+    // i file di Klein sono altri: nelle scelte di Qwen non devono comparire
+    const isKlein = (n: string): boolean => /klein/i.test(n)
+    const isKleinTe = (n: string): boolean => /(qwen3|qwen_3).*4b/i.test(n) || isKlein(n)
+    const isKleinVae = (n: string): boolean => isKlein(n) || /flux.?[23]/i.test(n)
     return {
-      diffusione: [...leggi('diffusion_models', /\.(gguf|safetensors)$/i), ...leggi('unet', /\.(gguf|safetensors)$/i)],
-      encoder: leggi('text_encoders', /\.(safetensors|gguf)$/i),
-      vae: leggi('vae', /\.safetensors$/i),
-      upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i)
+      diffusione: tutti.filter((n) => !isKlein(n)),
+      encoder: enc.filter((n) => !isKleinTe(n)),
+      vae: vae.filter((n) => !isKleinVae(n)),
+      upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i),
+      klein: tutti.filter(isKlein),
+      kleinTe: enc.filter(isKleinTe),
+      kleinVae: vae.filter(isKleinVae)
     }
   })
   gestisci('modelli:inutilizzati', () => fileInutilizzati())
@@ -386,6 +446,10 @@ function registraIpc(): void {
 }
 
 app.whenReady().then(() => {
+  if (!unica) return
+  // prima di avviare il motore (la sua cache delle foto caricate è ancora vuota)
+  pulisciVecchi(TEMP, 3, ['comfy', 'wic-png.ps1'])
+  pulisciVecchi(join(ENTRATA, 'daprod'), 3)
   app.setAppUserModelId('it.daprod.image')
   protocol.handle('daprod', async (req) => {
     const u = new URL(req.url)
@@ -431,6 +495,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', (e) => {
   salvaOra()
+  annullaSetup()
   if (chiusura) return
   if (infoMotore().stato === 'spento' || infoMotore().stato === 'non installato') return
   e.preventDefault()

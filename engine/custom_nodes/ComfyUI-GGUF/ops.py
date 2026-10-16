@@ -229,6 +229,9 @@ class GGMLOps(comfy.ops.manual_cast):
     Dequantize weights on the fly before doing the compute
     """
     class Linear(GGMLLayer, comfy.ops.manual_cast.Linear):
+        # DaProd Image: da ComfyUI 0.41 `linear_input_act()` salta il forward del modulo se è acceso `--fast fp16_accumulation` e l'attivazione
+        # è fp16; con pesi GGUF quel percorso leggerebbe i byte quantizzati. Con questo flag passa sempre da forward().
+        comfy_force_forward = True
         def __init__(self, in_features, out_features, bias=True, device=None, dtype=None):
             torch.nn.Module.__init__(self)
             # TODO: better workaround for reserved memory spike on windows

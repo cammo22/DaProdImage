@@ -71,7 +71,7 @@ export function raggruppa(foto: FotoAlbum[], o: OpzioniAuto): { ids: string[]; p
   for (let k = gruppi.length - 1; k > 0; k--) {
     const g = gruppi[k]
     const prima = gruppi[k - 1]
-    if (!g.pieno && g.ids.length < min && !prima.pieno && prima.ids.length + g.ids.length <= max + 1) {
+    if (!g.pieno && g.ids.length < min && !prima.pieno && prima.ids.length + g.ids.length <= max) {
       prima.ids.push(...g.ids)
       gruppi.splice(k, 1)
     }

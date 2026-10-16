@@ -32,6 +32,10 @@ export interface FileModelli {
   encoder: string[]
   vae: string[]
   upscaler: string[]
+  /** i file di FLUX 3 Klein (modelli, text encoder, VAE) */
+  klein: string[]
+  kleinTe: string[]
+  kleinVae: string[]
 }
 export interface ModelloTrovato {
   percorso: string

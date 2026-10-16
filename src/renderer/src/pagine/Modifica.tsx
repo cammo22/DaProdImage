@@ -6,6 +6,8 @@ import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, 
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Casella } from '../componenti/Casella'
+import { ScegliQualita } from '../componenti/ScegliQualita'
+import { ScegliModello } from '../componenti/ScegliModello'
 import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
@@ -345,6 +347,8 @@ export function Modifica(): JSX.Element {
       ...perQualita(s.qualita),
       quante: s.quante,
       origine: s.base.operaId,
+      // Klein: una richiesta breve scritta da te si espande; le istruzioni già costruite (idee, azioni rapide) no
+      potenzia: s.modo === 'tutta' && !rapida && !idee.length,
       etichetta: (rapida && rapida.id !== 'camera' ? rapida.nome + ' · ' : rapida ? 'Camera · ' : '') + (testo.slice(0, 50) || 'Espandi')
     }
     if (s.modo !== 'espandi') Object.assign(q, conMisura(s.misura, s.base))
@@ -617,6 +621,7 @@ export function Modifica(): JSX.Element {
 
       {estraiMode ? <ControlliEstrai base={base} /> : <div className="colonna destra">
         <div className="scorri">
+          <div className="sezione"><ScegliModello /></div>
           <div className="sezione">
             <h3>
               {fusion ? 'Cosa creare con le foto' : esempioMode ? 'Cosa vuoi (facoltativo)' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
@@ -800,17 +805,7 @@ export function Modifica(): JSX.Element {
           <div className="sezione">
             <h3>Qualità <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
             <div>
-              <Segmenti<Qualita>
-                valore={m.qualita}
-                cambia={(qualita) => setModifica({ qualita })}
-                voci={[
-                  { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi', titolo: 'LoRA Turbo8: circa 5 volte più veloce' },
-                  { id: 'bozza', nome: 'Veloce', sotto: '20 passi' },
-                  { id: 'alta', nome: 'Alta', sotto: '40 passi' },
-                  { id: 'massima', nome: 'Massima', sotto: '50 passi' }
-                ]}
-              />
-              {m.qualita === 'turbo' && <AvvisoTurbo />}
+              <ScegliQualita valore={m.qualita} cambia={(qualita) => setModifica({ qualita })} />
             </div>
             <div className="riga spazia" style={{ marginTop: 10 }}>
               <span className="tenue">Quante versioni</span>
@@ -824,10 +819,12 @@ export function Modifica(): JSX.Element {
             )}
           </div>
 
-          <div className="sezione">
-            <h3>LoRA</h3>
-            <SceltaLora />
-          </div>
+          {(imp?.famiglia || 'qwen') === 'qwen' && (
+            <div className="sezione">
+              <h3>LoRA</h3>
+              <SceltaLora />
+            </div>
+          )}
         </div>
         <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
           <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={fusion ? !m.riferimenti.length : esempioMode ? !m.esempio || !m.riferimenti.length : !base}>

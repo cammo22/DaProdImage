@@ -2,7 +2,7 @@
 //   modello GGUF → (Turbo) → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
 // e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
 import { modelloTurbo } from '@shared/tipi'
-import type { Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
+import type { Famiglia, Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
 import type { ChiaviRtx } from './cliente'
 
 /** il profilo di memoria: con poca VRAM il VAE lavora a tessere (niente picchi che finiscono nella RAM condivisa) */
@@ -66,7 +66,21 @@ function caricaClip(g: Grafo, imp: Impostazioni): Rif {
   return r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, titolo))
 }
 
+/** il modello che disegna questa richiesta */
+export const famigliaDi = (q: Richiesta, imp: Impostazioni): Famiglia => q.famiglia ?? imp.famiglia ?? 'qwen'
+
+/** FLUX 3 Klein: UNETLoader (i pesi INT8/BF16 li riconosce da soli ComfyUI), text encoder Qwen3-VL 4B di tipo flux3, VAE di Klein. Niente LoRA né cache KV. */
+function baseKlein(g: Grafo, imp: Impostazioni, fam: Famiglia): { model: Rif; clip: Rif; vae: Rif } {
+  const file = fam === 'klein-base' ? imp.kleinBase : imp.kleinModello
+  const model = r(g.add('UNETLoader', { unet_name: file, weight_dtype: 'default' }, 'Carico il modello'))
+  const clip = r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: 'flux3', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+  const vae = r(g.add('VAELoader', { vae_name: imp.kleinVae }, 'Carico il VAE'))
+  return { model, clip, vae }
+}
+
 function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Rif; vae: Rif } {
+  const fam = famigliaDi(q, imp)
+  if (fam !== 'qwen') return baseKlein(g, imp, fam)
   const carico = 'Carico il modello'
   const unet = imp.modello.toLowerCase().endsWith('.gguf')
     ? g.add('UnetLoaderGGUF', { unet_name: imp.modello }, carico)
@@ -85,7 +99,71 @@ function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Ri
   return { model, clip, vae }
 }
 
-function campiona(g: Grafo, q: Richiesta, model: Rif, enc: string, latente: Rif, passi: number, denoise = 1): Rif {
+/** il testo e le foto di riferimento per il modello, nella forma che ognuno vuole: Qwen li legge tutti col suo encoder (che dà anche la latente
+ *  della foto da modificare); Klein codifica il testo e mette ogni foto come riferimento (VAEEncode → ReferenceLatent). */
+interface Condizioni {
+  pos: Rif
+  neg: Rif
+  /** la latente da cui partire, se il modello la dà (Qwen in modifica) */
+  lat?: Rif
+}
+
+const ORDINALI = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']
+
+function condiziona(
+  g: Grafo,
+  fam: Famiglia,
+  ctx: { clip: Rif; vae: Rif },
+  o: {
+    prompt: string
+    neg: string
+    /** Qwen: lato di lavoro per le foto (0 = come il latente) */
+    resolution: number
+    /** Qwen: passa il VAE (serve se ci sono foto) */
+    conVae: boolean
+    /** le foto (già caricate): <image1> è la prima */
+    immagini: Rif[]
+    /** Klein: la prima foto si porta a questa misura (è la foto che si modifica); le altre stanno sotto 1 MP */
+    misuraPrima?: { w: number; h: number }
+    /** Qwen: le foto dall'indice `scalaDa` in poi si portano a questo numero di megapixel prima di darle all'encoder (se manca, vanno com'è) */
+    mpRiferimenti?: number
+    scalaDa?: number
+    fase: string
+  }
+): Condizioni {
+  if (fam === 'qwen') {
+    const inputs: Record<string, unknown> = { clip: ctx.clip, prompt: o.prompt, negative_prompt: o.neg, resolution: o.resolution }
+    if (o.conVae) inputs.vae = ctx.vae
+    o.immagini.forEach((im, i) => {
+      inputs[`images.image_${i + 1}`] = o.mpRiferimenti !== undefined && i >= (o.scalaDa ?? 1) ? r(g.add('ImageScaleToTotalPixels', { image: im, upscale_method: 'lanczos', megapixels: o.mpRiferimenti, resolution_steps: 32 })) : im
+    })
+    const enc = g.add('TextEncodeQwenImage21', inputs, o.fase)
+    return { pos: r(enc, 0), neg: r(enc, 1), lat: r(enc, 2) }
+  }
+  // Klein non ha i tag <imageN>: le foto si citano a parole («the second image»), come fa il suo prompt upsampler. Il negativo è il testo vuoto, o quello scritto
+  const parole = o.prompt.replace(/<image(\d+)>/g, (_m, n: string) => `the ${ORDINALI[Number(n) - 1] || 'last'} image`)
+  let pos = r(g.add('CLIPTextEncode', { clip: ctx.clip, text: parole }, o.fase))
+  let neg = r(g.add('CLIPTextEncode', { clip: ctx.clip, text: o.neg || '' }))
+  o.immagini.slice(0, 10).forEach((im, i) => {
+    const pronta =
+      i === 0 && o.misuraPrima
+        ? r(g.add('ImageScale', { image: im, upscale_method: 'lanczos', width: o.misuraPrima.w, height: o.misuraPrima.h, crop: 'center' }))
+        : r(g.add('ImageScaleToTotalPixels', { image: im, upscale_method: 'lanczos', megapixels: 1, resolution_steps: 16 }))
+    const lat = r(g.add('VAEEncode', { pixels: pronta, vae: ctx.vae }, i === 0 ? 'Preparo le foto' : undefined))
+    pos = r(g.add('ReferenceLatent', { conditioning: pos, latent: lat }))
+    neg = r(g.add('ReferenceLatent', { conditioning: neg, latent: lat }))
+  })
+  return { pos, neg }
+}
+
+/** la latente vuota per disegnare da zero a quella misura */
+function latenteVuota(g: Grafo, fam: Famiglia, w: number, h: number): Rif {
+  return r(g.add(fam === 'qwen' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: w, height: h, batch_size: 1 }))
+}
+
+function campiona(g: Grafo, q: Richiesta, fam: Famiglia, model: Rif, c: Condizioni, latente: Rif, passi: number, denoise = 1): Rif {
+  // Klein veloce è distillato (16 passi, senza CFG); Klein Base vuole CFG 3,5; sampler e scheduler sono quelli del riferimento (euler, e la scaletta del modello)
+  const cfg = fam === 'qwen' ? q.cfg : fam === 'klein' ? 1 : q.cfg > 1 ? q.cfg : 3.5
   return r(
     g.add(
       'KSampler',
@@ -93,11 +171,11 @@ function campiona(g: Grafo, q: Richiesta, model: Rif, enc: string, latente: Rif,
         model,
         seed: q.seed,
         steps: passi,
-        cfg: q.cfg,
-        sampler_name: q.sampler,
-        scheduler: q.scheduler,
-        positive: r(enc, 0),
-        negative: r(enc, 1),
+        cfg,
+        sampler_name: fam === 'qwen' ? q.sampler : 'euler',
+        scheduler: fam === 'qwen' ? q.scheduler : 'simple',
+        positive: c.pos,
+        negative: c.neg,
         latent_image: latente,
         denoise
       },
@@ -226,13 +304,6 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: 1 }
   }
 
-  // il rilevatore piccolo (Florence-2): riquadri di persone e oggetti in un attimo, senza Qwen
-  if (q.modalita === 'trova') {
-    const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Guardo la foto'))
-    const uscita = g.add('DaProdTrova', { image: img, modello: 'florence-2-base-ft' }, 'Cerco persone e oggetti')
-    return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: 1 }
-  }
-
   if (q.modalita === 'descrivi') {
     const clip = caricaClip(g, imp)
     const inputs: Record<string, unknown> = {
@@ -250,6 +321,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       use_default_template: true,
       system_prompt: q.sistema || ''
     }
+    if (q.presenza !== undefined) inputs['sampling_mode.presence_penalty'] = q.presenza
     if (ing.immagini[0]) inputs.image = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Guardo la foto'))
     const gen = g.add('TextGenerate', inputs, 'Scrivo')
     const uscita = g.add('PreviewAny', { source: r(gen, 0) })
@@ -268,26 +340,20 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   }
 
   const { model, clip, vae } = base(g, q, imp)
+  const fam = famigliaDi(q, imp)
   const leggo = 'Leggo il prompt e le foto'
 
   if (q.modalita === 'crea') {
-    const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
-    // con dei riferimenti (<image1>…) Qwen-Image 2.1 li guarda mentre disegna da zero: persone, vestiti, oggetti, stili
-    const inputs: Record<string, unknown> = { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }
-    if (ing.immagini.length) {
-      inputs.vae = vae
-      ing.immagini.slice(0, 16).forEach((im, i) => {
-        const caricata = r(g.add('LoadImage', { image: im.nome }, 'Carico i riferimenti'))
-        inputs[`images.image_${i + 1}`] = r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: 1, resolution_steps: 32 }))
-      })
-    }
-    const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
-    const lat = r(g.add('EmptyLatentImage', { width: q.larghezza, height: q.altezza, batch_size: 1 }))
+    const testo = q.trasparente && fam === 'qwen' ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
+    // con dei riferimenti (<image1>…) il modello li guarda mentre disegna da zero: persone, vestiti, oggetti, stili
+    const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico i riferimenti')))
+    const cond = condiziona(g, fam, { clip, vae }, { prompt: testo, neg, resolution: 1024, conVae: caricate.length > 0, immagini: caricate, mpRiferimenti: 1, scalaDa: 0, fase: leggo })
+    const lat = latenteVuota(g, fam, q.larghezza, q.altezza)
     // il Turbo è stato allenato con la scaletta del rumore che dipende dalla grandezza (come nel suo workflow)
-    const m = conTurbo(q, imp) && !modelloTurbo(imp.modello)
+    const m = fam === 'qwen' && conTurbo(q, imp) && !modelloTurbo(imp.modello)
       ? r(g.add('ModelSamplingFlux', { model, max_shift: 0.6935, base_shift: 0.5, width: q.larghezza, height: q.altezza }))
       : model
-    const ks = campiona(g, q, m, enc, lat, q.passi)
+    const ks = campiona(g, q, fam, m, cond, lat, q.passi)
     const mp = (q.larghezza * q.altezza) / 1048576
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), q.larghezza, q.altezza, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
@@ -296,13 +362,11 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   if (q.modalita === 'modifica') {
     // tutta la foto: image_1 è la foto, le altre sono riferimenti (<image2>…); il latente segue image_1
     const res = Math.round((Math.sqrt(q.megapixel) * 1024) / 32) * 32
-    const inputs: Record<string, unknown> = { clip, prompt: q.prompt, negative_prompt: neg, resolution: res, vae }
-    ing.immagini.slice(0, 16).forEach((im, i) => {
-      inputs[`images.image_${i + 1}`] = r(g.add('LoadImage', { image: im.nome }, 'Carico le foto'))
-    })
-    const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
-    const ks = campiona(g, q, model, enc, r(enc, 2), q.passi)
     const d = dimensioniPer(q.megapixel, ing.immagini[0].larghezza, ing.immagini[0].altezza)
+    const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico le foto')))
+    const cond = condiziona(g, fam, { clip, vae }, { prompt: q.prompt, neg, resolution: res, conVae: true, immagini: caricate, misuraPrima: d, fase: leggo })
+    const lat = cond.lat ?? latenteVuota(g, fam, d.w, d.h)
+    const ks = campiona(g, q, fam, model, cond, lat, q.passi)
     const mp = (d.w * d.h) / 1048576
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), d.w, d.h, rtx), prefisso)
     const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
@@ -327,13 +391,13 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       img = ingrandisciImg(g, imp, rtx, img, f)
     }
     img = r(g.add('ImageScale', { image: img, upscale_method: 'lanczos', width: W, height: H, crop: 'disabled' }))
-    const testo = q.trasparente ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
-    const enc = g.add('TextEncodeQwenImage21', { clip, prompt: testo, negative_prompt: neg, resolution: 1024 }, leggo)
+    const testo = q.trasparente && fam === 'qwen' ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
+    const cond = condiziona(g, fam, { clip, vae }, { prompt: testo, neg, resolution: 1024, conVae: false, immagini: [], fase: leggo })
     const mp = (W * H) / 1048576
     const lat = codifica(g, img, vae, mp)
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
     const passi = passiPer(q.passi, forza, minimo)
-    const ks = campiona(g, q, model, enc, lat, passi, forza)
+    const ks = campiona(g, q, fam, model, cond, lat, passi, forza)
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), W, H, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
@@ -408,11 +472,11 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     risoluzione = Math.round((Math.sqrt(Math.min(q.megapixel, (im.larghezza * im.altezza) / 1048576)) * 1024) / 32) * 32
   }
   // i riferimenti li porto io a ~1 MP
-  const inputs: Record<string, unknown> = { clip, prompt, negative_prompt: neg, resolution: risoluzione, vae, 'images.image_1': vista }
   const riferimenti = ing.immagini.slice(1, 15)
-  riferimenti.forEach((ri, i) => {
+  const fotoEncoder: Rif[] = [vista]
+  riferimenti.forEach((ri) => {
     const caricata = r(g.add('LoadImage', { image: ri.nome }, 'Carico i riferimenti'))
-    inputs[`images.image_${i + 2}`] = r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: Math.min(1, q.megapixel), resolution_steps: 32 }))
+    fotoEncoder.push(r(g.add('ImageScaleToTotalPixels', { image: caricata, upscale_method: 'lanczos', megapixels: Math.min(1, q.megapixel), resolution_steps: 32 })))
   })
   if (q.modalita === 'zona') {
     // Il modello guarda SEMPRE la foto intera: come ultima immagine riceve tutta la foto con la zona evidenziata in
@@ -429,23 +493,24 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const conVelo = r(g.add('ImageCompositeMasked', { destination: fotoP, source: rosso, x: 0, y: 0, resize_source: false, mask: velo }))
     const panoramica = r(g.add('ImageCompositeMasked', { destination: conVelo, source: rosso, x: 0, y: 0, resize_source: false, mask: bordo }, 'Guardo tutta la foto'))
     const n = riferimenti.length + 2
-    inputs[`images.image_${n}`] = panoramica
+    fotoEncoder.push(panoramica)
     const dove = zona && !tutta ? doveNelRiquadro(zona, box) : null
     const istruzione = q.prompt.trim().replace(/[.\s]+$/, '')
-    inputs.prompt =
-      `${istruzione}. Make this change only inside the area highlighted in red in <image${n}>, which shows the whole photo` +
-      (tutta ? '; <image1> is that same photo.' : `; <image1> is a close-up of that part of the photo${dove ? `, with the area in ${dove}` : ''}.`) +
+    const nomeFoto = (k: number): string => (fam === 'qwen' ? `<image${k}>` : `the ${ORDINALI[k - 1] || 'last'} image`)
+    prompt =
+      `${istruzione}. Make this change only inside the area highlighted in red in ${nomeFoto(n)}, which shows the whole photo` +
+      (tutta ? `; ${nomeFoto(1)} is that same photo.` : `; ${nomeFoto(1)} is a close-up of that part of the photo${dove ? `, with the area in ${dove}` : ''}.`) +
       ' Keep everything outside that area exactly the same, and do not add any red tint or outline.' +
-      (riempi ? ' The smudged, blurry patch in <image1> is only a placeholder: redraw it sharp and natural, matching the perspective, lighting and texture of the surroundings.' : '')
+      (riempi ? ` The smudged, blurry patch in ${nomeFoto(1)} is only a placeholder: redraw it sharp and natural, matching the perspective, lighting and texture of the surroundings.` : '')
   }
-  const enc = g.add('TextEncodeQwenImage21', inputs, leggo)
+  const cond = condiziona(g, fam, { clip, vae }, { prompt, neg, resolution: risoluzione, conVae: true, immagini: fotoEncoder, misuraPrima: { w: box.tw, h: box.th }, fase: leggo })
   const mp = (box.tw * box.th) / 1048576
   const lat0 = codifica(g, sorgente, vae, mp)
   const lat = r(g.add('SetLatentNoiseMask', { samples: lat0, mask: mLatente }))
   const dd = r(g.add('DifferentialDiffusion', { model, strength: 1 }))
   const forza = q.forza ?? 1
   const passi = passiPer(q.passi, forza, minimo)
-  const ks = campiona(g, q, dd, enc, lat, passi, forza)
+  const ks = campiona(g, q, fam, dd, cond, lat, passi, forza)
   // il doppio passaggio nel VAE sposta un filo i colori: si misurano appena fuori dalla zona e si rimettono a posto
   const fatto = r(g.add('DaProdAccordaColori', { image: sviluppa(g, { ...q, trasparente: false }, ks, vae, mp), reference: grande, mask: mDura, strength: 1 }))
   const indietro = r(g.add('ImageScale', { image: fatto, upscale_method: 'lanczos', width: box.w, height: box.h, crop: 'disabled' }, 'Incollo'))

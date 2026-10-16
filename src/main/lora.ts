@@ -3,9 +3,9 @@
 // e dall'intestazione safetensors si capisce se sono per Qwen-Image 2.1.
 import { shell } from 'electron'
 import { copyFileSync, existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, statSync, writeFileSync } from 'node:fs'
-import { basename, extname, join, relative } from 'node:path'
+import { basename, extname, join, relative, resolve, sep } from 'node:path'
 import type { InfoLora } from '@shared/tipi'
-import { DATI, assicura } from './percorsi'
+import { DATI, assicura, scriviAtomico } from './percorsi'
 import { impostazioni } from './impostazioni'
 import { scarica } from './installa/scarica'
 import { CATALOGO } from './installa/catalogo'
@@ -24,7 +24,7 @@ function note(): Record<string, Nota> {
 }
 function scriviNote(n: Record<string, Nota>): void {
   assicura(DATI)
-  writeFileSync(NOTE, JSON.stringify(n, null, 2))
+  scriviAtomico(NOTE, JSON.stringify(n, null, 2))
 }
 
 /** legge l'intestazione JSON di un .safetensors (solo i primi byte) */
@@ -160,7 +160,12 @@ export function importaLora(percorsi: string[]): string[] {
 }
 
 export async function eliminaLora(file: string): Promise<void> {
-  await shell.trashItem(join(cartellaLora(), file))
+  // solo un LoRA dentro la cartella dei LoRA: un percorso con «..» manderebbe nel Cestino un file qualsiasi del disco
+  const dentro = resolve(cartellaLora())
+  const p = resolve(dentro, file)
+  if (!p.toLowerCase().startsWith(dentro.toLowerCase() + sep) || !/\.(safetensors|ckpt|pt)$/i.test(p)) throw new Error('questo file non è un LoRA')
+  // se il file non c'è più (cancellato a mano) si toglie comunque la nota
+  if (existsSync(p)) await shell.trashItem(p)
   const n = note()
   delete n[file]
   scriviNote(n)
@@ -170,15 +175,19 @@ export async function eliminaLora(file: string): Promise<void> {
 async function risolvi(link: string): Promise<{ url: string; nome?: string; file?: string; parole?: string; anteprima?: string; intestazioni: Record<string, string> }> {
   const imp = impostazioni()
   const u = new URL(link.trim())
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('il link deve cominciare con https://')
   const intestazioni: Record<string, string> = {}
-  if (u.hostname.endsWith('huggingface.co')) {
+  // il token va solo a quel sito (non a «evilhuggingface.co»)
+  const dominio = (d: string): boolean => u.hostname === d || u.hostname.endsWith('.' + d)
+  if (dominio('huggingface.co')) {
     if (imp.tokenHF) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
     // /utente/repo/blob/main/file → /resolve/
     const url = u.toString().replace('/blob/', '/resolve/')
     if (!/\/resolve\//.test(url)) {
       // pagina del repo: si cerca il primo .safetensors
       const repo = u.pathname.split('/').filter(Boolean).slice(0, 2).join('/')
-      const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/main?recursive=true`, { headers: intestazioni })
+      const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/main?recursive=true`, { headers: intestazioni, signal: AbortSignal.timeout(20_000) })
+      if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'Hugging Face non mi lascia entrare in quel repo: controlla il token in Opzioni.' : r.status === 404 ? 'Non trovo quel repository su Hugging Face.' : `Hugging Face non risponde (${r.status}).`)
       const files = (await r.json()) as { path: string; type: string }[]
       const tutti = files.filter((f) => f.type === 'file' && f.path.endsWith('.safetensors'))
       // #file=v2,1500,1000: le preferenze, in ordine (il checkpoint consigliato dall'autore); se niente combacia, il primo
@@ -189,7 +198,7 @@ async function risolvi(link: string): Promise<{ url: string; nome?: string; file
     }
     return { url, file: basename(u.pathname), intestazioni }
   }
-  if (u.hostname.endsWith('civitai.com') || u.hostname.endsWith('civitai.green')) {
+  if (dominio('civitai.com') || dominio('civitai.green')) {
     const auth = imp.tokenCivitai ? { Authorization: 'Bearer ' + imp.tokenCivitai } : undefined
     let versione = u.searchParams.get('modelVersionId')
     const mm = u.pathname.match(/\/models\/(\d+)/)
@@ -198,9 +207,14 @@ async function risolvi(link: string): Promise<{ url: string; nome?: string; file
     type Versione = { name?: string; trainedWords?: string[]; images?: { url: string }[]; files?: { name: string; downloadUrl: string; primary?: boolean }[]; model?: { name?: string } }
     let info: Versione | null = null
     if (versione) {
-      info = (await (await fetch(`https://civitai.com/api/v1/model-versions/${versione}`, { headers: auth })).json()) as Versione
+      const r = await fetch(`https://civitai.com/api/v1/model-versions/${versione}`, { headers: auth, signal: AbortSignal.timeout(20_000) })
+      if (!r.ok) throw new Error(`Civitai non risponde (${r.status}): controlla il link, o metti il token API in Opzioni.`)
+      info = (await r.json()) as Versione
     } else if (mm) {
-      const m = (await (await fetch(`https://civitai.com/api/v1/models/${mm[1]}`, { headers: auth })).json()) as { name: string; modelVersions: Versione[] }
+      const r = await fetch(`https://civitai.com/api/v1/models/${mm[1]}`, { headers: auth, signal: AbortSignal.timeout(20_000) })
+      if (!r.ok) throw new Error(`Civitai non risponde (${r.status}): controlla il link, o metti il token API in Opzioni.`)
+      const m = (await r.json()) as { name: string; modelVersions: Versione[] }
+      if (!m.modelVersions?.length) throw new Error('Civitai: quel modello non ha versioni scaricabili')
       info = { ...m.modelVersions[0], model: { name: m.name } }
     }
     if (!info?.files?.length) throw new Error('Civitai non mi dà il file (forse serve il token API nelle Impostazioni)')

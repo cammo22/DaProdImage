@@ -33,7 +33,7 @@
     impostazioni: { leggi: v(imp), salva: async (m) => Object.assign(imp, m) },
     sistema: { controllo: v({}) },
     setup: { cerca: v([]), stato: v({ installato: true, motore: true, modelli: [] }), avvia: v(true), annulla: v() },
-    modelli: { stato: v([]), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler] }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
+    modelli: { stato: v([]), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler], klein: [], kleinTe: [], kleinVae: [] }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
     motore: { info: v({ stato: 'pronto', porta: 8818, vramTotale: 6442450944, vramLibera: 1500000000, gpu: 'NVIDIA GeForce RTX 3060 Laptop GPU', versione: '0.39.0' }), avvia: v(), riavvia: v(), ferma: v(), log: v(['motore pronto']), libera: v(), apriComfy: v() },
     lavori: {
       elenco: v([]), annulla: v(), svuota: v(), pulisci: v(),

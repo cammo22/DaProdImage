@@ -15,6 +15,6 @@ export default defineConfig({
     root: 'src/renderer',
     resolve: { alias: { '@shared': resolve('src/shared'), '@': resolve('src/renderer/src') } },
     plugins: [react()],
-    build: { rollupOptions: { input: resolve('src/renderer/index.html') } }
+    build: { minify: 'esbuild', rollupOptions: { input: resolve('src/renderer/index.html') } }
   }
 })

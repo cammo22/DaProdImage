@@ -880,8 +880,18 @@ details.tipo-modelli > summary:hover { color: var(--oro); }
 .pers-box span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; padding: 0 8px 0 6px; font-size: 12.5px; }
 .pers-box span svg { width: 14px; height: 14px; }
 .pers-box.oggetto span { background: #5ec8ff; color: #04202c; }
-.lora-chip { display: inline-flex; align-items: center; gap: 6px; }
-.lora-chip button { display: grid; place-items: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: .7; }
-.lora-chip button:hover { opacity: 1; }
-.lora-chip button svg { width: 13px; height: 13px; }
 .chip.tok { height: 26px; color: var(--oro); border-color: var(--oro); cursor: default; font-variant-numeric: tabular-nums; }
+
+/* selettore del modello (Qwen / Klein / Klein Base) */
+.sel-modello { margin-bottom: 4px; }
+.sel-modello-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.sel-modello-card button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bordo); background: #0f0b1c; color: var(--testo); cursor: pointer; text-align: left; min-width: 0; }
+.sel-modello-card button:hover { border-color: var(--bordo2); }
+.sel-modello-card button.su { border-color: var(--oro); background: #1d1730; box-shadow: 0 0 0 1px var(--oro) inset; }
+.sel-modello-card button .ic { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--pannello2); color: var(--oro); margin-bottom: 3px; }
+.sel-modello-card button.su .ic { background: var(--oro); color: #1d1300; }
+.sel-modello-card button .ic svg { width: 14px; height: 14px; }
+.sel-modello-card button b { font-size: 13.5px; white-space: nowrap; }
+.sel-modello-card button small { font-size: 11.5px; color: var(--spento); white-space: nowrap; }
+.sel-modello-card button em { position: absolute; top: 6px; right: 7px; font-style: normal; font-size: 10.5px; color: #1d1300; background: var(--oro2, #ffb627); padding: 1px 6px; border-radius: 6px; }
+.sel-modello-card button.da-scaricare { opacity: .85; }

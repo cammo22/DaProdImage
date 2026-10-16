@@ -35,6 +35,7 @@ export function richiestaFusion(s: StatoModifica, turboPronto: boolean): Esito {
       ...richiestaBase(),
       modalita: 'crea',
       prompt: conParoleLora(s.prompt.trim()),
+      potenzia: true,
       larghezza: w,
       altezza: h,
       megapixel: (w * h) / 1048576,

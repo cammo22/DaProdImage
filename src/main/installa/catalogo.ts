@@ -5,6 +5,7 @@ const UC = 'https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-GGUF/reso
 const TURBO = 'AtomicChat/Qwen-Image-2.1-Turbo-GGUF'
 const ENC_AC = 'AtomicChat/Qwen-Image-2.1-Turbo-Uncensored-GGUF'
 const ENC_MR = 'mradermacher/Qwen3-VL-8B-Instruct-Uncensored-V2-GGUF'
+const KLEIN = 'black-forest-labs/flux-3-image-klein-comfy'
 
 export const CATALOGO: VoceCatalogo[] = [
   // --- modello di diffusione (uno solo serve; solo Q4, Q6 e Q8) ---
@@ -76,13 +77,28 @@ export const CATALOGO: VoceCatalogo[] = [
     repo: 'Helsinki-NLP/opus-mt-it-en', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
     accanto: ['^config\\.json$', '^generation_config\\.json$', '^tokenizer_config\\.json$', '^source\\.spm$', '^target\\.spm$', '^vocab\\.json$']
   },
-  // --- rilevatore: un modello piccolo (Florence-2, 0,23 miliardi di parametri, MIT) che trova persone e oggetti in un secondo, al posto dell'LLM ---
+  // --- FLUX 3 Image Klein (Black Forest Labs): il repo «comfy» ha bf16, int8 («convrot») e NVFP4 per Klein (veloce, 16 passi) e Klein Base (50 passi, CFG).
+  //     I nomi dei file vengono dai workflow ufficiali di ComfyUI; il nome esatto lo chiede installa/risolvi.ts a Hugging Face. Per una scheda da 6-8 GB va bene l'INT8.
+  //     L'encoder è un Qwen3-VL 4B (diverso dal nostro 8B); il VAE è quello di FLUX.2. ---
+  ...([
+    ['klein-int8', 'FLUX 3 Klein · veloce · INT8', 'Il più veloce: 16 passi senza CFG. L\'INT8 sta nelle schede da 8 GB.', 5_700_000_000, ['^flux3_image_klein_sd_int8', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
+    ['klein-bf16', 'FLUX 3 Klein · veloce · BF16', 'Stessa qualità dell\'originale, ma pesa il doppio: serve molta RAM.', 11_300_000_000, ['^flux3_image_klein_sd(_bf16)?\\.safetensors$', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']],
+    ['klein-base-int8', 'FLUX 3 Klein Base · INT8', 'La versione «normale»: 50 passi con CFG 3,5, la qualità piena (3 volte più lenta di Klein).', 5_700_000_000, ['^flux3_image_klein_base_int8', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
+    ['klein-base-bf16', 'FLUX 3 Klein Base · BF16', 'Klein Base non quantizzato.', 11_300_000_000, ['^flux3_image_klein_base(_bf16)?\\.safetensors$', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']]
+  ] as const).map(([id, nome, descrizione, byte, cerca]): VoceCatalogo => ({
+    id, tipo: 'klein', nome, descrizione, file: '', cartella: 'diffusion_models', url: '', byte, circa: true, repo: KLEIN, cerca: [...cerca]
+  })),
   {
-    id: 'trova-florence', tipo: 'rilevatore', nome: 'Rilevatore persone e oggetti (Florence-2 base)',
-    descrizione: 'Un modello piccolo che trova persone e oggetti in una foto in un attimo (Estrai). Prima lo faceva il Qwen3-VL, molto più lento. Si scarica da solo al primo uso.',
-    file: '', cartella: 'detect/florence-2-base-ft', url: '', byte: 460_000_000, circa: true, consigliato: true,
-    repo: 'florence-community/Florence-2-base-ft', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
-    accanto: ['^config\\.json$', '^generation_config\\.json$', '^preprocessor_config\\.json$', '^processor_config\\.json$', '^tokenizer_config\\.json$', '^tokenizer\\.json$', '^vocab\\.json$', '^merges\\.txt$', '^special_tokens_map\\.json$', '^added_tokens\\.json$', '^chat_template\\.json$']
+    id: 'klein-te', tipo: 'klein-te', nome: 'Text encoder di FLUX 3 Klein (Qwen3-VL 4B)',
+    descrizione: 'Legge il prompt per Klein. È un Qwen3-VL da 4 miliardi di parametri, diverso dal nostro encoder 8B (che resta per migliora prompt, Idee, Estrai…).',
+    file: '', cartella: 'text_encoders', url: '', byte: 4_500_000_000, circa: true,
+    repo: KLEIN, cerca: ['^qwen3vl_4b_int8', '^(?=.*(qwen3|qwen_3))(?=.*vl)(?=.*4b)(?!.*(prompt|upsampl|9b))', '^(?=.*(qwen3|qwen_3))(?=.*4b)(?!.*(prompt|upsampl|9b))']
+  },
+  {
+    id: 'klein-vae', tipo: 'klein-vae', nome: 'VAE di FLUX 3 Klein (FLUX.2)',
+    descrizione: 'Il decoder delle immagini di Klein (piccolo).',
+    file: '', cartella: 'vae', url: '', byte: 170_000_000, circa: true,
+    repo: KLEIN, cerca: ['^flux2-vae\\.safetensors$', '^(?=.*flux)(?=.*vae)', '^(?=.*vae)(?!.*qwen)']
   },
   // --- VAE ---
   {

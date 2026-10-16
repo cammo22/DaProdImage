@@ -10,13 +10,13 @@ import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
 
 const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
-  ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['traduttore', 'Traduttore'], ['rilevatore', 'Rilevatore (Estrai)'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
+  ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
 export function Impostazioni(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
   const turbo = useTurbo()
-  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [] })
+  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
   const [log, setLog] = useState<string[]>([])
@@ -85,8 +85,8 @@ export function Impostazioni(): JSX.Element {
     <div className="voce">
       <div className="et"><b>{titolo}</b><small>{sotto}</small></div>
       <select value={valore} onChange={(e) => cambia(e.target.value)}>
-        {!lista.includes(valore) && <option value={valore}>{valore} (manca)</option>}
-        {lista.map((f) => <option key={f} value={f}>{f}</option>)}
+        {valore && !lista.includes(valore) && <option value={valore}>{valore} (manca)</option>}
+        {lista.map((f) => <option key={f || 'auto'} value={f}>{f || '(automatico)'}</option>)}
       </select>
     </div>
   )
@@ -107,6 +107,10 @@ export function Impostazioni(): JSX.Element {
               <div className="et"><b>Ingranditore</b><small>Per "2×", "Rifinisci" e le misure grandi. NVIDIA RTX (RTX Video Super Resolution) usa i Tensor core della scheda: più nitido e veloce; se non c'è, si usa quello a modello</small></div>
               <Segmenti valore={imp.upscalerRtx ? 'rtx' : 'modello'} cambia={(v) => salva({ upscalerRtx: v === 'rtx' })} voci={[{ id: 'rtx', nome: 'NVIDIA RTX', sotto: 'consigliato' }, { id: 'modello', nome: 'A modello', sotto: '4x-UltraSharp' }]} />
             </div>
+            {voceScelta('FLUX 3 Klein · veloce', 'Il file di Klein (16 passi). Vuoto = lo trova da solo fra quelli scaricati', imp.kleinModello, ['', ...file.klein.filter((n) => !/base/i.test(n))], (kleinModello) => salva({ kleinModello }))}
+            {voceScelta('FLUX 3 Klein Base', 'Il file di Klein Base (50 passi, CFG)', imp.kleinBase, ['', ...file.klein.filter((n) => /base/i.test(n))], (kleinBase) => salva({ kleinBase }))}
+            {voceScelta('Text encoder di Klein', 'Qwen3-VL 4B (diverso dall\'encoder 8B di Qwen)', imp.kleinEncoder, ['', ...file.kleinTe], (kleinEncoder) => salva({ kleinEncoder }))}
+            {voceScelta('VAE di Klein', 'Il decoder di FLUX 3 Klein', imp.kleinVae, ['', ...file.kleinVae], (kleinVae) => salva({ kleinVae }))}
             {!imp.upscalerRtx && voceScelta('Ingranditore a modello', 'Il file in upscale_models', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
           </div>
         </div>
@@ -233,11 +237,8 @@ export function Impostazioni(): JSX.Element {
               <Interruttore acceso={imp.unaCosaAllaVolta} cambia={(unaCosaAllaVolta) => salva({ unaCosaAllaVolta })}>{imp.unaCosaAllaVolta ? 'Accesa' : 'Spenta'}</Interruttore>
             </div>
             <div className="voce">
-              <div className="et">
-                <b>Chi trova persone e oggetti (Estrai)</b>
-                <small>{imp.trova === 'veloce' ? 'Un modello piccolo fatto per riconoscere gli oggetti (Florence-2, ~460 MB): meno di un secondo. Si scarica da solo la prima volta' : 'Il Qwen3-VL: più preciso con le descrizioni, ma molto più lento'}</small>
-              </div>
-              <Segmenti valore={imp.trova} cambia={(trova) => salva({ trova })} voci={[{ id: 'veloce', nome: 'Rilevatore' }, { id: 'llm', nome: 'Qwen3-VL' }]} />
+              <div className="et"><b>Scarica i modelli quando non li uso</b><small>Se per un po' non fai niente, i modelli escono dalla VRAM e la scheda torna libera per i giochi e gli altri programmi. La prossima immagine impiega qualche secondo in più a ripartire</small></div>
+              <Segmenti valore={imp.scaricaDopo} cambia={(scaricaDopo) => salva({ scaricaDopo })} voci={[{ id: 0, nome: 'Mai' }, { id: 60, nome: '1 min' }, { id: 120, nome: '2 min' }, { id: 300, nome: '5 min' }, { id: 900, nome: '15 min' }]} />
             </div>
             <div className="voce">
               <div className="et"><b>Accelerazione fp16</b><small>--fast fp16_accumulation: qualche secondo in meno sulle RTX, qualità quasi uguale</small></div>

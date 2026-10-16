@@ -17,6 +17,7 @@ const FORMATI_MISURA: { id: string; r: [number, number] }[] = [
 ]
 /** le risoluzioni più usate */
 const RISOLUZIONI_USUALI: { nome: string; w: number; h: number; titolo: string }[] = [
+  { nome: '480p', w: 854, h: 480, titolo: '854 × 480' },
   { nome: 'HD', w: 1280, h: 720, titolo: '1280 × 720' },
   { nome: 'Full HD', w: 1920, h: 1080, titolo: '1920 × 1080' },
   { nome: '2K', w: 2560, h: 1440, titolo: '2560 × 1440' },
@@ -40,16 +41,17 @@ const MP_USUALI: { id: number; sotto: string }[] = [
 ]
 
 /** quanto è grande la foto che il modello disegna, in megapixel: sotto ogni scelta c'è la misura vera in pixel (se si conoscono le proporzioni) */
-export function ScegliMp(p: { mp: number; cambia: (mp: number) => void; /** le proporzioni della foto che esce */ ar?: { w: number; h: number } | null; voci?: number[] }): JSX.Element {
+export function ScegliMp(p: { mp: number; cambia: (mp: number) => void; /** le proporzioni della foto che esce */ ar?: { w: number; h: number } | null; voci?: number[]; /** una prima voce «Auto» (valore 0): il modello lavora alla misura finale */ auto?: string }): JSX.Element {
   const voci = MP_USUALI.filter((x) => !p.voci || p.voci.includes(x.id))
+  const auto = p.auto ? [{ id: 0, nome: 'Auto', sotto: p.auto, titolo: p.auto }] : []
   return (
     <Segmenti
       valore={p.mp}
       cambia={p.cambia}
-      voci={voci.map((x) => {
+      voci={[...auto, ...voci.map((x) => {
         const d = p.ar ? dimMp(x.id, p.ar.w, p.ar.h) : null
         return { id: x.id, nome: `${testoMp(x.id)} MP`, sotto: d ? `${d.w}×${d.h}` : x.sotto, titolo: `${testoMp(x.id)} megapixel${d ? ` = ${d.w} × ${d.h} px` : ''} · ${x.sotto}` }
-      })}
+      })]}
     />
   )
 }
@@ -87,6 +89,8 @@ export function SceltaMisura(p: {
   auto?: { w: number; h: number; nota?: string }
   /** niente misure in pixel sotto i megapixel (per le zone, dove non valgono per tutta la foto) */
   senzaPx?: boolean
+  /** non mostrare la riga «La foto esce a…» (la mostra già chi usa il componente) */
+  senzaUscita?: boolean
 }): JSX.Element {
   const [blocca, setBlocca] = useState(true)
   const ar = p.base ? p.base.larghezza / p.base.altezza : 1
@@ -174,7 +178,7 @@ export function SceltaMisura(p: {
           </div>
         </div>
       )}
-      {uscita && <Uscita w={uscita.w} h={uscita.h} nota={v.tipo === 'auto' ? p.auto?.nota : undefined} />}
+      {uscita && !p.senzaUscita && <Uscita w={uscita.w} h={uscita.h} nota={v.tipo === 'auto' ? p.auto?.nota : undefined} />}
       {finale && (
         <div className="piccolo spento" style={{ marginTop: 6 }}>
           Lavora a ~{mpTesto} MP e porta a <b>{finale.larghezza} × {finale.altezza}</b> ({mpFinale.toFixed(1).replace('.', ',')} MP)

@@ -1,7 +1,7 @@
 // Gli album: ogni album è una cartella in DATI/album/<id> con album.json (il progetto), le foto (JPEG grande per la
 // stampa e una miniatura per lavorare svelti). Le foto entrano da qualsiasi formato (anche RAW): la conversione la fa
 // l'interfaccia, qui si salva, si leggono le date di scatto e si scrive il PDF.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { DATI, TEMP, assicura } from './percorsi'
@@ -20,7 +20,12 @@ export interface RiassuntoAlbum {
   copertina?: string
 }
 
-const cartella = (id: string): string => join(ALBUM, id.replace(/[^\w-]/g, ''))
+/** la cartella di un album: un id che dopo la pulizia resta vuoto sarebbe la cartella di TUTTI gli album (e eliminaAlbum li cancellerebbe) */
+const cartella = (id: string): string => {
+  const pulito = String(id ?? '').replace(/[^\w-]/g, '')
+  if (!pulito) throw new Error('album non valido')
+  return join(ALBUM, pulito)
+}
 
 export function elencoAlbum(): RiassuntoAlbum[] {
   assicura(ALBUM)
@@ -37,21 +42,33 @@ export function elencoAlbum(): RiassuntoAlbum[] {
 }
 
 export function caricaAlbum(id: string): unknown {
-  try {
-    return JSON.parse(readFileSync(join(cartella(id), 'album.json'), 'utf8'))
-  } catch {
-    return null
+  const c = cartella(id)
+  // se il progetto è rovinato (interruzione mentre si scriveva) si ripiega sull'ultima copia buona
+  for (const nome of ['album.json', 'album.json.bak']) {
+    try {
+      return JSON.parse(readFileSync(join(c, nome), 'utf8'))
+    } catch {
+      /* si prova l'altro */
+    }
   }
+  return null
 }
 
 export function salvaAlbum(a: { id: string }): void {
   const c = cartella(a.id)
   assicura(c)
-  // si scrive in un file a parte e poi lo si rinomina: un'interruzione non rovina il progetto
+  // si scrive in un file a parte e poi lo si rinomina: un'interruzione non rovina il progetto. L'ultima copia buona resta in album.json.bak
   const tmp = join(c, 'album.json.tmp')
+  const dest = join(c, 'album.json')
   writeFileSync(tmp, JSON.stringify(a))
-  copyFileSync(tmp, join(c, 'album.json'))
-  rmSync(tmp, { force: true })
+  if (existsSync(dest)) {
+    try {
+      copyFileSync(dest, dest + '.bak')
+    } catch {
+      /* la copia di sicurezza è un di più */
+    }
+  }
+  renameSync(tmp, dest)
 }
 
 export function eliminaAlbum(id: string): void {
@@ -79,7 +96,8 @@ function dataUrlInFile(dataUrl: string, dest: string): void {
 export function salvaFotoAlbum(idAlbum: string, idFoto: string, grande: string, mini: string): { grande: string; mini: string } {
   const c = join(cartella(idAlbum), 'foto')
   assicura(c)
-  const id = idFoto.replace(/[^\w-]/g, '')
+  const id = String(idFoto ?? '').replace(/[^\w-]/g, '')
+  if (!id) throw new Error('foto non valida')
   const g = join(c, `${id}.jpg`)
   const m = join(c, `${id}.mini.jpg`)
   dataUrlInFile(grande, g)

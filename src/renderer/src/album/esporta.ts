@@ -78,6 +78,6 @@ export async function esporta(a: Album, o: OpzioniEsporta, avanza: (fatto: numbe
     const dest = `${o.cartella}\\${o.nome}.pdf`
     usciti.push(await api.album.pdf(dest, pdf))
   }
-  avanza(totale, totale, 'Fatto')
+  avanza(fermo.si ? usciti.length : totale, totale, fermo.si ? 'Fermato' : 'Fatto')
   return usciti
 }

@@ -1,7 +1,23 @@
 // Il ponte fra l'interfaccia e il processo principale: solo queste funzioni, niente Node nel renderer.
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
-const chiama = (canale: string) => (...a: unknown[]) => ipcRenderer.invoke(canale, ...a)
+/** gli errori di Electron arrivano come «Error invoking remote method 'x': Error: ENOSPC…»: si toglie la parte tecnica e si dice in italiano */
+function messaggioUtente(e: unknown): string {
+  const t = String((e as Error)?.message ?? e).replace(/^Error invoking remote method '[^']*': (Error: )?/, '')
+  if (/ENOSPC/.test(t)) return 'Non c\'è più spazio sul disco.'
+  if (/ENOENT/.test(t)) return 'Non trovo il file o la cartella: è stato spostato o cancellato?'
+  if (/EPERM|EBUSY|EACCES/.test(t)) return 'Il file è in uso o protetto: riprova fra un attimo.'
+  if (/fetch failed|ECONNREFUSED|ECONNRESET|ETIMEDOUT|UND_ERR|ENOTFOUND|network/i.test(t)) return 'Non riesco a collegarmi (rete assente, o il motore è spento o bloccato).'
+  if (/AbortError|aborted/i.test(t)) return 'annullato'
+  return t
+}
+const chiama = (canale: string) => async (...a: unknown[]) => {
+  try {
+    return await ipcRenderer.invoke(canale, ...a)
+  } catch (e) {
+    throw new Error(messaggioUtente(e))
+  }
+}
 const ascolta = (canale: string) => (f: (...a: unknown[]) => void) => {
   const h = (_e: unknown, ...a: unknown[]): void => f(...a)
   ipcRenderer.on(canale, h)

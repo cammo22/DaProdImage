@@ -1,9 +1,9 @@
 {
-  "motore": 6,
+  "motore": 7,
   "python": "3.13",
   "comfyui": {
-    "commit": "b26625f23a888367b92153b28d93e159e83e677b",
-    "versione": "0.39.0"
+    "commit": "b53f77a74e21091cbdebfdf7b85fc80326932646",
+    "versione": "0.41.2"
   },
   "torch": {
     "indice": "https://download.pytorch.org/whl/cu130",

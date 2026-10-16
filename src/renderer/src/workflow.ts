@@ -113,7 +113,8 @@ export function daUtente(r: RicettaUtente): Workflow {
     descrizione: r.descrizione, ingressi: r.ingressi, utente: true,
     passi: (c) =>
       r.passi.flatMap((p): PassoWf[] => {
-        const base: Partial<PassoWf> = { trasparente: p.trasparente, lora: p.lora as ChiaveLora[] | undefined, crea: p.crea }
+        // senza una foto di partenza il passo deve poter creare da zero: se non ha impostazioni sue, ne ha di base
+        const base: Partial<PassoWf> = { trasparente: p.trasparente, lora: p.lora as ChiaveLora[] | undefined, crea: p.crea ?? (r.foto ? undefined : { formato: '1:1', ris: 1024 }) }
         if (p.perRiga) {
           return righe(c.v[p.perRiga]).map((riga) => E(metti(p.etichetta, c.v, riga) || riga.slice(0, 24), metti(p.prompt, c.v, riga), base))
         }

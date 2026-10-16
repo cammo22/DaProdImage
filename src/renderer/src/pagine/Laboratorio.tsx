@@ -5,6 +5,7 @@ import { usaStato, scegliFoto, type FotoBase, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Casella } from '../componenti/Casella'
+import { ScegliQualita } from '../componenti/ScegliQualita'
 import { Segmenti } from '../componenti/Controlli'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, ScegliMp, MISURA0, type Misura } from '../componenti/Misura'
@@ -340,16 +341,7 @@ export function Laboratorio(): JSX.Element {
 
               <div className="sezione">
                 <h3>Qualità <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
-                <Segmenti<Qualita>
-                  valore={qualita}
-                  cambia={setQualita}
-                  voci={[
-                    { id: 'turbo', nome: <><I.fulmine /> Turbo</>, sotto: '8 passi' },
-                    { id: 'bozza', nome: 'Veloce', sotto: '20 passi' },
-                    { id: 'alta', nome: 'Alta', sotto: '40 passi' }
-                  ]}
-                />
-                {qualita === 'turbo' && <AvvisoTurbo />}
+                <ScegliQualita valore={qualita} cambia={setQualita} senzaMassima />
                 {!passi.some((x) => !x.crea) && (
                   <div style={{ marginTop: 10 }}>
                     <span className="piccolo tenue">Grandezza della foto</span>
@@ -378,7 +370,7 @@ export function Laboratorio(): JSX.Element {
           </button>
           <span className="flex1" />
           {vista === 'catalogo' && <button className="btn piccolo" onClick={nuovaRicetta}><I.piu /> Nuova ricetta</button>}
-          {vista === 'catalogo' && ricette.nascoste.length > 0 && <button className="btn piccolo fantasma" onClick={() => usaRicette.getState().mostraTutte()} title="Rimette le ricette che avevi nascosto">Mostra le {ricette.nascoste.length} nascoste</button>}
+          {vista === 'catalogo' && ricette.nascoste.length > 0 && <button className="btn piccolo fantasma" onClick={() => usaRicette.getState().mostraTutte()} title="Rimette le ricette che avevi nascosto">{ricette.nascoste.length === 1 ? 'Mostra la ricetta nascosta' : `Mostra le ${ricette.nascoste.length} nascoste`}</button>}
           {vista === 'catalogo' && <input type="search" placeholder="Cerca una ricetta…" value={cerca} onChange={(e) => setCerca(e.target.value)} style={{ width: 240 }} />}
           {vista === 'risultati' && runs.length > 1 && (
             <select value={attiva || ''} onChange={(e) => usaLab.setState({ attiva: e.target.value })} style={{ width: 300 }}>

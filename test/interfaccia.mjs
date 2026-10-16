@@ -28,7 +28,7 @@ console.log('ricerca partita da sola?', await pg.evaluate(() => !!window.__testo
 await pg.screenshot({ path: `${out}/i2a-estrai-prima.png` })
 await pg.click('button:has-text("Trova persone e oggetti")')
 await pausa(1200)
-console.log('ricerca col pulsante:', await pg.evaluate(() => window.__testo?.modalita), '(deve essere trova)')
+console.log('ricerca col pulsante:', await pg.evaluate(() => window.__testo?.modalita), '(deve essere descrivi)')
 await pg.screenshot({ path: `${out}/i2-estrai-trovati.png` })
 const f = await pg.locator('.pers-foto').boundingBox()
 await pg.mouse.click(f.x + f.width * 0.45, f.y + f.height * 0.7)

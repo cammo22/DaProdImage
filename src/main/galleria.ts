@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import type { FiltroGalleria, Opera } from '@shared/tipi'
 import { DATI, MINIATURE, assicura } from './percorsi'
 import { impostazioni } from './impostazioni'
-import { dimensioniPng, leggiMetadati, scriviMetadati } from './png'
+import { dimensioniPng, leggiMetadati, leggiMetadatiDaFile, scriviMetadati } from './png'
 
 const INDICE = join(DATI, 'galleria.json')
 let opere: Opera[] | null = null
@@ -26,20 +26,40 @@ function carica(): Opera[] {
   if (opere) return opere
   try {
     opere = JSON.parse(readFileSync(INDICE, 'utf8')) as Opera[]
-    opere = opere.filter((o) => existsSync(o.file))
+    // le opere di un disco scollegato non si buttano: se la cartella della galleria non c'è, l'indice resta com'è
+    if (existsSync(impostazioni().cartellaGalleria)) opere = opere.filter((o) => existsSync(o.file))
   } catch {
     opere = ricostruisci()
   }
   return opere
 }
 
+/** scrive l'indice in un file a parte e poi lo rinomina; su Windows l'antivirus a volte tiene il file: si riprova, e alla fine si scrive diretto */
+function scriviIndice(): void {
+  if (!opere) return
+  assicura(DATI)
+  const testo = JSON.stringify(opere)
+  for (let t = 0; t < 3; t++) {
+    try {
+      writeFileSync(INDICE + '.tmp', testo)
+      renameSync(INDICE + '.tmp', INDICE)
+      return
+    } catch {
+      /* si riprova */
+    }
+  }
+  try {
+    writeFileSync(INDICE, testo)
+  } catch {
+    /* il prossimo salvataggio ci riprova */
+  }
+}
+
 function salvaPresto(): void {
   if (timerSalva) clearTimeout(timerSalva)
   timerSalva = setTimeout(() => {
     timerSalva = null
-    assicura(DATI)
-    writeFileSync(INDICE + '.tmp', JSON.stringify(opere))
-    renameSync(INDICE + '.tmp', INDICE)
+    scriviIndice()
   }, 300)
 }
 
@@ -47,11 +67,11 @@ export function salvaOra(): void {
   if (!timerSalva || !opere) return
   clearTimeout(timerSalva)
   timerSalva = null
-  writeFileSync(INDICE, JSON.stringify(opere))
+  scriviIndice()
 }
 
 /** rilegge la cartella della galleria e ricostruisce l'indice dai PNG */
-function ricostruisci(): Opera[] {
+function ricostruisci(preferite: Set<string> = new Set()): Opera[] {
   const radice = impostazioni().cartellaGalleria
   const out: Opera[] = []
   const guarda = (c: string, prof: number): void => {
@@ -65,18 +85,19 @@ function ricostruisci(): Opera[] {
       const p = join(c, n)
       if (n.toLowerCase().endsWith('.png')) {
         try {
-          const buf = readFileSync(p)
-          const meta = leggiMetadati(buf) as Partial<Opera> | null
-          if (!meta) continue
-          const dim = dimensioniPng(buf)
+          // si legge solo l'inizio e la fine del PNG, non tutto il file
+          const letto = leggiMetadatiDaFile(p)
+          const meta = letto?.meta as Partial<Opera> | null | undefined
+          if (!letto || !meta) continue
           out.push({
             ...(meta as Opera),
             id: meta.id || randomUUID(),
             file: p,
             miniatura: '',
-            larghezza: dim?.larghezza || 0,
-            altezza: dim?.altezza || 0,
-            preferita: !!meta.preferita
+            larghezza: letto.larghezza,
+            altezza: letto.altezza,
+            // i preferiti stanno solo nell'indice: se si ricostruisce si tengono quelli di prima
+            preferita: !!meta.preferita || preferite.has(p)
           })
         } catch {
           /* niente */
@@ -151,7 +172,20 @@ export function elenco(f: FiltroGalleria = {}): Opera[] {
     const t = f.testo.toLowerCase()
     l = l.filter((o) => o.prompt.toLowerCase().includes(t) || (o.etichetta || '').toLowerCase().includes(t) || String(o.seed) === t)
   }
-  return l.map((o) => (o.miniatura && existsSync(o.miniatura) ? o : { ...o, miniatura: miniatura(o) }))
+  // le miniature mancanti si fanno a piccoli gruppi (decodificare foto grandi blocca la finestra): le altre arrivano al giro dopo
+  let fatte = 0
+  let restano = false
+  const risultato = l.map((o) => {
+    if (o.miniatura && existsSync(o.miniatura)) return o
+    if (fatte >= 8) {
+      restano = true
+      return { ...o, miniatura: o.file }
+    }
+    fatte++
+    return { ...o, miniatura: miniatura(o) }
+  })
+  if (restano) setTimeout(avvisa, 80)
+  return risultato
 }
 
 export const opera = (id: string): Opera | undefined => carica().find((o) => o.id === id)
@@ -168,9 +202,8 @@ export function preferita(id: string, si: boolean): void {
 export async function elimina(ids: string[], definitivo = false): Promise<void> {
   const lista = carica()
   for (const id of ids) {
-    const i = lista.findIndex((o) => o.id === id)
-    if (i < 0) continue
-    const o = lista[i]
+    const o = lista.find((x) => x.id === id)
+    if (!o) continue
     try {
       if (definitivo) unlinkSync(o.file)
       else await shell.trashItem(o.file) // nel cestino: si può recuperare
@@ -182,7 +215,9 @@ export async function elimina(ids: string[], definitivo = false): Promise<void> 
     } catch {
       /* niente */
     }
-    lista.splice(i, 1)
+    // dopo l'await l'elenco può essere cambiato (un lavoro finito aggiunge in testa): si cerca di nuovo
+    const j = lista.indexOf(o)
+    if (j >= 0) lista.splice(j, 1)
   }
   salvaPresto()
   avvisa()
@@ -230,7 +265,8 @@ export function importaFoto(png: string, nome: string): Opera {
 }
 
 export const ricaricaGalleria = (): void => {
+  const preferite = new Set((opere || []).filter((o) => o.preferita).map((o) => o.file))
   opere = null
-  ricostruisci()
+  ricostruisci(preferite)
   avvisa()
 }

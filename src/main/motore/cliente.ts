@@ -28,6 +28,8 @@ export const suAnteprima = (f: AscoltatoreAnteprima): (() => void) => {
 }
 
 export function connetti(): Promise<void> {
+  // già collegato (o in collegamento): niente socket in più
+  if (ws && ws.readyState <= WebSocket.OPEN) return Promise.resolve()
   chiuso = false
   return new Promise((ok, ko) => {
     const s = new WebSocket(`ws://${indirizzo()}/ws?clientId=${idCliente}`)
@@ -43,7 +45,7 @@ export function connetti(): Promise<void> {
     }
     s.onclose = () => {
       if (ws === s) ws = null
-      if (!chiuso) setTimeout(() => connetti().catch(() => undefined), 1500)
+      if (!chiuso) setTimeout(() => { if (!chiuso) connetti().catch(() => undefined) }, 1500)
     }
     s.onmessage = (ev) => {
       if (typeof ev.data === 'string') {
@@ -103,9 +105,11 @@ export async function accoda(prompt: Record<string, unknown>, promptId: string):
   const r = await fetch(`http://${indirizzo()}/prompt`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ prompt, client_id: idCliente, prompt_id: promptId })
+    body: JSON.stringify({ prompt, client_id: idCliente, prompt_id: promptId }),
+    signal: AbortSignal.timeout(60_000)
   })
-  const j = (await r.json()) as Record<string, unknown>
+  // se il motore risponde con una pagina d'errore (non JSON) si dice chiaro, non «Unexpected token <»
+  const j = (await r.json().catch(() => ({ error: { message: `il motore ha risposto in modo strano (${r.status})` } }))) as Record<string, unknown>
   if (!r.ok) throw new Error(erroreLeggibile(j))
   return j.prompt_id as string
 }
@@ -125,7 +129,7 @@ export async function caricaImmagine(percorso: string): Promise<string> {
   form.append('subfolder', 'daprod')
   form.append('type', 'input')
   form.append('overwrite', 'true')
-  const r = await fetch(`http://${indirizzo()}/upload/image`, { method: 'POST', body: form })
+  const r = await fetch(`http://${indirizzo()}/upload/image`, { method: 'POST', body: form, signal: AbortSignal.timeout(120_000) })
   if (!r.ok) throw new Error('non riesco a passare la foto al motore (' + r.status + ')')
   const j = (await r.json()) as { name: string; subfolder: string }
   const rif = j.subfolder ? `${j.subfolder}/${j.name}` : j.name
@@ -135,14 +139,14 @@ export async function caricaImmagine(percorso: string): Promise<string> {
 
 /** le uscite di un lavoro dalla cronologia del motore (se il WebSocket non le ha portate, es. risultato in cache) */
 export async function usciteDa(promptId: string, nodo: string): Promise<{ immagini: { filename: string; subfolder: string; type: string }[]; testo?: string }> {
-  const r = await fetch(`http://${indirizzo()}/history/${promptId}`)
+  const r = await fetch(`http://${indirizzo()}/history/${promptId}`, { signal: AbortSignal.timeout(20_000) })
   const j = (await r.json()) as Record<string, { outputs?: Record<string, { images?: { filename: string; subfolder: string; type: string }[]; text?: string[] }> }>
   const o = j[promptId]?.outputs?.[nodo]
   return { immagini: o?.images || [], testo: o?.text?.join('\n') }
 }
 
 export async function interrompi(): Promise<void> {
-  await fetch(`http://${indirizzo()}/interrupt`, { method: 'POST' }).catch(() => undefined)
+  await fetch(`http://${indirizzo()}/interrupt`, { method: 'POST', signal: AbortSignal.timeout(10_000) }).catch(() => undefined)
 }
 
 /** libera la VRAM (scarica i modelli) */
@@ -150,14 +154,15 @@ export async function liberaMemoria(): Promise<void> {
   await fetch(`http://${indirizzo()}/free`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ unload_models: true, free_memory: true })
+    body: JSON.stringify({ unload_models: true, free_memory: true }),
+    signal: AbortSignal.timeout(10_000)
   }).catch(() => undefined)
 }
 
 /** i byte che PyTorch tiene riservati sulla scheda adesso (null se il motore non lo dice) */
 async function vramRiservata(): Promise<number | null> {
   try {
-    const j = (await (await fetch(`http://${indirizzo()}/system_stats`)).json()) as { devices?: { type?: string; torch_vram_total?: number; torch_vram_free?: number }[] }
+    const j = (await (await fetch(`http://${indirizzo()}/system_stats`, { signal: AbortSignal.timeout(5000) })).json()) as { devices?: { type?: string; torch_vram_total?: number; torch_vram_free?: number }[] }
     const d = j.devices?.find((x) => x.type === 'cuda') || j.devices?.[0]
     return d && d.torch_vram_total !== undefined ? d.torch_vram_total : null
   } catch {
@@ -185,7 +190,7 @@ export async function scaricaModelli(): Promise<void> {
 let nodiCache: Record<string, unknown> | null = null
 export async function nodiDisponibili(): Promise<Record<string, unknown>> {
   if (nodiCache) return nodiCache
-  const r = await fetch(`http://${indirizzo()}/object_info`)
+  const r = await fetch(`http://${indirizzo()}/object_info`, { signal: AbortSignal.timeout(60_000) })
   nodiCache = (await r.json()) as Record<string, unknown>
   return nodiCache
 }

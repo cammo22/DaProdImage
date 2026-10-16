@@ -100,6 +100,11 @@ a 300 dpi con l'abbondanza.
 Un manichino con le ossa che muovi come vuoi (anche **mani e dita**, una per una, e la **testa**) per dare una posa al personaggio: in
 Modifica → Estrai e nelle ricette del Laboratorio. Diventa un manichino grigio che il modello usa solo come guida di posa.
 
+## Due modelli: Qwen e FLUX 3 Klein
+
+In cima a Crea, Modifica ed Estrai scegli **chi disegna**: **Qwen-Image 2.1** (con i LoRA e il Turbo), **Klein** (veloce, 16 passi) o **Klein Base**
+(la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+
 ## Estrai
 
 In Modifica: dai una foto e il modello trova **persone e oggetti**; clicchi quello che vuoi (si illumina) e lo ottieni da solo su sfondo
@@ -141,7 +146,8 @@ se la scheda è da 6 GB, il profilo **6 GB** in Opzioni. L'app ti avvisa da sola
 
 - Il motore è **ComfyUI** a una versione fissata, senza la sua interfaccia, installato con **uv** in
   `%LOCALAPPDATA%\DaProdImage`. Il modello è [Qwen-Image 2.1 Uncensored GGUF](https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-GGUF)
-  (Q4_K_M per 6-8 GB) con i passi della pipeline ufficiale (40, euler, CFG 1).
+  (Q4_K_M per 6-8 GB) con i passi della pipeline ufficiale (40, euler, CFG 1). In alternativa **FLUX 3 Klein** (`black-forest-labs/flux-3-image-klein-comfy`), con il suo
+  encoder Qwen3-VL 4B e il VAE FLUX.2.
 - **ComfyUI-GGUF** viaggia dentro l'app: il fork di leejet, l'unico che conosce `qwen_image21`, con una nostra
   correzione per ComfyUI 0.39 (`engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`). I **DaProd-Nodi** riempiono la zona
   prima di "rimuovi" e accordano i colori dopo il VAE, così l'incollaggio non si vede.
