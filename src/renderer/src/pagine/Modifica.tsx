@@ -2,34 +2,26 @@
 // Le azioni rapide (persone, vestiti, situazioni, camera, luce, stili, testi) mettono l'istruzione giusta;
 // dopo ogni modifica la nuova versione resta sulla tela, col confronto prima/dopo e il tasto "Continua da qui".
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
-import { usaStato, attesiModifica, scegliFoto, type ModoModifica, type Qualita, type FotoBase } from '../stato'
+import { usaStato, attesiModifica, scegliFoto, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
-import { I } from '../componenti/Icone'
-import { Casella } from '../componenti/Casella'
-import { ScegliQualita } from '../componenti/ScegliQualita'
-import { ScegliModello } from '../componenti/ScegliModello'
-import { Contatore, Cursore, Segmenti } from '../componenti/Controlli'
-import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
-import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
-import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
-import { AvvisoLora } from '../componenti/AvvisoLora'
-import { Riferimenti } from '../componenti/Riferimenti'
-import { SceltaMisura, ScegliMp, MISURA0, conMisura, dimMp } from '../componenti/Misura'
-import { Fusion, MAX_FUSION } from '../componenti/Fusion'
-import { ControlliEstrai, PalcoEstrai } from '../componenti/Estrai'
-import { FANTASIE, pianificaIdee, unisciRapide } from '../regista'
+import { conParoleLora } from '../componenti/SceltaLora'
+import { type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
+import { useTurbo } from '../componenti/Turbo'
+import { MISURA0, conMisura, dimMp } from '../componenti/Misura'
+import { MAX_FUSION } from '../componenti/Fusion'
+import { ControlliEstrai } from '../componenti/Estrai'
+import { pianificaIdee, unisciRapide } from '../regista'
+import { TelaModifica } from './modifica/Tela'
+import { SchedeModifica, NIENTE } from './modifica/Schede'
 import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
-import { CAMERA0, ControlloCamera, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
-import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
+import { CAMERA0, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
+import { daDataUrl, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { SISTEMA_MIGLIORA_MODIFICA, fileLoraCamera, loraPer, perQualita, richiestaBase } from '../azioni'
 import { categoriePer, type Rapida } from '../rapide'
-import { apriInModifica, fotoDaOpera } from '../azioni'
 import type { Bordi, Lavoro, Opera } from '@shared/tipi'
 
 const attesiFusion = new Set<string>()
-
-const NIENTE: Bordi = { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }
 
 export function Modifica(): JSX.Element {
   const { modifica: m, setModifica, imp, lavori, avvisa } = usaStato()
@@ -480,360 +472,70 @@ export function Modifica(): JSX.Element {
           })()
         }}
       >
-        <div className="attrezzi">
-          <div style={{ width: 660 }}>
-            <Segmenti<ModoModifica>
-              valore={m.modo}
-              cambia={(modo) => setModifica({ modo })}
-              voci={[
-                { id: 'tutta', nome: 'Tutta la foto' },
-                { id: 'zona', nome: 'Solo una zona' },
-                { id: 'espandi', nome: 'Espandi' },
-                { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' },
-                { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' },
-                { id: 'estrai', nome: 'Estrai', titolo: 'Dalla foto estrai una persona o un oggetto, su sfondo pulito' }
-              ]}
-            />
-          </div>
-          {disegna && base && !confrontoAttivo && (
-            <>
-              <span className="sep" />
-              {([
-                ['pennello', I.pennello, 'Pennello (B)'],
-                ['gomma', I.gomma, 'Gomma (E)'],
-                ['rettangolo', I.rettangolo, 'Rettangolo (R)'],
-                ['lazo', I.lazo, 'Lazo (L)'],
-                ['mano', I.mano, 'Sposta (H o Spazio)']
-              ] as const).map(([id, Ic, t]) => (
-                <button key={id} className={`btn icona piccolo ${strumento === id ? 'attivo' : ''}`} onClick={() => setStrumento(id)} title={t}>
-                  <Ic />
-                </button>
-              ))}
-              <div style={{ width: 150 }}>
-                <Cursore etichetta="Pennello" valore={pennello} min={2} max={Math.max(200, Math.round(Math.min(base.larghezza, base.altezza) / 3))} formato={(v) => `${v}px`} cambia={setPennello} />
-              </div>
-              <span className="sep" />
-              <button className="btn piccolo icona" onClick={() => tela.current?.annulla()} title="Annulla (Ctrl+Z)"><I.annulla /></button>
-              <button className="btn piccolo icona" onClick={() => tela.current?.ripeti()} title="Ripeti (Ctrl+Y)"><I.ripeti /></button>
-              <button className="btn piccolo icona" onClick={() => tela.current?.inverti()} title="Inverti la zona"><I.inverti /></button>
-              <button className="btn piccolo" onClick={() => tela.current?.pulisci()} title="Cancella la zona">Pulisci</button>
-            </>
-          )}
-          <span className="flex1" />
-          {base && !griglia && <button className="btn piccolo icona" onClick={() => tela.current?.adatta()} title="Adatta alla finestra"><I.adatta /></button>}
-          <button className="btn piccolo" onClick={daGalleria} title={griglia ? 'Aggiungi foto dalla galleria (anche tante insieme)' : 'Scegli una foto dalla galleria'}><I.galleria /> {griglia ? 'Aggiungi dalla galleria' : 'Dalla galleria'}</button>
-          <button className="btn piccolo" onClick={daPc} title={griglia ? 'Aggiungi foto dal PC (anche tante insieme)' : 'Apri una foto dal PC'}><I.immagine /> Dal PC</button>
-          {base && !griglia && (
-            <button className="btn piccolo pericolo" onClick={togliFoto} title="Toglie la foto e rimette la pagina com'era appena aperta (le versioni restano in galleria)">
-              <I.x /> Togli
-            </button>
-          )}
-        </div>
-
-        {estraiMode ? <PalcoEstrai base={base} daGalleria={daGalleria} daPc={daPc} /> : null}
-        {estraiMode ? null : griglia ? (
-          <Fusion
-            foto={m.riferimenti}
-            cambia={(riferimenti) => setModifica({ riferimenti })}
-            inserisci={inserisci}
-            risultati={ris}
-            inCorso={fusInCorso}
-            inAttesa={fusInAttesa}
-            daGalleria={daGalleria}
-            daPc={daPc}
-            riusa={(o) => aggiungiFusion([fotoDaOpera(o)])}
-            esempio={esempioMode ? { foto: m.esempio, cambia: (esempio) => setModifica({ esempio }), daGalleria: async () => { const [f] = await scegliFoto(false); if (f) setModifica({ esempio: f }) }, daPc: async () => { const [x] = await api.file.scegliImmagini(false); if (x) { try { setModifica({ esempio: await normalizza(x) }) } catch (e) { avvisa((e as Error).message, 'errore') } } } } : undefined}
-            apriInModifica={(o) => { apriInModifica(fotoDaOpera(o)); setModifica({ modo: 'tutta' }) }}
-            mostra={(o) => void api.galleria.mostra(o.id)}
-          />
-        ) : null}
-        {griglia || estraiMode ? null : !base ? (
-          <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
-            <div className="vuoto">
-              <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
-              <p>Trascina qui una foto, incollala con <kbd>Ctrl</kbd>+<kbd>V</kbd>, o scegline una.</p>
-              <p className="piccolo">Cambi tutta la foto con una frase o un'azione rapida, o segni col pennello solo la zona da cambiare: il resto resta identico al pixel.</p>
-              <div className="riga" style={{ justifyContent: 'center', marginTop: 14 }}>
-                <button className="btn primario" onClick={daGalleria}><I.galleria /> Dalla galleria</button>
-                <button className="btn" onClick={daPc}><I.immagine /> Dal PC</button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <TelaMaschera
-            ref={tela}
-            url={urlFile(base.percorso)}
-            larghezza={base.larghezza}
-            altezza={base.altezza}
-            strumento={strumento}
-            dimensione={pennello}
-            disegna={disegna && !inCorso && !confrontoAttivo}
-            bordi={qi?.modalita === 'espandi' && anteprima ? qi.bordi : m.modo === 'espandi' ? m.bordi : undefined}
-            cambiaMaschera={setHaMaschera}
-            cambiaDimensione={setPennello}
-            anteprima={anteprima}
-            // il "prima" è sempre la foto originale, qualunque versione stai guardando (v3, v4…)
-            confronto={confrontoAttivo && m.versioni[0] ? { prima: urlFile(m.versioni[0].percorso) } : undefined}
-          >
-            {!inCorso && m.versioni.length > 1 && indice >= 0 && (
-              <div className="barra-versioni" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
-                <button className="btn piccolo icona" disabled={!precedente} onClick={() => { if (precedente) { setModifica({ base: precedente }); setConfronto(false) } }} title="Versione prima"><span className="freccina">‹</span></button>
-                <b>{indice === 0 ? 'Originale' : `v${indice + 1}`}</b>
-                <span className="spento">di {m.versioni.length}</span>
-                <button className="btn piccolo icona" disabled={!successiva} onClick={() => { if (successiva) { setModifica({ base: successiva }); setConfronto(false) } }} title="Versione dopo"><span className="freccina">›</span></button>
-                {precedente && (
-                  <>
-                    <span className="sep" />
-                    <button className={`btn piccolo ${confrontoAttivo ? 'attivo' : ''}`} onClick={() => setConfronto(!confronto)} title="L'originale e questa versione, con la linea da trascinare">
-                      <I.inverti /> Prima / dopo
-                    </button>
-                    {confrontoAttivo ? (
-                      <button className="btn piccolo primario" onClick={() => setConfronto(false)} title="Chiude il confronto: da qui puoi modificare ancora">
-                        <I.modifica /> Continua da qui
-                      </button>
-                    ) : (
-                      <button className="btn piccolo" onClick={() => { setModifica({ base: precedente }); setConfronto(false) }} title="Scarta questa modifica e torna alla versione prima"><I.annulla /> Torna indietro</button>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-            {confrontoAttivo && (
-              <div className="suggerimento-confronto">Trascina la linea per confrontare · poi premi <b>Continua da qui</b> per modificare ancora{disegna ? ' (o per segnare un\'altra zona)' : ''}</div>
-            )}
-          </TelaMaschera>
-        )}
-
-        {!griglia && !estraiMode && m.versioni.length > 0 && (
-          <div className="versioni">
-            {m.versioni.map((v, i) => (
-              <div key={v.percorso} className={`v ${v.percorso === base?.percorso ? 'su' : ''}`} style={{ ['--ar' as string]: `${v.larghezza} / ${v.altezza}` }} onClick={() => { setModifica({ base: v }); setConfronto(false) }} title={v.prompt}>
-                <img src={urlFile(v.percorso)} alt="" />
-                <span>{i === 0 ? 'Originale' : `v${i + 1}`}</span>
-              </div>
-            ))}
-            {inAttesa > 0 && <span className="piccolo oro">+{inAttesa} in arrivo…</span>}
-            <span className="flex1" />
-            {base && indice > 0 && !confrontoAttivo && <span className="piccolo tenue">Continua a modificare da qui: ogni modifica parte dalla versione scelta.</span>}
-          </div>
-        )}
+        <TelaModifica
+          tela={tela}
+          strumento={strumento}
+          setStrumento={setStrumento}
+          pennello={pennello}
+          setPennello={setPennello}
+          setHaMaschera={setHaMaschera}
+          confronto={confronto}
+          setConfronto={setConfronto}
+          confrontoAttivo={confrontoAttivo}
+          disegna={disegna}
+          griglia={griglia}
+          esempioMode={esempioMode}
+          estraiMode={estraiMode}
+          base={base}
+          indice={indice}
+          precedente={precedente}
+          successiva={successiva}
+          inCorso={inCorso}
+          inAttesa={inAttesa}
+          anteprima={anteprima}
+          ris={ris}
+          fusInCorso={fusInCorso}
+          fusInAttesa={fusInAttesa}
+          daGalleria={daGalleria}
+          daPc={daPc}
+          togliFoto={togliFoto}
+          inserisci={inserisci}
+          aggiungiFusion={aggiungiFusion}
+        />
       </div>
 
-      {estraiMode ? <ControlliEstrai base={base} /> : <div className="colonna destra">
-        <div className="scorri">
-          <div className="sezione"><ScegliModello /></div>
-          <div className="sezione">
-            <h3>
-              {fusion ? 'Cosa creare con le foto' : esempioMode ? 'Cosa vuoi (facoltativo)' : m.modo === 'espandi' ? 'Cosa c\'è fuori (facoltativo)' : m.modo === 'zona' ? 'Cosa fare nella zona' : 'Cosa cambiare'}
-              {m.modo === 'zona' && <span className="dx">{haMaschera ? <span className="oro">zona segnata ✓</span> : 'segnala col pennello'}</span>}
-            </h3>
-            <Casella
-              inputRef={prompt}
-              valore={m.prompt}
-              cambia={(v) => {
-                setModifica({ prompt: v })
-                if (!v.trim()) setCameraRapida(null)
-              }}
-              placeholder={esempioMode ? 'Facoltativo, es. "sostituisci le iridi con quelle delle mie foto". Se lasci vuoto il modello capisce da solo cosa fare' : fusion ? 'es. "la ragazza di <image1> con la giacca di <image2> in una strada di Tokyo di notte"' : m.modo === 'zona' ? 'es. "una camicia di lino bianca" o "rimuovi la persona"' : m.modo === 'espandi' ? 'es. "una spiaggia al tramonto"' : 'es. "fallo di notte con la neve", "metti la maglia di <image2>"'}
-              minimo={96}
-              disabled={scrivendo}
-            />
-            <div className="riga a-capo" style={{ marginTop: 8 }}>
-              <button className="btn piccolo" onClick={migliora} disabled={(!base && !griglia) || (fusion && !m.riferimenti.length) || (esempioMode && !m.esempio) || scrivendo || !m.prompt.trim()} title="Il modello guarda la foto e rende l'istruzione precisa (in inglese)">
-                <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
-              </button>
-              {!fusion && (esempioMode ? m.esempio : base) && (
-                <button className="chip principale" onClick={() => inserisci('<image1>')} title={esempioMode ? 'Mette l\'esempio nel testo' : 'Mette la foto principale (quella che modifichi) nel testo'}>
-                  &lt;image1&gt; · {esempioMode ? 'esempio' : 'principale'}
-                </button>
-              )}
-              {m.riferimenti.map((_, i) => (
-                <button key={i} className="chip" onClick={() => inserisci(`<image${i + (fusion ? 1 : 2)}>`)} title="Inserisci il riferimento nel testo">&lt;image{i + (fusion ? 1 : 2)}&gt;</button>
-              ))}
-            </div>
-            {mancaRif && !griglia && (
-              <div className="avviso-box" style={{ marginTop: 10, padding: '8px 10px', fontSize: 13.5 }}>
-                Serve {rapida?.rifNome || 'una foto di riferimento'}: aggiungila qui sotto in <b>Riferimenti</b> (nel testo è <b>&lt;image2&gt;</b>).
-              </div>
-            )}
-          </div>
-
-          {esempioMode && m.qualita === 'turbo' && (
-            <div className="avviso-box" style={{ margin: '10px 16px 0', padding: '8px 10px', fontSize: 13.5 }}>
-              Il Turbo è velocissimo ma segue meno i <b>colori e i dettagli</b> delle tue foto: per le iridi, i vestiti, i loghi… prova <b>Alta</b>.
-            </div>
-          )}
-          {esempioMode && (
-            <div className="sezione">
-              <h3>Il piano del modello {m.pianoEsempio && <button className="btn piccolo fantasma" style={{ marginLeft: 'auto' }} onClick={() => setModifica({ pianoEsempio: null })} title="Al prossimo lavoro il modello guarda di nuovo le foto e rifà il piano">Rifai</button>}</h3>
-              {m.pianoEsempio && m.pianoEsempio.chiave === chiaveEsempio(m) ? (
-                <>
-                  <Casella valore={m.pianoEsempio.testo} minimo={120} senzaCestino cambia={(testo) => setModifica({ pianoEsempio: { ...m.pianoEsempio!, testo } })} />
-                  {m.pianoEsempio.ritagli?.some(Boolean) && (
-                    <div style={{ marginTop: 8 }}>
-                      <span className="piccolo tenue">Le parti delle tue foto che contano (ritagliate dal modello)</span>
-                      <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
-                        {m.pianoEsempio.ritagli.map((r, i) => r && <img key={i} src={urlFile(r)} alt="" style={{ height: 56, borderRadius: 6, border: '1px solid var(--bordo2)' }} title={`<image${i + 2}>`} />)}
-                      </div>
-                    </div>
-                  )}
-                  <div className="piccolo spento" style={{ marginTop: 4 }}>L'ha scritto il modello guardando le foto: puoi correggerlo. Si usa così com'è finché non cambi le foto o le note.</div>
-                </>
-              ) : (
-                <div className="piccolo spento">Quando premi il pulsante il modello guarda l'esempio e le tue foto insieme e decide da solo cosa sostituire con cosa, e cosa lasciare com'è. Qui vedrai cosa ha deciso, e potrai correggerlo.</div>
-              )}
-            </div>
-          )}
-
-          {m.modo !== 'espandi' && !griglia && (
-            <div className="sezione">
-              <h3>Idee <span className="dx">sommale: il modello le mescola</span></h3>
-              <div className="cat-rapide">
-                {categorie.map((c) => {
-                  const Ic = (I as Record<string, () => JSX.Element>)[c.icona] || I.crea
-                  return (
-                    <button key={c.id} className={cat?.id === c.id ? 'su' : ''} onClick={() => setCategoria(c.id)}>
-                      <Ic />
-                      {c.nome}
-                    </button>
-                  )
-                })}
-              </div>
-              {cat && cat.id === 'prospettiva' && m.modo === 'tutta' && (
-                <div style={{ marginTop: 12 }}>
-                  <ControlloCamera valore={camera} cambia={cambiaCamera} lora={loraCamera} />
-                  <AvvisoLora id="lora-camera" perche="Rifà la foto da un'altra posizione della camera, molto più fedele. Si accende da solo con il comando Camera." />
-                </div>
-              )}
-              {cat && cat.id === 'vestiti' && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-vestiti" perche="Tiene volto, pose e sfondo mentre cambia il vestito. Si accende da solo qui." /></div>}
-              <div className="riga a-capo" style={{ marginTop: 10, gap: 6 }}>
-                {cat?.voci.map((r) => (
-                  <button key={r.id} className={`chip ${idee.some((x) => x.id === r.id) ? 'su' : ''}`} onClick={() => void usaRapida(r)} title={r.rif ? `Serve ${r.rifNome || 'una foto di riferimento'}` : 'Un clic la accende, un altro la spegne: puoi sommarne quante vuoi'}>
-                    {r.rif ? '＋ ' : ''}{r.nome}
-                  </button>
-                ))}
-              </div>
-              {idee.length > 0 && (
-                <div className="idee-scelte">
-                  <div className="riga spazia">
-                    <b className="oro piccolo">{idee.length} {idee.length === 1 ? 'idea' : 'idee'}: {idee.map((r) => r.nome.replace('…', '')).join(' + ')}</b>
-                    <button className="btn piccolo fantasma" onClick={() => setIdee([])}>Togli tutte</button>
-                  </div>
-                  <span className="piccolo tenue">Fantasia del modello</span>
-                  <Segmenti valore={m.fantasia} cambia={(fantasia) => setModifica({ fantasia })} voci={FANTASIE.map((f) => ({ id: f.id, nome: f.nome, sotto: f.sotto }))} />
-                  {m.pianoIdee && m.pianoIdee.chiave === chiaveIdee ? (
-                    <div style={{ marginTop: 8 }}>
-                      <div className="riga spazia"><span className="piccolo tenue">Il piano del modello (puoi correggerlo)</span><button className="btn piccolo fantasma" onClick={() => setModifica({ pianoIdee: null })} title="Al prossimo lavoro il modello rimescola le idee, con dettagli nuovi">Rifai</button></div>
-                      <Casella minimo={110} senzaCestino valore={m.pianoIdee.testo} cambia={(testo) => setModifica({ pianoIdee: { chiave: m.pianoIdee!.chiave, testo } })} />
-                    </div>
-                  ) : (
-                    <div className="piccolo spento" style={{ marginTop: 6 }}>Quando premi «Modifica» il modello guarda la foto, mescola le idee e inventa i dettagli. Qui vedrai cosa ha deciso.</div>
-                  )}
-                </div>
-              )}
-              {cat && ['luce', 'ritocco', 'situazioni'].includes(cat.id) && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-coerenza" perche="Le modifiche restano sul fotogramma: luce, colori e stili cambiano, i contorni no. Si accende da solo in queste azioni." /></div>}
-            </div>
-          )}
-
-          {m.modo === 'espandi' && base && (
-            <div className="sezione">
-              <h3>Di quanto allargare <span className="dx">{base.larghezza + m.bordi.sinistra + m.bordi.destra} × {base.altezza + m.bordi.sopra + m.bordi.sotto}</span></h3>
-              <div className="riga a-capo" style={{ gap: 6, marginBottom: 10 }}>
-                <button className="chip" onClick={() => espandiPreset('tutto')}>+25% ovunque</button>
-                <button className="chip" onClick={() => espandiPreset('largo')}>Larga 16:9</button>
-                <button className="chip" onClick={() => espandiPreset('alto')}>Alta 9:16</button>
-                <button className="chip" onClick={() => espandiPreset('quadrato')}>Quadrata</button>
-                <button className="chip" onClick={() => setModifica({ bordi: { ...NIENTE } })}>Azzera</button>
-              </div>
-              {(['sinistra', 'destra', 'sopra', 'sotto'] as const).map((k) => (
-                <Cursore key={k} etichetta={k[0].toUpperCase() + k.slice(1)} valore={m.bordi[k]} min={0} max={Math.round(Math.max(base.larghezza, base.altezza) * 0.75 / 32) * 32} passo={32} formato={(v) => `${v}px`} cambia={(v) => setModifica({ bordi: { ...m.bordi, [k]: v } })} />
-              ))}
-            </div>
-          )}
-
-          {!griglia && <div className="sezione">
-            <Riferimenti
-              lista={m.riferimenti}
-              cambia={(riferimenti) => setModifica({ riferimenti })}
-              inizio={2}
-              inserisci={inserisci}
-              principale={base?.percorso}
-              comeBase={comeBase}
-              titolo="Riferimenti"
-              esempio={'Es. "metti a <image1> la giacca di <image2>". Persone, vestiti, oggetti, stili: fino a 9 foto in più (dalla galleria, dal PC o incollate con Ctrl+V).'}
-            />
-          </div>}
-
-          {m.modo === 'zona' && (
-            <div className="sezione">
-              <div className="nota-zona">
-                <I.occhio /> Il modello guarda <b>tutta la foto</b> con la tua zona evidenziata e cambia <b>solo lì</b>: fuori dalla zona la foto resta identica al pixel.
-                Per togliere qualcosa scrivi "rimuovi…": la zona si ripulisce da sola prima di ridisegnarla.
-              </div>
-            </div>
-          )}
-
-          {fusion && (() => {
-            const mis = m.misura && m.misura.tipo !== 'originale' ? m.misura : MISURA0
-            const prima = m.riferimenti[0] ? { larghezza: m.riferimenti[0].larghezza, altezza: m.riferimenti[0].altezza } : null
-            return (
-              <div className="sezione">
-                <h3>Dimensioni della foto nuova <span className="dx">{mis.tipo === 'custom' ? `${mis.w} × ${mis.h}` : 'automatiche'}</span></h3>
-                <SceltaMisura valore={mis} cambia={(misura) => setModifica({ misura })} base={prima} mp={m.mp} ammetti={['auto', 'custom']} cambiaMp={(mp) => setModifica({ mp })} auto={(() => {
-                  const [a, b] = FORMATI_FUSION.find((f) => f.id === (m.formatoFusion || 'prima'))?.r || (prima ? [prima.larghezza, prima.altezza] : [1, 1])
-                  return dimMp(m.mp, a, b)
-                })()} />
-                {mis.tipo === 'auto' && (
-                  <div style={{ marginTop: 10 }}>
-                    <span className="piccolo tenue">Proporzioni</span>
-                    <Segmenti valore={m.formatoFusion || 'prima'} cambia={(formatoFusion) => setModifica({ formatoFusion })} voci={FORMATI_FUSION.map((f) => ({ id: f.id, nome: f.nome }))} />
-                  </div>
-                )}
-
-              </div>
-            )
-          })()}
-
-          {m.modo !== 'espandi' && !fusion && (
-            <div className="sezione">
-              <h3>Dimensioni <span className="dx">{(m.misura ?? MISURA0).tipo === 'auto' ? 'come i megapixel' : (m.misura ?? MISURA0).tipo === 'originale' ? 'come la foto' : 'misura mia'}</span></h3>
-              <SceltaMisura valore={m.misura ?? MISURA0} cambia={(misura) => setModifica({ misura })} base={esempioMode ? m.esempio : base} mp={m.mp} cambiaMp={(mp) => setModifica({ mp })}
-                senzaPx={m.modo === 'zona'} auto={m.modo === 'zona' && base ? { w: base.larghezza, h: base.altezza, nota: 'resta com\'è, cambia solo la zona' } : undefined} />
-            </div>
-          )}
-
-          <div className="sezione">
-            <h3>Qualità <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
-            <div>
-              <ScegliQualita valore={m.qualita} cambia={(qualita) => setModifica({ qualita })} />
-            </div>
-            <div className="riga spazia" style={{ marginTop: 10 }}>
-              <span className="tenue">Quante versioni</span>
-              <Contatore valore={m.quante} min={1} max={8} cambia={(quante) => setModifica({ quante })} />
-            </div>
-            {m.modo === 'espandi' && (
-              <div style={{ marginTop: 12 }}>
-                <span className="piccolo tenue">Megapixel a cui lavora il modello</span>
-                <ScegliMp mp={m.mp} cambia={(mp) => setModifica({ mp })} />
-              </div>
-            )}
-          </div>
-
-          {(imp?.famiglia || 'qwen') === 'qwen' && (
-            <div className="sezione">
-              <h3>LoRA</h3>
-              <SceltaLora />
-            </div>
-          )}
-        </div>
-        <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
-          <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={fusion ? !m.riferimenti.length : esempioMode ? !m.esempio || !m.riferimenti.length : !base}>
-            {m.modo === 'zona' ? <I.zona /> : m.modo === 'espandi' ? <I.espandi /> : griglia ? <I.crea /> : <I.modifica />}
-            {m.modo === 'zona' ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : fusion ? 'Fusion · crea la foto nuova' : esempioMode ? 'Crea come l\'esempio' : 'Modifica'}
-          </button>
-          <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{dimOut ? `${dimOut.w} × ${dimOut.h} px · ` : ''}Ctrl+Invio · ~{durata(stima)}</div>
-        </div>
-      </div>}
+      {estraiMode ? (
+        <ControlliEstrai base={base} />
+      ) : (
+        <SchedeModifica
+          prompt={prompt}
+          base={base}
+          griglia={griglia}
+          haMaschera={haMaschera}
+          scrivendo={scrivendo}
+          migliora={migliora}
+          setCameraRapida={setCameraRapida}
+          inserisci={inserisci}
+          mancaRif={mancaRif}
+          rapida={rapida}
+          categorie={categorie}
+          cat={cat}
+          setCategoria={setCategoria}
+          idee={idee}
+          setIdee={setIdee}
+          usaRapida={usaRapida}
+          chiaveIdee={chiaveIdee}
+          camera={camera}
+          cambiaCamera={cambiaCamera}
+          loraCamera={loraCamera}
+          espandiPreset={espandiPreset}
+          comeBase={comeBase}
+          passi={passi}
+          stima={stima}
+          dimOut={dimOut}
+          manda={manda}
+        />
+      )}
     </div>
   )
 }
