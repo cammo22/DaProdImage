@@ -54,6 +54,20 @@ uguale('ingranditore in mezzo: klein, leggero, klein', sequenza('', ['immagine:k
 uguale('ingranditore in mezzo: klein, leggero, testo:4b', sequenza('', ['immagine:klein', 'leggero', 'testo:4b']), [false, false, true])
 uguale('cpu all\'inizio: non ricorda niente', S.cambioDiModello(null, 'cpu'), { libera: false, ricorda: null })
 
+// chi scrive nei lavori di testo: scriveCol4B(modalita, famiglia, encoderKlein della richiesta, testoCon4B, il 4B c'è)
+uguale('4B: Klein scrive col 4B', S.scriveCol4B('descrivi', 'klein', undefined, false, true), true)
+uguale('4B: Klein Base scrive col 4B', S.scriveCol4B('descrivi', 'klein-base', undefined, false, true), true)
+uguale('4B: Qwen con impostazione spenta = encoder 8B', S.scriveCol4B('descrivi', 'qwen', undefined, false, true), false)
+uguale('4B: Qwen con impostazione accesa = 4B', S.scriveCol4B('descrivi', 'qwen', undefined, true, true), true)
+uguale('4B: Qwen accesa ma il 4B manca = 8B', S.scriveCol4B('descrivi', 'qwen', undefined, true, false), false)
+uguale('4B: Klein senza il 4B = encoder di prima', S.scriveCol4B('descrivi', 'klein', undefined, false, false), false)
+uguale('4B: encoderKlein false esclude anche con Qwen accesa', S.scriveCol4B('descrivi', 'qwen', false, true, true), false)
+uguale('4B: encoderKlein false esclude con Klein', S.scriveCol4B('descrivi', 'klein', false, false, true), false)
+uguale('4B: un lavoro che disegna non scrive', S.scriveCol4B('crea', 'qwen', undefined, true, true), false)
+// Qwen + 4B insieme: disegno Qwen, testo 4B, disegno Qwen = si libera due volte (non stanno in VRAM insieme su 8 GB)
+uguale('qwen, testo:4b, qwen: libera ogni volta', sequenza('', ['immagine:qwen', 'testo:4b', 'immagine:qwen']), [false, true, true])
+uguale('testo:4b, testo:4b, qwen', sequenza('', ['testo:4b', 'testo:4b', 'immagine:qwen']), [false, false, true])
+
 // le fasi mostrate mentre si libera
 uguale('fase da qwen', S.faseScarico('immagine:qwen'), 'Scarico Qwen-Image')
 uguale('fase da klein', S.faseScarico('immagine:klein'), 'Scarico FLUX 3 Klein')

@@ -15,7 +15,7 @@ import { aggiungi } from '../galleria'
 import { pulisciDidascalia, senzaTitolo } from './didascalia'
 import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { encoderKleinFile, fileKlein } from './klein'
-import { cambioDiModello, faseScarico, occupaImmagine, occupaTesto, type Occupa } from './spazio'
+import { cambioDiModello, faseScarico, occupaImmagine, occupaTesto, scriveCol4B, type Occupa } from './spazio'
 import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
@@ -326,9 +326,10 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
  *  Se il 4B non c'è, o la richiesta dice `encoderKlein: false`, tutto resta com'era. */
 function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp: Impostazioni } {
   const fam = q.famiglia ?? imp.famiglia
-  if (q.modalita !== 'descrivi' || fam === 'qwen' || q.encoderKlein === false) return { q, imp }
+  // con Qwen il 4B scrive solo se l'hai acceso in Opzioni (`testoCon4B`, di serie spento); la regola è in spazio.ts
+  if (q.modalita !== 'descrivi' || q.encoderKlein === false || (fam === 'qwen' && !imp.testoCon4B)) return { q, imp }
   const enc = encoderKleinFile(imp)
-  if (!enc) return { q, imp }
+  if (!scriveCol4B(q.modalita, fam, q.encoderKlein, !!imp.testoCon4B, !!enc)) return { q, imp }
   return { q: { ...q, encoderKlein: true }, imp: { ...imp, kleinEncoder: enc } }
 }
 

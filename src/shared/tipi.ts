@@ -250,6 +250,9 @@ export interface Impostazioni {
   unaCosaAllaVolta: boolean
   /** Klein: espande i prompt brevi in didascalie dettagliate col Qwen3-VL (come l'upsampler ufficiale; +circa mezzo minuto per immagine) */
   potenziaKlein: boolean
+  /** i lavori di testo (migliora prompt, descrivi foto, Idee, Estrai, traduzione LLM…) scrivono col Qwen3-VL 4B (veloce, tutto in VRAM) anche con Qwen.
+   *  Spento di serie: con Qwen scrive il suo encoder 8B. Con Klein il 4B scrive sempre. */
+  testoCon4B: boolean
   /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
   scaricaDopo: number
 }

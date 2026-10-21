@@ -43,6 +43,7 @@ const PREDEFINITE: Impostazioni = {
   traduttore: 'dedicato',
   unaCosaAllaVolta: true,
   potenziaKlein: true,
+  testoCon4B: false,
   scaricaDopo: 120
 }
 

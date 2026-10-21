@@ -15,6 +15,14 @@ export const occupaImmagine = (fam: Famiglia): Occupa => (fam === 'klein' ? 'imm
 /** la chiave di un lavoro che scrive: col 4B di Klein (`encoderKlein`) o con l'8B di Qwen */
 export const occupaTesto = (encoderKlein?: boolean): Occupa => (encoderKlein ? 'testo:4b' : 'testo:8b')
 
+/** chi scrive nei lavori di testo (`descrivi`): il 4B di Klein o l'encoder di Qwen.
+ *  Con Klein scrive il 4B (salvo `encoderKlein: false` nella richiesta); con Qwen solo se l'impostazione `testoCon4B` è accesa (di serie è spenta).
+ *  `c'è4B` = il file del 4B è sul disco: se no si resta con l'encoder della famiglia. */
+export function scriveCol4B(modalita: string, fam: Famiglia, encoderKlein: boolean | undefined, testoCon4B: boolean, ce4B: boolean): boolean {
+  if (modalita !== 'descrivi' || encoderKlein === false || !ce4B) return false
+  return fam !== 'qwen' || testoCon4B
+}
+
 /** se fra il lavoro di prima e questo bisogna liberare la scheda (`/free`), e la chiave da ricordare dopo.
  *  Si libera ogni volta che cambia il modello grosso: da Qwen a Klein, da Klein a Klein Base, dal disegno all'LLM, dal 4B all'8B.
  *  Il traduttore e l'ingranditore non contano: non liberano niente e lasciano ricordato il modello di prima. */
