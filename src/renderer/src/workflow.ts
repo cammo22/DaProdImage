@@ -54,7 +54,7 @@ export interface Workflow {
   categoria: string
   icona: string
   descrizione: string
-  modo: 'serie' | 'catena'
+  modo: 'serie' | 'catena' | 'speciale'
   /** serve la foto da cambiare? se no, il workflow disegna da zero */
   foto: boolean
   /** foto di riferimento: non servono, sono facoltative, ne serve almeno una, o ogni riferimento è un passo */
@@ -129,7 +129,7 @@ export function inUtente(w: Workflow, id = 'u-' + crypto.randomUUID().slice(0, 8
   for (const i of w.ingressi) v[i.id] = i.tipo === 'scelta' ? i.predefinita : i.tipo === 'camera' || i.tipo === 'posa' ? '' : `{${i.id}}`
   const passi = w.passi({ v, nRif: w.rif === 'ognuno' ? 3 : 1, camera: !!fileLoraCamera() })
   return {
-    id, nome: w.nome + ' (mia)', categoria: w.categoria, descrizione: w.descrizione, modo: w.modo, foto: w.foto, rif: w.rif, rifNome: w.rifNome,
+    id, nome: w.nome + ' (mia)', categoria: w.categoria, descrizione: w.descrizione, modo: w.modo === 'speciale' ? 'serie' : w.modo, foto: w.foto, rif: w.rif, rifNome: w.rifNome,
     ingressi: w.ingressi.filter((i) => i.tipo !== 'scelta' && i.tipo !== 'camera' && i.tipo !== 'posa'),
     passi: passi.map((p) => ({ etichetta: p.etichetta, prompt: p.prompt, crea: p.crea, trasparente: p.trasparente, lora: p.lora })),
     da: w.id
@@ -196,6 +196,18 @@ interface StatoLab {
 }
 
 export const usaLab = create<StatoLab>(() => ({ runs: [], attiva: null, vista: 'catalogo', scelto: null }))
+
+/** le due ricette che usano la tela di Modifica (la griglia di foto): Unisci foto e Come l'esempio */
+export type Speciale = 'unisci' | 'esempio' | null
+export const specialeDi = (modo: string, scelto: string | null): Speciale => (modo === 'ricette' && (scelto === 'unisci' || scelto === 'esempio') ? scelto : null)
+/** come specialeDi, ma si aggiorna da solo quando cambia il modo o la ricetta scelta */
+export function usaSpeciale(): Speciale {
+  const modo = usaStato((s) => s.modifica.modo)
+  const scelto = usaLab((s) => s.scelto)
+  return specialeDi(modo, scelto)
+}
+/** lo stesso, letto adesso (per i gestori di tasti e di lavori) */
+export const specialeOra = (): Speciale => specialeDi(usaStato.getState().modifica.modo, usaLab.getState().scelto)
 
 const aggiorna = (id: string, f: (r: Run) => void): void =>
   usaLab.setState((s) => ({ runs: s.runs.map((r) => (r.id === id ? (() => { const n = { ...r, passi: r.passi.map((p) => ({ ...p })) }; f(n); return n })() : r)) }))

@@ -1,14 +1,16 @@
 // Modifica, la parte a sinistra: barra degli attrezzi, tela (o griglia di Fusion/Esempio, o palco di Estrai) e striscia delle versioni.
 // Lo stato vive in Modifica.tsx: qui si disegna e basta.
 import { type JSX, type RefObject } from 'react'
-import { usaStato, scegliFoto, type ModoModifica, type FotoBase } from '../../stato'
+import { usaStato, scegliFoto, type FotoBase } from '../../stato'
 import { api, urlFile } from '../../api'
 import { I } from '../../componenti/Icone'
-import { Cursore, Segmenti } from '../../componenti/Controlli'
+import { Cursore } from '../../componenti/Controlli'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../../componenti/TelaMaschera'
 import { Fusion } from '../../componenti/Fusion'
 import { PalcoEstrai } from '../../componenti/Estrai'
 import { normalizza } from '../../util'
+import { usaLab, usaSpeciale } from '../../workflow'
+import { SelettoreModo } from './SelettoreModo'
 import { apriInModifica, fotoDaOpera } from '../../azioni'
 import type { Lavoro, Opera } from '@shared/tipi'
 
@@ -47,23 +49,17 @@ export function TelaModifica(p: Props): JSX.Element {
   const { modifica: m, setModifica, avvisa } = usaStato()
   const { tela, strumento, setStrumento, pennello, setPennello, setHaMaschera, confronto, setConfronto, confrontoAttivo, disegna, griglia, esempioMode, estraiMode, base, indice, precedente, successiva, inCorso, inAttesa, anteprima, ris, fusInCorso, fusInAttesa, daGalleria, daPc, togliFoto, inserisci, aggiungiFusion } = p
   const qi = inCorso?.richiesta
+  const speciale = usaSpeciale()
 
   return (
     <>
       <div className="attrezzi">
-        <div style={{ width: 660 }}>
-          <Segmenti<ModoModifica>
-            valore={m.modo}
-            cambia={(modo) => setModifica({ modo })}
-            voci={[
-              { id: 'scrivi', nome: 'Scrivi', titolo: 'Scrivi cosa cambiare: se segni una zona col pennello cambia solo lì, se no tutta la foto' },
-              { id: 'espandi', nome: 'Espandi' },
-              { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' },
-              { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' },
-              { id: 'estrai', nome: 'Estrai', titolo: 'Dalla foto estrai una persona o un oggetto, su sfondo pulito' }
-            ]}
-          />
-        </div>
+        <SelettoreModo />
+        {speciale && (
+          <button className="btn piccolo" onClick={() => usaLab.setState({ scelto: null })} title="Torna al catalogo delle ricette">
+            ‹ {speciale === 'unisci' ? 'Unisci foto' : "Come l'esempio"} · tutte le ricette
+          </button>
+        )}
         {disegna && base && !confrontoAttivo && (
           <>
             <span className="sep" />

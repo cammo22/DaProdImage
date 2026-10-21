@@ -8,6 +8,7 @@ import { Segmenti } from '../../componenti/Controlli'
 import { AvvisoLora } from '../../componenti/AvvisoLora'
 import { ControlloCamera, type PosizioneCamera } from '../../componenti/Camera'
 import { FANTASIE } from '../../regista'
+import { usaSpeciale } from '../../workflow'
 import type { Rapida, CategoriaRapide } from '../../rapide'
 
 export interface PropsScrivi {
@@ -57,8 +58,9 @@ export function SchedaScrivi(p: PropsScrivi): JSX.Element {
 /** «Cosa cambiare»: la casella del prompt, Migliora e i segnaposto delle foto */
 function SchedaTesto({ prompt, base, griglia, zona, scrivendo, migliora, setCameraRapida, inserisci, mancaRif, rapida }: PropsScrivi): JSX.Element {
   const { modifica: m, setModifica } = usaStato()
-  const fusion = m.modo === 'fusion'
-  const esempioMode = m.modo === 'esempio'
+  const sp = usaSpeciale()
+  const fusion = sp === 'unisci'
+  const esempioMode = sp === 'esempio'
   return (
     <div className="sezione">
       <h3>

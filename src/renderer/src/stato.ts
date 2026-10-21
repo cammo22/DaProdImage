@@ -5,13 +5,13 @@ import { senzaTurbo } from '@shared/modelli'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
-// 'laboratorio' non è più sulla rotaia (T7): la pagina resta montata finché T9 non la sposta in Modifica.
+// 'laboratorio' è sparito dalla rotaia (T7): T9 ha spostato le sue ricette nella scheda 'ricette' di Modifica.
 // I LoRA stanno dentro Opzioni (`SchedaOpzioni`).
-export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'impostazioni'
+export type Pagina = 'crea' | 'modifica' | 'album' | 'galleria' | 'impostazioni'
 export type SchedaOpzioni = 'generali' | 'lora'
 export type Qualita = 'bozza' | 'alta' | 'massima'
 /** Scrivi = tutta la foto, o solo la zona se ne hai disegnata una (si decide al momento dell'invio) */
-export type ModoModifica = 'scrivi' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
+export type ModoModifica = 'scrivi' | 'espandi' | 'ricette' | 'estrai'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, massima: 50 }
 
@@ -161,12 +161,12 @@ function daVecchio(c: StatoCrea & { mp?: number; qualita?: unknown; negativo?: u
   return mp ? { ...pulito, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : pulito
 }
 
-/** «Tutta la foto» e «Solo una zona» sono diventate Scrivi; la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion; la qualità «turbo» della 1.0 ora è «alta» */
+/** «Tutta la foto» e «Solo una zona» sono diventate Scrivi; «Fusion» ed «Esempio» sono ricette (Unisci foto, Come l'esempio): si apre il catalogo; la qualità «turbo» della 1.0 ora è «alta» */
 const daVecchioMod = (v: StatoModifica): StatoModifica => {
   const m = { ...v, qualita: senzaTurbo(v.qualita) }
   const vecchio = m.modo as string
   if (vecchio === 'tutta' || vecchio === 'zona') return { ...m, modo: 'scrivi' }
-  return vecchio === 'nuova' ? { ...m, modo: 'fusion' } : vecchio === 'personaggio' ? { ...m, modo: 'estrai' } : m
+  return vecchio === 'nuova' || vecchio === 'fusion' || vecchio === 'esempio' ? { ...m, modo: 'ricette' } : vecchio === 'personaggio' ? { ...m, modo: 'estrai' } : m
 }
 
 let idAvviso = 0

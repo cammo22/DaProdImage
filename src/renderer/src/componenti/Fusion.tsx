@@ -71,7 +71,7 @@ export function Fusion(p: {
         </div>
         {p.foto.length === 0 ? (
           <div className="vuoto fusion-vuoto">
-            <div className="grosso">{p.esempio ? 'COME L\'ESEMPIO' : 'FUSION'}</div>
+            <div className="grosso">{p.esempio ? 'COME L\'ESEMPIO' : 'UNISCI FOTO'}</div>
             {p.esempio ? (
               <p>Metti qui le foto da usare (qualsiasi cosa) e sopra <b className="oro">una foto di esempio</b>: il modello guarda tutto insieme, <b>decide da solo</b> cosa sostituire con cosa e rifà l'esempio.</p>
             ) : (

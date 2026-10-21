@@ -31,11 +31,11 @@ export function Catalogo(p: { cerca: string; scelto: string | null; scegli: (id:
                 <button key={w.id} className={`carta-wf ${p.scelto === w.id ? 'su' : ''}`} onClick={() => p.scegli(w.id)}>
                   <div className="riga spazia">
                     <span className="ic-wf grande">{icona(w.icona)}</span>
-                    <span className="riga" style={{ gap: 6 }}>{w.utente && <span className="distintivo">mia</span>}<span className={`distintivo ${w.modo === 'catena' ? 'forse' : 'si'}`}>{w.modo === 'catena' ? <><I.catena /> catena</> : <><I.serie /> serie</>}</span></span>
+                    <span className="riga" style={{ gap: 6 }}>{w.utente && <span className="distintivo">mia</span>}<span className={`distintivo ${w.modo === 'catena' ? 'forse' : 'si'}`}>{w.modo === 'catena' ? <><I.catena /> catena</> : w.modo === 'speciale' ? <><I.crea /> foto nuova</> : <><I.serie /> serie</>}</span></span>
                   </div>
                   <b>{w.nome}</b>
                   <span>{w.descrizione}</span>
-                  <small>{w.foto ? 'serve una foto' : w.rif === 'serve' ? 'serve un logo o disegno' : 'solo testo'}</small>
+                  <small>{w.modo === 'speciale' ? 'serve qualche foto' : w.foto ? 'serve una foto' : w.rif === 'serve' ? 'serve un logo o disegno' : 'solo testo'}</small>
                 </button>
               ))}
             </div>

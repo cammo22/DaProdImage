@@ -7,7 +7,6 @@ import { Coda } from './componenti/Coda'
 import { Crea } from './pagine/Crea'
 import { Modifica } from './pagine/Modifica'
 import { Album } from './pagine/Album'
-import { Laboratorio } from './pagine/Laboratorio'
 import { BarraStato } from './componenti/BarraStato'
 import { SelettoreModello } from './componenti/ScegliModello'
 import { SelettoreFoto } from './componenti/SelettoreFoto'
@@ -219,7 +218,6 @@ export function App(): JSX.Element {
             {/* le pagine restano montate: la maschera disegnata o il prompt non si perdono cambiando pagina */}
             <div className={pagina === 'crea' ? '' : 'nascosto'}><Crea /></div>
             <div className={pagina === 'modifica' ? '' : 'nascosto'}><Modifica /></div>
-            <div className={pagina === 'laboratorio' ? '' : 'nascosto'}><Laboratorio /></div>
             <div className={pagina === 'album' ? '' : 'nascosto'}>{pagina === 'album' && <Album />}</div>
             <div className={pagina === 'galleria' ? '' : 'nascosto'}>{pagina === 'galleria' && <Galleria />}</div>
             <div className={pagina === 'impostazioni' ? '' : 'nascosto'}>{pagina === 'impostazioni' && <Impostazioni />}</div>

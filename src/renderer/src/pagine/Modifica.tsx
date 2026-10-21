@@ -15,6 +15,8 @@ import { SchedeModifica } from './modifica/Schede'
 import { NIENTE, bordiPreset, type PresetEspandi } from './modifica/SchedaEspandi'
 import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
+import { specialeOra, usaSpeciale } from '../workflow'
+import { SchedaRicette } from './modifica/SchedaRicette'
 import { CAMERA0, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
 import { daDataUrl, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { SISTEMA_MIGLIORA_MODIFICA, fileLoraCamera, loraPer, perQualita, richiestaBase } from '../azioni'
@@ -45,10 +47,14 @@ export function Modifica(): JSX.Element {
   const [scrivendo, setScrivendo] = useState(false)
   // Fusion: i risultati (foto nuove) e il lavoro che li sta creando
   const [ris, setRis] = useState<Opera[]>([])
-  const fusion = m.modo === 'fusion'
-  const esempioMode = m.modo === 'esempio'
+  // Unisci foto e Come l'esempio sono ricette, ma usano la tela di Modifica (la griglia di foto) e la colonna di destra come prima
+  const speciale = usaSpeciale()
+  const fusion = speciale === 'unisci'
+  const esempioMode = speciale === 'esempio'
+  /** nel catalogo delle ricette (e nelle ricette normali) Modifica cede il posto a SchedaRicette */
+  const catalogo = m.modo === 'ricette' && !speciale
   const estraiMode = m.modo === 'estrai'
-  /** i modi con una griglia di foto al posto della tela: Fusion e Esempio */
+  /** le ricette con una griglia di foto al posto della tela: Unisci foto e Come l'esempio */
   const griglia = fusion || esempioMode
   /** in Scrivi: se c'è una zona disegnata vale la zona, se no tutta la foto (si decide da quello che hai sulla tela) */
   const zona = m.modo === 'scrivi' && haMaschera
@@ -109,9 +115,9 @@ export function Modifica(): JSX.Element {
   // entrando in Fusion con una foto già aperta, quella è la prima
   useEffect(() => {
     const s = usaStato.getState().modifica
-    if (s.modo === 'fusion' && !s.riferimenti.length && s.base) setModifica({ riferimenti: [s.base] })
-    if (s.modo === 'esempio' && !s.esempio && s.base) setModifica({ esempio: s.base })
-  }, [m.modo])
+    if (speciale === 'unisci' && !s.riferimenti.length && s.base) setModifica({ riferimenti: [s.base] })
+    if (speciale === 'esempio' && !s.esempio && s.base) setModifica({ esempio: s.base })
+  }, [speciale])
 
   // pennello proporzionato alla foto; foto nuova = niente confronto
   useEffect(() => {
@@ -134,7 +140,7 @@ export function Modifica(): JSX.Element {
   // un risultato nuovo: si apre il confronto prima/dopo (con "Continua da qui" bene in vista)
   const lunghezza = useRef(m.versioni.length)
   useEffect(() => {
-    if (m.versioni.length > lunghezza.current && m.versioni.length > 1 && usaStato.getState().modifica.modo !== 'fusion') setConfronto(true)
+    if (m.versioni.length > lunghezza.current && m.versioni.length > 1 && specialeOra() !== 'unisci') setConfronto(true)
     lunghezza.current = m.versioni.length
   }, [m.versioni.length])
 
@@ -160,7 +166,7 @@ export function Modifica(): JSX.Element {
     setModifica({ riferimenti: nuove })
   }
   const daPc = async (): Promise<void> => {
-    if (['fusion', 'esempio'].includes(usaStato.getState().modifica.modo)) {
+    if (specialeOra()) {
       const ps = await api.file.scegliImmagini(true)
       const f: FotoBase[] = []
       for (const x of ps) {
@@ -177,7 +183,7 @@ export function Modifica(): JSX.Element {
     if (p) void apri(p)
   }
   const daGalleria = async (): Promise<void> => {
-    if (['fusion', 'esempio'].includes(usaStato.getState().modifica.modo)) {
+    if (specialeOra()) {
       aggiungiFusion(await scegliFoto(true))
       return
     }
@@ -210,14 +216,16 @@ export function Modifica(): JSX.Element {
   useEffect(() => {
     const incolla = async (e: ClipboardEvent): Promise<void> => {
       if (usaStato.getState().pagina !== 'modifica') return
+      // nel catalogo delle ricette incolla SchedaRicette
+      if (usaStato.getState().modifica.modo === 'ricette' && !specialeOra()) return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       const d = immagineDaIncolla(e)
       if (!d) return
       e.preventDefault()
       const f = await daDataUrl(await d)
       const s = usaStato.getState().modifica
-      if (s.modo === 'fusion') aggiungiFusion([f])
-      else if (s.modo === 'esempio') {
+      if (specialeOra() === 'unisci') aggiungiFusion([f])
+      else if (specialeOra() === 'esempio') {
         if (!s.esempio) setModifica({ esempio: f })
         else aggiungiFusion([f])
       }
@@ -236,6 +244,7 @@ export function Modifica(): JSX.Element {
   useEffect(() => {
     const t = (e: KeyboardEvent): void => {
       if (usaStato.getState().pagina !== 'modifica') return
+      if (usaStato.getState().modifica.modo === 'ricette' && !specialeOra()) return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
         if (e.key === 'Enter' && e.ctrlKey) {
           e.preventDefault()
@@ -300,7 +309,7 @@ export function Modifica(): JSX.Element {
 
   async function manda(): Promise<void> {
     const s = usaStato.getState().modifica
-    if (s.modo === 'fusion' || s.modo === 'esempio') return mandaGriglia()
+    if (specialeOra()) return mandaGriglia()
     if (!s.base) return
     if (s.modo !== 'espandi' && !s.prompt.trim() && !idee.length) {
       avvisa('Scrivi cosa cambiare (o scegli una o più idee)', 'errore')
@@ -374,7 +383,7 @@ export function Modifica(): JSX.Element {
   async function mandaGriglia(): Promise<void> {
     const s = usaStato.getState().modifica
     let e
-    if (s.modo === 'esempio') {
+    if (specialeOra() === 'esempio') {
       // il modello guarda l'esempio e le tue foto e scrive lui cosa sostituire con cosa; il piano resta qui sotto, correggibile
       const chiave = chiaveEsempio(s)
       let piano: { testo: string; ritagli?: (string | null)[] } = s.pianoEsempio?.chiave === chiave ? s.pianoEsempio : { testo: '' }
@@ -415,8 +424,11 @@ export function Modifica(): JSX.Element {
   /** per quali foto, idee e note vale il piano delle idee (come in manda()) */
   const chiaveIdee = base ? JSON.stringify([base.percorso, idee.map((r) => r.id), m.prompt.trim(), m.riferimenti.map((r) => r.percorso), m.fantasia, zona ? 'zona' : m.modo]) : ''
 
+  const vista = { display: catalogo ? 'none' : 'contents' }
+
   return (
     <div className="pagina">
+      <div style={vista}>
       <div
         className="editor"
         onDragOver={(e) => e.preventDefault()}
@@ -425,8 +437,8 @@ export function Modifica(): JSX.Element {
           e.stopPropagation()
           const fs = Array.from(e.dataTransfer.files)
           if (!fs.length) return
-          if (['fusion', 'esempio'].includes(usaStato.getState().modifica.modo)) {
-            // Fusion / Esempio: tutte le foto trascinate sono riferimenti
+          if (specialeOra()) {
+            // Unisci / Esempio: tutte le foto trascinate sono riferimenti
             void (async () => {
               const f: FotoBase[] = []
               for (const x of fs.slice(0, MAX_FUSION)) {
@@ -520,6 +532,8 @@ export function Modifica(): JSX.Element {
           manda={manda}
         />
       )}
+      </div>
+      <div style={{ display: catalogo ? 'contents' : 'none' }}><SchedaRicette /></div>
     </div>
   )
 }

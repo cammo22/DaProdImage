@@ -12,6 +12,7 @@ import { Riferimenti } from '../../componenti/Riferimenti'
 import { SceltaMisura, ScegliMp, MISURA0, dimMp } from '../../componenti/Misura'
 import { FORMATI_FUSION, chiaveEsempio } from '../../fusion'
 import { durata } from '../../util'
+import { usaSpeciale } from '../../workflow'
 import { SchedaScrivi, type PropsScrivi } from './SchedaScrivi'
 import { SchedaEspandi, type PresetEspandi } from './SchedaEspandi'
 
@@ -26,8 +27,9 @@ interface Props extends PropsScrivi {
 
 export function SchedeModifica(p: Props): JSX.Element {
   const { modifica: m, setModifica, imp } = usaStato()
-  const fusion = m.modo === 'fusion'
-  const esempioMode = m.modo === 'esempio'
+  const sp = usaSpeciale()
+  const fusion = sp === 'unisci'
+  const esempioMode = sp === 'esempio'
   const { base, griglia, passi, stima, dimOut, manda } = p
 
   return (
@@ -64,7 +66,7 @@ export function SchedeModifica(p: Props): JSX.Element {
       <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
         <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={fusion ? !m.riferimenti.length : esempioMode ? !m.esempio || !m.riferimenti.length : !base}>
           {p.zona ? <I.zona /> : m.modo === 'espandi' ? <I.espandi /> : griglia ? <I.crea /> : <I.modifica />}
-          {p.zona ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : fusion ? 'Fusion · crea la foto nuova' : esempioMode ? 'Crea come l\'esempio' : 'Modifica'}
+          {p.zona ? 'Cambia la zona' : m.modo === 'espandi' ? 'Espandi' : fusion ? 'Unisci · crea la foto nuova' : esempioMode ? 'Crea come l\'esempio' : 'Modifica'}
         </button>
         <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{dimOut ? `${dimOut.w} × ${dimOut.h} px · ` : ''}Ctrl+Invio · ~{durata(stima)}</div>
       </div>
@@ -75,7 +77,7 @@ export function SchedeModifica(p: Props): JSX.Element {
 /** Esempio: «Il piano del modello» */
 function SchedaEsempio(): JSX.Element | null {
   const { modifica: m, setModifica } = usaStato()
-  if (m.modo !== 'esempio') return null
+  if (usaSpeciale() !== 'esempio') return null
   return (
     <>
       <div className="sezione">
@@ -104,8 +106,9 @@ function SchedaEsempio(): JSX.Element | null {
 /** Dimensioni della foto che esce: per Fusion (foto nuova) o per gli altri modi */
 function SchedaDimensioni({ base, zona }: { base: FotoBase | null; zona: boolean }): JSX.Element {
   const { modifica: m, setModifica } = usaStato()
-  const fusion = m.modo === 'fusion'
-  const esempioMode = m.modo === 'esempio'
+  const sp = usaSpeciale()
+  const fusion = sp === 'unisci'
+  const esempioMode = sp === 'esempio'
   return (
     <>
       {fusion && (() => {
