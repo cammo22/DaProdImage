@@ -15,6 +15,7 @@ import { aggiungi } from '../galleria'
 import { pulisciDidascalia, senzaTitolo } from './didascalia'
 import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { encoderKleinFile, fileKlein } from './klein'
+import { cambioDiModello, faseScarico, occupaImmagine, occupaTesto, type Occupa } from './spazio'
 import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
@@ -212,19 +213,19 @@ async function prepara(q: Richiesta): Promise<Ingressi> {
 
 type Uscita = { nodo: string; immagini: { filename: string; subfolder: string; type: string }[]; testo?: string }
 
-/** che cosa occupa la scheda: il modello immagine, l'LLM, o niente di importante (il traduttore sta sul processore) */
-type Occupa = 'immagine' | 'testo' | 'cpu'
+/** che cosa occupa la scheda (vedi spazio.ts): il denoiser di una famiglia, l'LLM 4B o 8B, o niente di importante */
 let ultimoOccupa: Occupa | null = null
 
-/** una cosa alla volta in VRAM: passando dal modello immagine all'LLM (o viceversa) si scarica quello che non serve più */
+/** una cosa alla volta in VRAM: quando cambia il modello grosso (Qwen ↔ Klein ↔ Klein Base, disegno ↔ LLM, 4B ↔ 8B)
+ *  si scarica quello che non serve più, così su 8 GB due modelli non si contendono VRAM e RAM */
 async function fattiSpazio(occupa: Occupa, l: Lavoro | null): Promise<void> {
-  if (occupa === 'cpu') return
-  const cambia = ultimoOccupa !== null && ultimoOccupa !== occupa
-  ultimoOccupa = occupa
-  if (!cambia || !impostazioni().unaCosaAllaVolta) return
+  const prima = ultimoOccupa
+  const { libera, ricorda } = cambioDiModello(prima, occupa)
+  ultimoOccupa = ricorda
+  if (!libera || !impostazioni().unaCosaAllaVolta) return
   const fase = l?.fase
   if (l) {
-    l.fase = occupa === 'testo' ? 'Scarico il modello immagine' : 'Scarico l\'LLM'
+    l.fase = faseScarico(prima)
     avvisa(l)
   }
   await scaricaModelli()
@@ -232,7 +233,7 @@ async function fattiSpazio(occupa: Occupa, l: Lavoro | null): Promise<void> {
 }
 
 /** manda un grafo al motore e aspetta che finisca (le fasi e l'avanzamento arrivano dai messaggi) */
-async function lancia(grafo: GrafoPronto, occupa: Occupa = 'immagine', l: Lavoro | null = corrente, token = false): Promise<Uscita> {
+async function lancia(grafo: GrafoPronto, occupa: Occupa, l: Lavoro | null = corrente, token = false): Promise<Uscita> {
   await fattiSpazio(occupa, l)
   misuraToken = token
   tokT0 = 0
@@ -310,7 +311,7 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
     imp, { immagini: ing.immagini.slice(0, 1) }, 'pup'
   )
   g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Potenzio il prompt']))
-  const u = await lancia(g, 'testo', l, true)
+  const u = await lancia(g, occupaTesto(encoderKlein), l, true)
   const t = pulisciDidascalia(u.testo || '').replace(/^["“]+|["”]+$/g, '').replace(/^(caption|instruction)\s*:\s*/i, '')
   if (t.length < 20) throw new Error('didascalia vuota')
   potenziati.set(chiave, t)
@@ -351,7 +352,7 @@ async function inInglese(l: Lavoro): Promise<string> {
     const t4 = conEncoderDiTesto({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, imp)
     const g = costruisci(t4.q, t4.imp, { immagini: [] }, 'traduci')
     g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
-    const u = await lancia(g, 'testo', l, true)
+    const u = await lancia(g, occupaTesto(t4.q.encoderKlein), l, true)
     t = pulisciTraduzione(u.testo || '', p)
   }
   tradotti.set(p, t)
@@ -447,7 +448,9 @@ async function esegui(l: Lavoro): Promise<void> {
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
     const testo = l.richiesta.modalita === 'descrivi'
-    const uscita = await lancia(grafo, testo ? 'testo' : 'immagine', l, testo)
+    // la chiave della VRAM: chi scrive (4B o 8B), chi disegna (la famiglia), o l'ingranditore che non sposta niente
+    const occupa = testo ? occupaTesto(lavoroTesto.q.encoderKlein) : l.richiesta.modalita === 'ingrandisci' ? 'leggero' : occupaImmagine(fam)
+    const uscita = await lancia(grafo, occupa, l, testo)
     if (testo) {
       l.testo = lavoroTesto.q.encoderKlein ? senzaTitolo(uscita?.testo || '') : (uscita?.testo || '').trim()
     } else {
