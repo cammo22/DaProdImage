@@ -1,20 +1,22 @@
-// La barra dei preset (a sinistra in Crea) e la scheda coi campi del preset scelto.
+// Il menu degli stili (in cima alla colonna di Crea) e la scheda coi campi del preset scelto.
 // Scegliere un preset mette formato, risoluzione e sfondo giusti e scrive il prompt dagli esempi;
 // cambiando un campo o uno stile il prompt si riscrive (e si può sempre ritoccare a mano).
 import type { JSX } from 'react'
 import { usaStato } from '../stato'
 import { I } from './Icone'
 import { Casella } from './Casella'
-import { PRESET, campiCon, componiPreset, presetDa, type Preset } from '../preset'
+import { PRESET, campiCon, componiPreset, presetDa } from '../preset'
 
 const icona = (nome: string): JSX.Element => {
   const Ic = (I as Record<string, () => JSX.Element>)[nome] || I.crea
   return <Ic />
 }
 
-export function BarraPreset({ prima }: { prima: (prompt: string) => void }): JSX.Element {
+/** gli stili in un menu solo: «Libero» (scrivi tu) o uno dei preset */
+export function MenuStili({ prima }: { prima: (prompt: string) => void }): JSX.Element {
   const { crea, setCrea } = usaStato()
-  const scegli = (p: Preset | null): void => {
+  const scegli = (id: string): void => {
+    const p = presetDa(id)
     if (!p) {
       setCrea({ preset: '' })
       return
@@ -23,20 +25,17 @@ export function BarraPreset({ prima }: { prima: (prompt: string) => void }): JSX
     const stile = p.stili[0]?.id || ''
     setCrea({ preset: p.id, stile, campi: {}, formato: p.formato, ris: p.ris, trasparente: !!p.trasparente, prompt: componiPreset(p, {}, stile) })
   }
+  const attivo = presetDa(crea.preset)
   return (
-    <nav className="barra-preset" aria-label="Preset">
-      <button className={!crea.preset ? 'su' : ''} onClick={() => scegli(null)} title="Scrivi tu il prompt, senza preset">
-        {icona('libero')}
-        <span>Libero</span>
-      </button>
-      <i className="riga-sep" />
-      {PRESET.map((p) => (
-        <button key={p.id} className={crea.preset === p.id ? 'su' : ''} onClick={() => scegli(p)} title={p.descrizione}>
-          {icona(p.icona)}
-          <span>{p.nome}</span>
-        </button>
-      ))}
-    </nav>
+    <label className="col" style={{ gap: 4 }} title={attivo ? attivo.descrizione : 'Scrivi tu il prompt, senza preset'}>
+      <span className="piccolo tenue">Stile</span>
+      <select value={crea.preset} onChange={(e) => scegli(e.target.value)} aria-label="Stile">
+        <option value="">Libero (scrivo io il prompt)</option>
+        {PRESET.map((p) => (
+          <option key={p.id} value={p.id}>{p.nome}</option>
+        ))}
+      </select>
+    </label>
   )
 }
 

@@ -141,7 +141,7 @@ export function ingrandisci(o: Opera, fattore = 2): Promise<void> {
 /** Riusa: rimette prompt, seed e LoRA dell'opera nella pagina Crea */
 export function riusa(o: Opera): void {
   const s = usaStato.getState()
-  s.setCrea({ prompt: o.prompt, negativo: o.negativo, seed: o.seed, casuale: false, cfg: o.cfg, sampler: o.sampler, scheduler: o.scheduler, trasparente: !!o.trasparente })
+  s.setCrea({ prompt: o.prompt, seed: o.seed, casuale: false, trasparente: !!o.trasparente })
   if (o.lora?.length) s.setLoraAttive(o.lora.filter((l) => s.lore.some((x) => x.file === l.file)))
   s.apriVisore(null)
   s.vai('crea')

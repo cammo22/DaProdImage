@@ -29,20 +29,16 @@ export interface FotoBase {
 
 export interface StatoCrea {
   prompt: string
-  negativo: string
   formato: string
   /** risoluzione: il lato corto in pixel (256p … 2048, il massimo nativo) */
   ris: number
   /** megapixel a cui lavora il modello (0 = come la misura finale); più alti della misura = disegna grande e poi riduce */
   mpLavoro: number
-  qualita: Qualita
+  /** 1, 2 o 4 immagini */
   quante: number
   seed: number
   casuale: boolean
   trasparente: boolean
-  cfg: number
-  sampler: string
-  scheduler: string
   /** foto di riferimento (<image1>…): persone, vestiti, oggetti, stili. Non si salvano fra un avvio e l'altro */
   riferimenti: FotoBase[]
   /** il preset scelto a sinistra ('' = libero) e i suoi campi */
@@ -147,8 +143,8 @@ const leggiLista = <T,>(k: string): T[] => {
 }
 
 const CREA0: StatoCrea = {
-  prompt: '', negativo: '', formato: '1:1', ris: 1024, mpLavoro: 0, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
-  cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
+  prompt: '', formato: '1:1', ris: 1024, mpLavoro: 0, quante: 1, seed: 0, casuale: true, trasparente: false,
+  riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
 }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
@@ -157,9 +153,9 @@ const MOD0: StatoModifica = {
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione; fino alla 1.0 c'era la qualità «turbo» (ora «alta») */
-function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
-  const { mp, ...resto } = c
-  const pulito = { ...resto, qualita: senzaTurbo(resto.qualita) }
+function daVecchio(c: StatoCrea & { mp?: number; qualita?: unknown; negativo?: unknown; cfg?: unknown; sampler?: unknown; scheduler?: unknown }): StatoCrea {
+  // qualità, negativo, CFG, sampler e scheduler non ci sono più in Crea (dalla 1.1 contano solo i valori del modello): si buttano
+  const { mp, qualita: _q, negativo: _n, cfg: _c, sampler: _s, scheduler: _sc, ...pulito } = c
   // appena si salva, il campo mp sparisce: la conversione avviene una volta sola
   return mp ? { ...pulito, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : pulito
 }
