@@ -50,6 +50,7 @@ interfaccia**, installato e guidato dall'app.
 
 ## FLUX 3 Klein (famiglie di modelli)
 - `Famiglia = 'qwen' | 'klein' | 'klein-base'` (`shared/tipi.ts`, `FAMIGLIE` = passi per qualità), `Richiesta.famiglia`, `impostazioni.famiglia`.
+- **Tre modelli, niente Turbo di Qwen** (1.1, `src/shared/modelli.ts`, la mappa unica, provata da `node test/modelli.mjs`): `qwen-base` (40 passi), `klein` (veloce, 8 passi), `klein-base` (50, CFG 3,5). `impostazioni.modelloScelto` va sempre d'accordo con `famiglia` (`allineaScelta` in `salvaImpostazioni`); le impostazioni vecchie si migrano una volta (`migra`: Turbo GGUF → UC dello stesso quant). La qualità «turbo» salvata vale «alta» (`senzaTurbo`): l'interfaccia non manda più `turbo: true`, i grafi del Turbo restano per i PNG vecchi.
   Il selettore è `componenti/ScegliModello.tsx` (3 schede, "da scaricare", download di modello + `klein-te` + `klein-vae`), la qualità `ScegliQualita.tsx`.
 - Catalogo: `klein-int8/bf16`, `klein-base-int8/bf16`, `klein-te` (Qwen3-VL 4B), `klein-vae` dal repo `black-forest-labs/flux-3-image-klein-comfy`
   (`repo` + `cerca` regex, risolti a runtime da `installa/risolvi.ts`: **i nomi vengono dai template ufficiali, vanno confermati con i file veri**).

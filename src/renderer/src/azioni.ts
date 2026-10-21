@@ -1,8 +1,9 @@
 // Le azioni che servono a più pagine: costruire le richieste, aprire una foto in Modifica, rifinire, variare.
 import { modelloTurbo } from '@shared/tipi'
+import { senzaTurbo } from '@shared/modelli'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
-import { famigliaCorrente, passiDi, usaStato, type FotoBase, type Qualita } from './stato'
+import { passiDi, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
 import type { ChiaveLora } from './rapide'
 
@@ -56,16 +57,13 @@ export function turboPresente(): boolean {
   return !!imp?.loraTurbo && lore.some((l) => l.file === imp.loraTurbo)
 }
 
-/** passi (e Turbo) per una qualità; il Turbo vuole CFG 1, euler, simple */
+/** passi per una qualità. Il Turbo di Qwen non c'è più (D1 del piano): una qualità «turbo» salvata vale «alta» e non accende il LoRA */
 export function perQualita(q: Qualita): Pick<Richiesta, 'passi' | 'turbo'> & Partial<Pick<Richiesta, 'cfg' | 'sampler' | 'scheduler'>> {
-  // Klein: niente Turbo (è già distillato), il CFG e il sampler li decide il motore
-  if (famigliaCorrente() !== 'qwen') return { passi: passiDi(q), turbo: false }
-  if (q === 'turbo') return { passi: passiDi('turbo'), turbo: true, cfg: 1, sampler: 'euler', scheduler: 'simple' }
-  return { passi: passiDi(q), turbo: false }
+  return { passi: passiDi(senzaTurbo(q)), turbo: false }
 }
 
-/** la qualità per i lavori "di servizio" (rifinisci, varia): Turbo se è acceso in Crea */
-const qualitaServizio = (): Qualita => (usaStato.getState().crea.qualita === 'turbo' && turboPresente() ? 'turbo' : 'alta')
+/** la qualità per i lavori "di servizio" (rifinisci, varia) */
+const qualitaServizio = (): Qualita => 'alta'
 
 export const fotoDaOpera = (o: Opera): FotoBase => ({ percorso: o.file, larghezza: o.larghezza, altezza: o.altezza, operaId: o.id, prompt: o.prompt })
 

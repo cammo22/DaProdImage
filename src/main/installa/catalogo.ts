@@ -137,7 +137,8 @@ export const CATALOGO: VoceCatalogo[] = [
     descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Il modo Turbo di Crea e Modifica.',
     file: 'turbo8_lora_step2500.safetensors', cartella: 'loras',
     url: 'https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1/resolve/main/turbo8_lora_step2500.safetensors',
-    byte: 1_360_000_000, circa: true, consigliato: true
+    // dalla 1.1 il Turbo di Qwen non si usa più (D1 del piano): resta per chi ce l'ha, ma non si scarica da solo
+    byte: 1_360_000_000, circa: true, consigliato: false
   },
   {
     // ausboss: tiene le modifiche "ferme" (luce, colori, stile, testi) senza spostare niente; non fa muovere i soggetti

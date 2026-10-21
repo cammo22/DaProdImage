@@ -62,11 +62,6 @@ export function Laboratorio(): JSX.Element {
   const w = scelto ? workflowDa(scelto) : undefined
   const run = runs.find((r) => r.id === attiva)
 
-  // il Turbo, se c'è, è il modo giusto per fare serie di immagini
-  useEffect(() => {
-    if (turbo.presente) setQualita((q) => (q === 'alta' ? 'turbo' : q))
-  }, [turbo.presente])
-
   const scegli = (id: string): void => {
     const nuovo = workflowDa(id)!
     usaLab.setState({ scelto: id, vista: 'catalogo' })

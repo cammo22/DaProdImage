@@ -6,7 +6,7 @@ Si parte dal ramo `feat/klein-upsampler-veloce` (1.0.2 + le modifiche non commit
 Cosa ha chiesto Cammo:
 1. guardare le novità di Hugging Face e ComfyUI e prendere quello che conviene;
 2. unire Modifica e Lab;
-3. selettore del modello **sempre visibile**, con tre modelli soli: Qwen Image 2.1, FLUX Klein a 8 passi, Qwen base;
+3. selettore del modello **sempre visibile**, con tre modelli soli (D1 rivista: Qwen base, Klein veloce a 8 passi, Klein Base);
 4. molti meno tasti, solo il meglio;
 5. pensare alla GPU da ~8 GB: niente carichi in parallelo, tenere d'occhio la memoria, niente Chrome nelle prove.
 
@@ -14,21 +14,23 @@ Cosa ha chiesto Cammo:
 
 ## 0. Decisioni (prese qui, da confermare con Cammo prima di T3)
 
-- **D1 — I tre modelli.** "Qwen Image 2.1" e "Qwen base" sono lo stesso modello in due modi:
-  - **Qwen veloce** = Qwen-Image 2.1 col **LoRA Turbo8** (8 passi, CFG 1). È il modello di partenza.
-  - **FLUX Klein** = Klein distillato a **8 passi** (oggi 16). BFL dice 4–16 passi per il distillato, quindi 8 rientra.
-  - **Qwen base** = Qwen-Image 2.1 pieno, **40 passi**, senza Turbo: la qualità piena, con tutti i LoRA.
-  - **Klein Base sparisce dall'interfaccia** (50 passi con CFG su 8 GB: lento e non chiesto).
-  - Il Turbo si fa col LoRA e non col GGUF Turbo di AtomicChat: un denoiser solo sul disco (4,6 GB in Q4 invece di due),
-    ed è la strada già provata. I `turbo-q*` restano nel catalogo per chi li ha, ma non si propongono più.
-    Se le misure di T12 dicono che il GGUF Turbo è molto meglio, si cambia solo la mappa di D2.
-- **D2 — Il backend non cambia forma.** `Famiglia` (`qwen | klein | klein-base`) resta com'è nel main e nei PNG. L'interfaccia ha un
-  tipo nuovo, solo suo, `Modello = 'qwen-veloce' | 'klein' | 'qwen-base'`, con una mappa unica (`src/shared/modelli.ts`):
-  `qwen-veloce → {famiglia:'qwen', turbo:true, passi:8}`, `klein → {famiglia:'klein', passi:8}`, `qwen-base → {famiglia:'qwen', turbo:false, passi:40}`.
-  Così **i grafi di Qwen non cambiano di un nodo** (regola del CLAUDE.md) e i PNG vecchi con `klein-base` si riaprono ancora.
-- **D3 — La Qualità sparisce.** Ogni modello ha i suoi passi. Il flusso "bozza → rifinisci" diventa: esplori con Qwen veloce o Klein,
-  sulla foto che ti piace premi **Rifai in qualità piena** (stesso seed, stesso prompt, Qwen base). `qualita` resta nella `Richiesta`
-  per i PNG e le ricette vecchie, ma l'interfaccia non la mostra più.
+- **D1 — I tre modelli (rivista da Cammo il 21/10: niente Turbo di Qwen, a Cammo non piace).** Due famiglie, tre voci:
+  - **Qwen base** (`qwen-base`) = Qwen-Image 2.1 pieno, **40 passi**, CFG 1, con tutti i LoRA. È il modello di partenza.
+  - **Klein veloce** (`klein`) = FLUX 3 Klein distillato a **8 passi** (oggi 16), senza CFG: è lui il "Flux turbo". BFL dice 4–16 passi per il distillato, quindi 8 rientra.
+  - **Klein Base** (`klein-base`) = FLUX 3 Klein pieno, 50 passi con CFG 3,5: **resta nell'interfaccia** (la qualità piena di Klein).
+  - **Il Turbo di Qwen sparisce**: né il LoRA Turbo8 né il GGUF Turbo di AtomicChat si propongono più. Il LoRA non si scarica più da solo
+    (`lora-turbo` non è più `consigliato`); chi ha il GGUF Turbo come denoiser torna, una volta sola, a quello pieno dello stesso quant se c'è.
+    I file e il codice del Turbo nei grafi restano (i PNG vecchi con `turbo: true` si riaprono), ma l'interfaccia non manda più `turbo: true`.
+- **D2 — Il backend non cambia forma.** `Famiglia` (`qwen | klein | klein-base`) resta com'è nel main e nei PNG. La mappa unica è
+  `src/shared/modelli.ts` (fatta in T2): `IdModello = 'qwen-base' | 'klein' | 'klein-base'`,
+  `qwen-base → {famiglia:'qwen', turbo:false, passi:40}`, `klein → {famiglia:'klein', passi:8}`, `klein-base → {famiglia:'klein-base', passi:50}`;
+  `FAMIGLIE` in `tipi.ts` prende nomi e passi da lì. Nelle impostazioni il campo nuovo si chiama **`modelloScelto`** (non `modello`, che è già il file
+  del denoiser di Qwen) e resta sempre d'accordo con `famiglia` (`allineaScelta`). Così **i grafi di Qwen non cambiano di un nodo** (regola del CLAUDE.md)
+  e i PNG vecchi si riaprono (`modelloDaOpera`: Klein Base, Klein, tutto il resto Qwen base).
+- **D3 — La Qualità sparisce.** Ogni modello ha i suoi passi. Il flusso "bozza → rifinisci" diventa: esplori con **Klein veloce**,
+  sulla foto che ti piace premi **Rifai in qualità piena** (stesso seed, stesso prompt) con **Klein Base** (il più vicino) o **Qwen base**
+  (`inQualitaPiena('klein')`). Qwen base e Klein Base sono già pieni: lì il pulsante non c'è. `qualita` resta nella `Richiesta`
+  per i PNG e le ricette vecchie (`turbo` vale `alta`: `senzaTurbo`), ma l'interfaccia non la mostra più.
 - **D4 — Il nome.** La pagina unica si chiama **Modifica**. Le ricette del Lab diventano la scheda **Ricette** dentro Modifica.
 - **D5 — Versione.** 1.1.0 (interfaccia e modelli). Se in T13 si alza ComfyUI, anche `motore: 8` in `engine/versioni.json`.
 
@@ -44,7 +46,7 @@ Noi siamo su **ComfyUI 0.41.2**. L'ultima stabile è la **0.42.3** (21/10). Cosa
 | "Synchronize model-prefetch graph cleanups so repeated runs release memory reliably" | 0.42.1 | È proprio il nostro caso: tanti lavori di fila e `/free` fra testo e immagine | **Sì** (T13) |
 | `SetReferenceMultiLatent` (più latenti di riferimento da un nodo) | 0.41.0, c'è già | Alternativa ai `ReferenceLatent` in catena di Klein, che il CLAUDE.md dà per "non provati" | Prova in T12, cambio solo se meglio |
 | FLUX.3 Layout Prompt (riquadri nel prompt) | 0.41.0 | Bello per Estrai/zona con Klein | **Dopo** questa release |
-| Klein distillato "4–16 passi" | docs.comfy.org, tutorial Klein | Conferma D1 (8 passi) | Sì |
+| Klein distillato "4–16 passi" | docs.comfy.org, tutorial Klein | Conferma D1 (Klein a 8 passi) | Sì |
 | Klein in nvfp4 | HF di BFL | Serve una RTX 50 (Blackwell); la 4060 è Ada | No, resta int8 |
 | Upsampler ufficiale Qwen3.5 9B | template Klein | 9B non sta in 8 GB con Klein | No, resta il 4B |
 | Qwen-Image 2.1: fino a 10 riferimenti, modifiche locali "con cerchi e annotazioni dipinte" | HF Qwen/Qwen-Image-2.1 | Conferma il nostro modo della zona (velo rosso sull'ultima immagine) | Niente da cambiare |
@@ -59,7 +61,7 @@ prima di pubblicare (regola del CLAUDE.md). Se si rompe, la 0.42 si rimanda e la
 ## 2. Il flusso dell'interfaccia dopo
 
 ### La cornice (sempre)
-- **Barra in alto, accanto a RAM/VRAM/GPU: il selettore del modello**, tre pillole: `Qwen veloce · 8 passi` / `Klein · 8 passi` / `Qwen base · 40 passi`.
+- **Barra in alto, accanto a RAM/VRAM/GPU: il selettore del modello**, tre pillole: `Qwen base · 40 passi` / `Klein veloce · 8 passi` / `Klein Base · 50 passi` (ordine di `ORDINE_MODELLI`).
   Si vede su tutte le pagine (oggi `ScegliModello` sta in cima a Crea e Modifica e occupa una sezione intera).
   La pillola di un modello da scaricare ha un puntino; un clic apre il pannellino di download che c'è già.
   Durante un lavoro il selettore resta cliccabile, ma vale **dal lavoro dopo** (si scrive "dal prossimo lavoro").
@@ -87,10 +89,10 @@ Il prima/dopo e "Continua da qui" restano.
 
 ### Cosa va via (o si nasconde)
 - Il selettore Qualità ovunque (Crea, Modifica, Laboratorio, `ScegliQualita.tsx`): sostituito da "Rifai in qualità piena" in galleria e sul risultato.
-- `AvvisoTurbo` e `Turbo.tsx`: il Turbo non è più un'opzione, è il modello "Qwen veloce".
+- `AvvisoTurbo` e `Turbo.tsx`: il Turbo di Qwen non c'è più (D1). Dalla T2 il selettore Qualità non mostra più la voce Turbo.
 - In Modifica: la sezione Dimensioni sempre aperta (va in Altro), "Mostra la zona al modello" (sperimentale), il doppio selettore modello.
 - Nel Lab: la sezione Preset delle ricette (si tengono le ricette tue, non i preset dei valori), "Vedi i prompt" (va dentro l'editor della ricetta).
-- Klein Base dalle schede, da `idle.ts` (non si scarica più da solo) e da "consigliato".
+- Il LoRA Turbo8 da "consigliato" (fatto in T2) e i `turbo-q*` dai suggerimenti del Setup. Klein Base resta.
 
 **Obiettivo misurabile**: oggi `Crea.tsx` + `Modifica.tsx` + `Laboratorio.tsx` hanno **72** righe con `onClick` (22 + 31 + 19).
 Dopo, Crea + Modifica (con le ricette) devono stare **sotto 40**. Si conta con `grep -c onClick` in T14.
@@ -101,9 +103,9 @@ Dopo, Crea + Modifica (con le ricette) devono stare **sotto 40**. Si conta con `
 
 | Modello | Denoiser | Encoder per il disegno | Passi | VRAM attesa |
 |---|---|---|---|---|
-| Qwen veloce | UC Q4 GGUF 4,6 GB + LoRA Turbo8 1,4 GB | Qwen3-VL 8B int8 (9,35 GB: non entra, va a pezzi) | 8 | piena, con scambi |
-| Klein | int8 ~5,6 GB | Qwen3-VL 4B (entra tutto) | 8 | ~7 GB |
-| Qwen base | UC Q4 GGUF | Qwen3-VL 8B int8 | 40 | piena, con scambi |
+| Qwen base | UC Q4 GGUF 4,6 GB | Qwen3-VL 8B int8 (9,35 GB: non entra, va a pezzi) | 40 | piena, con scambi |
+| Klein veloce | int8 ~5,6 GB | Qwen3-VL 4B (entra tutto) | 8 | ~7 GB |
+| Klein Base | int8 | Qwen3-VL 4B | 50 (CFG 3,5) | ~7 GB, il doppio del calcolo per il CFG |
 
 Regole (alcune ci sono già, altre sono nuove):
 - **Un lavoro alla volta** (`lavori.ts`, la coda): resta. Nessun precaricamento "per fare prima", nessun download pesante del modello mentre la GPU disegna
@@ -124,8 +126,8 @@ Regole (alcune ci sono già, altre sono nuove):
 ## 4. File da toccare
 
 Renderer:
-- `src/shared/modelli.ts` (nuovo, piccolo e puro): `Modello`, la mappa di D2, `modelloDa(famiglia, turbo)` per leggere PNG e impostazioni vecchie.
-- `src/shared/tipi.ts`: `FAMIGLIE.klein.passi` a 8; `Impostazioni.modello` (nuovo, con migrazione da `famiglia` + `turbo`). `Famiglia` resta.
+- `src/shared/modelli.ts` (fatto in T2, puro): `IdModello`, la mappa di D2, `modelloDa`, `modelloDaImpostazioni`, `modelloDaOpera`, `parametriModello`, `inQualitaPiena`, `senzaTurbo`, `denoiserSenzaTurbo`.
+- `src/shared/tipi.ts`: `FAMIGLIE` dalla mappa (Klein a 8 passi); `Impostazioni.modelloScelto` (fatto in T2, migrazione in `src/main/impostazioni.ts`). `Famiglia` resta.
 - `src/renderer/src/componenti/ScegliModello.tsx`: diventa la riga di pillole della barra in alto (la logica di download resta).
 - `src/renderer/src/App.tsx`: selettore nella barra, rotaia a 4 voci, `Pagina` senza `laboratorio` (con redirect se arriva da localStorage).
 - `src/renderer/src/stato.ts`: `ModoModifica` → `'scrivi' | 'espandi' | 'ricette' | 'estrai'`, migrazione di `tutta/zona → scrivi`, `fusion/esempio → ricette`.
@@ -143,8 +145,8 @@ Renderer:
 
 Main:
 - `src/main/motore/lavori.ts`: chiave di `fattiSpazio` (T4), testo col 4B (T5), più le modifiche già in corso (§7).
-- `src/main/idle.ts`, `src/main/installa/catalogo.ts`: Klein Base e Turbo GGUF fuori dai consigliati.
-- `src/main/impostazioni.ts`: migrazione `famiglia` → `modello`.
+- `src/main/installa/catalogo.ts`: il LoRA Turbo8 fuori dai consigliati (fatto in T2); i `turbo-q*` non si propongono nel Setup (T7).
+- `src/main/impostazioni.ts`: migrazione `famiglia` (+ Turbo GGUF) → `modelloScelto` (fatto in T2).
 - `engine/versioni.json`: solo se T13 va bene.
 - **Non si toccano**: `grafi.ts` per Qwen (si controlla col confronto del grafo, T3), `engine/custom_nodes/*`, l'Album.
 
@@ -168,7 +170,7 @@ Testi: `CHANGELOG.md` (1.1.0), `README.md`, la guida del primo avvio.
 2. **localStorage e impostazioni vecchie** (`modo: 'fusion'`, `pagina: 'laboratorio'`, `famiglia: 'klein-base'`, ricette tue con `qualita`) →
    migrazioni in `stato.ts`/`impostazioni.ts` con test; mai buttare via i dati, solo tradurli.
 3. **Klein a 8 passi peggio del previsto sulle modifiche** (zona, riferimenti) → T12 lo misura; se serve, Klein in Modifica usa 12 passi (solo un numero nella mappa).
-4. **Turbo8 + altri LoRA** insieme: a volte si pestano. → T12 prova le tre combinazioni più usate (Coerenza, Vestiti, Camera).
+4. ~~Turbo8 + altri LoRA~~: il Turbo di Qwen non c'è più (D1 rivista). Resta da vedere che i LoRA vadano su Qwen base a 40 passi, come oggi.
 5. **Più foto in Modifica**: la tela è per una foto sola → il lotto è permesso solo nella scheda Ricette; nelle altre schede si usa la prima foto e si dice.
 6. **`Modifica.tsx` troppo grande e toccato da tutti** → spezzarlo è il primo lavoro sull'interfaccia (T6), poi un task alla volta.
 7. **ComfyUI 0.42 rompe la correzione GGUF** → T13 è separato e facoltativo.
@@ -201,17 +203,17 @@ Come si integrano (T1, prima di tutto il resto, uscita come **1.0.3**):
 | # | Task | Chi | Dipende da | Min |
 |---|---|---|---|---|
 | T1 | Integra le modifiche non committate (§7), 1.0.3 | sonnet | — | 45 |
-| T2 | `src/shared/modelli.ts` + migrazione impostazioni + `test/modelli.mjs` | opus | T1 | 45 |
+| T2 | `src/shared/modelli.ts` + migrazione impostazioni + `test/modelli.mjs` (**fatto**, D1 rivista) | opus | T1 | 45 |
 | T3 | Script di confronto dei grafi di Qwen (prima/dopo), eseguito su T2 | opus | T2 | 45 |
 | T4 | `fattiSpazio` per famiglia (`immagine:qwen` / `immagine:klein` / `testo:4b` / `testo:8b`) | opus | T2 | 30 |
 | T5 | Testo col 4B con qualsiasi modello, dietro un'impostazione spenta | sonnet | T4 | 30 |
 | T6 | Spezza `Modifica.tsx` in tela + schede, senza cambiare niente di visibile | sonnet | T1 | 60 |
-| T7 | Selettore modello nella barra in alto, rotaia a 4 voci, LoRA in Opzioni | sonnet | T2 | 60 |
+| T7 | Selettore modello nella barra in alto (tre pillole Qwen base / Klein veloce / Klein Base da `ORDINE_MODELLI`, salva `modelloScelto`), via i `turbo-q*` dal Setup, rotaia a 4 voci, LoRA in Opzioni | sonnet | T2 | 60 |
 | T8 | Scheda Scrivi (zona automatica se c'è la maschera) + Espandi | sonnet | T6 | 60 |
 | T9 | Scheda Ricette (dal Laboratorio) + Unisci/Esempio come ricette; via `Laboratorio.tsx` | sonnet | T8 | 60 |
 | T10 | Crea essenziale: via Qualità e avanzate, Formato, Altro | sonnet | T7 | 45 |
-| T11 | "Rifai in qualità piena" in galleria e sul risultato; via `ScegliQualita`, `Turbo` | sonnet | T10 | 45 |
-| T12 | Misure GPU (una alla volta, niente browser): Klein 8 vs 16 passi in Crea e zona, Turbo8+LoRA, testo 4B con Qwen, `SetReferenceMultiLatent` | ollamo | T5, T9 | 60 |
+| T11 | "Rifai in qualità piena" in galleria e sul risultato (solo sulle foto di Klein veloce: `modelloDaOpera` + `inQualitaPiena` → Klein Base o Qwen base, stesso seed); via `ScegliQualita`, `Turbo.tsx`, `AvvisoTurbo`, `turboPresente` | sonnet | T10 | 45 |
+| T12 | Misure GPU (una alla volta, niente browser): Klein 8 vs 16 passi in Crea e zona, Klein Base 50 passi su 8 GB, testo 4B con Qwen, `SetReferenceMultiLatent` | ollamo | T5, T9 | 60 |
 | T13 | ComfyUI 0.42.3 su un ramo a parte: generazione vera Qwen + Klein, `motore: 8` solo se va | beam | T1 | 60 |
 | T14 | Controllo finale: conteggio `onClick` < 40, confronto grafi, typecheck, build, `test/foto.mjs` | ollamo | T9, T10, T11 | 30 |
 | T15 | CHANGELOG 1.1.0, README, testi dell'interfaccia | haiku | T14 | 45 |
@@ -221,4 +223,4 @@ Totale circa 12 ore di lavoro, in serie sui file "hotspot" (`Modifica.tsx`, `lav
 (es. T7 e T6 sì, T8 e T9 no).
 
 Ordine consigliato: **T1 → T2 → (T3, T4, T6, T7) → T5, T8, T10 → T9, T11, T16 → T12, T13 → T14 → T15**.
-Prima di T7 Cammo conferma D1 (soprattutto: "Qwen Image 2.1" = la versione veloce a 8 passi, "Qwen base" = quella piena a 40).
+D1 confermata e cambiata da Cammo il 21/10: Qwen base (40) + Klein veloce (8) + Klein Base (50), niente Turbo di Qwen.

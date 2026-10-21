@@ -1,7 +1,8 @@
 // Le impostazioni: un JSON nei dati dell'app, scritto subito a ogni modifica.
-import { readFileSync, writeFileSync, renameSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Impostazioni } from '@shared/tipi'
+import { allineaScelta, denoiserSenzaTurbo, famigliaDi, modelloDaImpostazioni } from '@shared/modelli'
 import { DATI, GALLERIA_PREDEFINITA, MODELLI_PREDEFINITI, assicura } from './percorsi'
 
 const FILE = join(DATI, 'impostazioni.json')
@@ -14,6 +15,7 @@ const PREDEFINITE: Impostazioni = {
   vae: 'texture_fix_vae_for_qwen_image_2.1_bf16.safetensors',
   upscaler: '4x-UltraSharp.pth',
   famiglia: 'qwen',
+  modelloScelto: 'qwen-base',
   kleinModello: '',
   kleinBase: '',
   kleinEncoder: '',
@@ -46,11 +48,44 @@ const PREDEFINITE: Impostazioni = {
 
 let attuali: Impostazioni | null = null
 
+function scrivi(imp: Impostazioni): void {
+  assicura(DATI)
+  writeFileSync(FILE + '.tmp', JSON.stringify(imp, null, 2))
+  renameSync(FILE + '.tmp', FILE)
+}
+
+/** dalla 1.1 i modelli sono tre (`modelli.ts`) e il Turbo di Qwen non c'è più: le impostazioni senza `modelloScelto`
+ *  lo prendono dalla famiglia (Qwen, anche col Turbo, → qwen-base) e, se il denoiser era il Turbo GGUF, tornano a quello pieno
+ *  (stesso quant) se è nella cartella. Succede una volta sola: dopo, `modelloScelto` è nel file. */
+function migra(letto: Partial<Impostazioni>, imp: Impostazioni): boolean {
+  if (letto.modelloScelto) return false
+  let presenti: string[] = []
+  try {
+    presenti = readdirSync(join(imp.cartellaModelli, 'diffusion_models'))
+  } catch {
+    /* cartella che non c'è: il denoiser resta com'è */
+  }
+  const pieno = denoiserSenzaTurbo(imp.modello, presenti)
+  if (pieno) imp.modello = pieno
+  return true
+}
+
 export function impostazioni(): Impostazioni {
   if (attuali) return attuali
   try {
     const letto = JSON.parse(readFileSync(FILE, 'utf8')) as Partial<Impostazioni>
-    attuali = { ...PREDEFINITE, ...letto, predefiniti: { ...PREDEFINITE.predefiniti, ...(letto.predefiniti || {}) } }
+    const imp: Impostazioni = { ...PREDEFINITE, ...letto, predefiniti: { ...PREDEFINITE.predefiniti, ...(letto.predefiniti || {}) } }
+    // la scelta del modello e la famiglia vanno sempre d'accordo (anche con un file vecchio o scritto a mano)
+    imp.modelloScelto = modelloDaImpostazioni(letto)
+    imp.famiglia = famigliaDi(imp.modelloScelto)
+    attuali = imp
+    if (migra(letto, imp)) {
+      try {
+        scrivi(imp)
+      } catch {
+        /* si riscrive al primo salvataggio */
+      }
+    }
   } catch {
     attuali = structuredClone(PREDEFINITE)
   }
@@ -58,12 +93,10 @@ export function impostazioni(): Impostazioni {
 }
 
 export function salvaImpostazioni(modifiche: Partial<Impostazioni>): Impostazioni {
-  const nuove = { ...impostazioni(), ...modifiche }
+  const nuove = { ...impostazioni(), ...modifiche, ...allineaScelta(modifiche) }
   if (modifiche.predefiniti) nuove.predefiniti = { ...impostazioni().predefiniti, ...modifiche.predefiniti }
   attuali = nuove
-  assicura(DATI)
-  writeFileSync(FILE + '.tmp', JSON.stringify(nuove, null, 2))
-  renameSync(FILE + '.tmp', FILE)
+  scrivi(nuove)
   return nuove
 }
 

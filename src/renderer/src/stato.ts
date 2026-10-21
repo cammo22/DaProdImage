@@ -1,6 +1,7 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
 import { FAMIGLIE, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
+import { senzaTurbo } from '@shared/modelli'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
@@ -148,15 +149,19 @@ const MOD0: StatoModifica = {
   pianoEsempio: null, fantasia: 'normale', pianoIdee: null
 }
 
-/** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
+/** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione; fino alla 1.0 c'era la qualità «turbo» (ora «alta») */
 function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
   const { mp, ...resto } = c
+  const pulito = { ...resto, qualita: senzaTurbo(resto.qualita) }
   // appena si salva, il campo mp sparisce: la conversione avviene una volta sola
-  return mp ? { ...resto, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : resto
+  return mp ? { ...pulito, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : pulito
 }
 
-/** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion */
-const daVecchioMod = (m: StatoModifica): StatoModifica => ((m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : (m.modo as string) === 'personaggio' ? { ...m, modo: 'estrai' } : m)
+/** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion; la qualità «turbo» della 1.0 ora è «alta» */
+const daVecchioMod = (v: StatoModifica): StatoModifica => {
+  const m = { ...v, qualita: senzaTurbo(v.qualita) }
+  return (m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : (m.modo as string) === 'personaggio' ? { ...m, modo: 'estrai' } : m
+}
 
 let idAvviso = 0
 
