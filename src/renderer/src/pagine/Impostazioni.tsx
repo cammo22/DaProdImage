@@ -6,7 +6,6 @@ import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
-import { scaricaTurbo, useTurbo } from '../componenti/Turbo'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
 
@@ -30,7 +29,6 @@ export function Impostazioni(): JSX.Element {
 
 function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
-  const turbo = useTurbo()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
@@ -204,7 +202,7 @@ function OpzioniGenerali(): JSX.Element {
           <h2 className="chiudibile" onClick={() => alterna('PRESTAZIONI E MEMORIA')}>{chiusi['PRESTAZIONI E MEMORIA'] ? '▸' : '▾'} PRESTAZIONI E MEMORIA</h2>
           <div className="pannello" style={chiusi['PRESTAZIONI E MEMORIA'] ? { display: 'none' } : undefined}>
             <div className="voce">
-              <div className="et"><b>Scarica da solo quello che manca</b><small>Quando l'app è ferma per un minuto, scarica i file consigliati che non hai (il LoRA Turbo, il traduttore…). I modelli grandi li scegli tu</small></div>
+              <div className="et"><b>Scarica da solo quello che manca</b><small>Quando l'app è ferma per un minuto, scarica i file consigliati che non hai (il traduttore…). I modelli grandi li scegli tu</small></div>
               <Interruttore acceso={imp.scaricaInIdle} cambia={(scaricaInIdle) => salva({ scaricaInIdle })}>{imp.scaricaInIdle ? 'Sì' : 'No'}</Interruttore>
             </div>
             <div className="voce">
@@ -221,18 +219,6 @@ function OpzioniGenerali(): JSX.Element {
                 cambia={(memoria) => salva({ memoria })}
                 voci={[{ id: 'auto', nome: 'Auto' }, { id: 'bassa', nome: '6 GB' }, { id: 'normale', nome: '8-12 GB' }, { id: 'alta', nome: '16 GB+' }]}
               />
-            </div>
-            <div className="voce">
-              <div className="et"><b>Turbo (8 passi)</b><small>Il LoRA Turbo8: circa 5 volte più veloce. Si sceglie da Qualità in Crea e Modifica</small></div>
-              <div className="riga">
-                {turbo.presente ? (
-                  <span className="distintivo si">✓ pronto · {imp.loraTurbo}</span>
-                ) : turbo.dl?.stato === 'in corso' || turbo.dl?.stato === 'verifica' ? (
-                  <span className="piccolo tenue">Scarico… {turbo.dl.totali ? Math.round((turbo.dl.ricevuti / turbo.dl.totali) * 100) : 0}%</span>
-                ) : (
-                  <button className="btn piccolo primario" onClick={() => void scaricaTurbo()}><I.fulmine /> Scarica il Turbo (~1,4 GB)</button>
-                )}
-              </div>
             </div>
             <div className="voce">
               <div className="et"><b>Traduci in inglese da solo</b><small>Qwen-Image capisce meglio l'inglese: i prompt in italiano si traducono prima di disegnare. I testi fra virgolette restano identici</small></div>

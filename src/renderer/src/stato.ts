@@ -9,14 +9,14 @@ import type { Misura } from './componenti/Misura'
 // I LoRA stanno dentro Opzioni (`SchedaOpzioni`).
 export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'impostazioni'
 export type SchedaOpzioni = 'generali' | 'lora'
-export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
+export type Qualita = 'bozza' | 'alta' | 'massima'
 export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
 
-export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
+export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, massima: 50 }
 
 /** il modello che disegna adesso (Qwen, Klein veloce, Klein Base) */
 export const famigliaCorrente = (): Famiglia => usaStato.getState().imp?.famiglia || 'qwen'
-/** i passi per una qualità col modello scelto (Klein non ha il Turbo: lì «turbo» vale come bozza) */
+/** i passi per una qualità col modello scelto (il Turbo di Qwen non c'è più) */
 export const passiDi = (q: Qualita, f: Famiglia = famigliaCorrente()): number => FAMIGLIE[f].passi[q]
 
 export interface FotoBase {

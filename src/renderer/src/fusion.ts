@@ -20,10 +20,9 @@ export const FORMATI_FUSION: { id: string; nome: string; r?: [number, number] }[
 export type Esito = { q: Richiesta } | { errore: string }
 
 /** Fusion: tutte le foto sono riferimenti, ne esce una immagine nuova in base al testo */
-export function richiestaFusion(s: StatoModifica, turboPronto: boolean): Esito {
+export function richiestaFusion(s: StatoModifica): Esito {
   if (!s.riferimenti.length) return { errore: 'Aggiungi almeno una foto' }
   if (!s.prompt.trim()) return { errore: 'Scrivi cosa deve nascere dalle foto (es. "la donna di <image1> con la giacca di <image2> in una strada di Tokyo di notte")' }
-  if (s.qualita === 'turbo' && !turboPronto) return { errore: 'Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta' }
   const mis = s.misura && s.misura.tipo === 'custom' ? s.misura : null
   const [a, b] = mis ? [mis.w, mis.h] : FORMATI_FUSION.find((f) => f.id === s.formatoFusion)?.r || [s.riferimenti[0].larghezza, s.riferimenti[0].altezza]
   const px = s.mp * 1048576
@@ -109,10 +108,9 @@ export async function pianificaEsempio(s: StatoModifica): Promise<{ testo: strin
 }
 
 /** Esempio: l'esempio è la base (`image_1`), le altre foto sono i riferimenti (ritagliati se serviva); l'istruzione è il piano del modello (o quello che hai corretto) */
-export function richiestaEsempio(s: StatoModifica, turboPronto: boolean, piano: { testo: string; ritagli?: (string | null)[] }): Esito {
+export function richiestaEsempio(s: StatoModifica, piano: { testo: string; ritagli?: (string | null)[] }): Esito {
   if (!s.esempio) return { errore: 'Metti la foto di esempio: com\'è il risultato che vuoi' }
   if (!s.riferimenti.length) return { errore: 'Aggiungi almeno una foto di riferimento (quello che vuoi portare nell\'esempio)' }
-  if (s.qualita === 'turbo' && !turboPronto) return { errore: 'Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta' }
   return {
     q: {
       ...richiestaBase(),

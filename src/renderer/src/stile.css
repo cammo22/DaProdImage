@@ -442,8 +442,6 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 17p
 .campo-preset input, .campo-preset textarea { font-size: 14.5px; padding: 7px 10px; }
 
 /* ---------- Turbo ---------- */
-.turbo-box { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,213,74,.45); background: linear-gradient(135deg, rgba(255,213,74,.10), rgba(255,61,242,.06)); }
-.turbo-box b { color: var(--oro); }
 .turbo-ic { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--oro); color: #1d1300; }
 .turbo-ic svg { width: 18px; height: 18px; }
 

@@ -6,7 +6,6 @@ import { usaStato, attesiModifica, scegliFoto, type FotoBase } from '../stato'
 import { api, urlFile } from '../api'
 import { conParoleLora } from '../componenti/SceltaLora'
 import { type AnteprimaTela, type ComandiTela, type Strumento } from '../componenti/TelaMaschera'
-import { useTurbo } from '../componenti/Turbo'
 import { MISURA0, conMisura, dimMp } from '../componenti/Misura'
 import { MAX_FUSION } from '../componenti/Fusion'
 import { ControlliEstrai } from '../componenti/Estrai'
@@ -43,7 +42,6 @@ export function Modifica(): JSX.Element {
   const [categoria, setCategoria] = useState('persone')
   const [camera, setCamera] = useState<PosizioneCamera>(CAMERA0)
   const [scrivendo, setScrivendo] = useState(false)
-  const turbo = useTurbo()
   // Fusion: i risultati (foto nuove) e il lavoro che li sta creando
   const [ris, setRis] = useState<Opera[]>([])
   const fusion = m.modo === 'fusion'
@@ -62,7 +60,7 @@ export function Modifica(): JSX.Element {
   const fusInCorso: Lavoro | undefined = lavori.find((l) => l.stato === 'in corso' && attesiFusion.has(l.id))
   const fusInAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiFusion.has(l.id)).length
   const forzaRapida = rapida?.forza
-  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, m.qualita === 'turbo' ? 4 : 8), Math.round(passi * forzaRapida)) : passi) * m.quante
+  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, 8), Math.round(passi * forzaRapida)) : passi) * m.quante
   /** a che risoluzione esce la foto (se si sa già) */
   const dimOut = ((): { w: number; h: number } | null => {
     const mis = m.misura ?? MISURA0
@@ -302,10 +300,6 @@ export function Modifica(): JSX.Element {
       avvisa(`Serve ${rapida.rifNome || 'una foto di riferimento'}: aggiungila in Riferimenti (<image2>)`, 'errore')
       return
     }
-    if (s.qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
-      return
-    }
     // le idee scelte: il modello guarda la foto e le mescola in una sola istruzione, inventando i dettagli
     let testo = s.prompt.trim()
     if (s.modo !== 'espandi' && idee.length) {
@@ -386,8 +380,8 @@ export function Modifica(): JSX.Element {
         }
         setModifica({ pianoEsempio: { chiave, ...piano } })
       }
-      e = richiestaEsempio(s, turbo.presente, piano)
-    } else e = richiestaFusion(s, turbo.presente)
+      e = richiestaEsempio(s, piano)
+    } else e = richiestaFusion(s)
     if ('errore' in e) {
       avvisa(e.errore, 'errore')
       return

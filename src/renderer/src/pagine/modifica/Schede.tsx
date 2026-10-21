@@ -5,7 +5,6 @@ import { usaStato, type FotoBase } from '../../stato'
 import { urlFile } from '../../api'
 import { I } from '../../componenti/Icone'
 import { Casella } from '../../componenti/Casella'
-import { ScegliQualita } from '../../componenti/ScegliQualita'
 import { ScegliModello } from '../../componenti/ScegliModello'
 import { Contatore, Cursore, Segmenti } from '../../componenti/Controlli'
 import { SceltaLora } from '../../componenti/SceltaLora'
@@ -152,17 +151,12 @@ function SchedaTesto({ prompt, base, griglia, haMaschera, scrivendo, migliora, s
   )
 }
 
-/** Esempio: l'avviso sul Turbo e «Il piano del modello» */
+/** Esempio: «Il piano del modello» */
 function SchedaEsempio(): JSX.Element | null {
   const { modifica: m, setModifica } = usaStato()
   if (m.modo !== 'esempio') return null
   return (
     <>
-      {m.qualita === 'turbo' && (
-        <div className="avviso-box" style={{ margin: '10px 16px 0', padding: '8px 10px', fontSize: 13.5 }}>
-          Il Turbo è velocissimo ma segue meno i <b>colori e i dettagli</b> delle tue foto: per le iridi, i vestiti, i loghi… prova <b>Alta</b>.
-        </div>
-      )}
       <div className="sezione">
         <h3>Il piano del modello {m.pianoEsempio && <button className="btn piccolo fantasma" style={{ marginLeft: 'auto' }} onClick={() => setModifica({ pianoEsempio: null })} title="Al prossimo lavoro il modello guarda di nuovo le foto e rifà il piano">Rifai</button>}</h3>
         {m.pianoEsempio && m.pianoEsempio.chiave === chiaveEsempio(m) ? (
@@ -302,16 +296,13 @@ function SchedaDimensioni({ base }: { base: FotoBase | null }): JSX.Element {
   )
 }
 
-/** Qualità, quante versioni e (in Espandi) i megapixel */
+/** Passi del modello, quante versioni e (in Espandi) i megapixel */
 function SchedaQualita({ passi, stima }: { passi: number; stima: number }): JSX.Element {
   const { modifica: m, setModifica } = usaStato()
   return (
     <div className="sezione">
-      <h3>Qualità <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
-      <div>
-        <ScegliQualita valore={m.qualita} cambia={(qualita) => setModifica({ qualita })} />
-      </div>
-      <div className="riga spazia" style={{ marginTop: 10 }}>
+      <h3>Versioni <span className="dx">{passi} passi · ~{durata(stima)}</span></h3>
+      <div className="riga spazia">
         <span className="tenue">Quante versioni</span>
         <Contatore valore={m.quante} min={1} max={8} cambia={(quante) => setModifica({ quante })} />
       </div>

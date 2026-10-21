@@ -9,8 +9,6 @@ import { VistaZoom } from './VistaZoom'
 import { AdattaFoto } from './AdattaFoto'
 import { percentuale } from './Coda'
 import { Contatore, Interruttore, Segmenti } from './Controlli'
-import { useTurbo } from './Turbo'
-import { ScegliQualita } from './ScegliQualita'
 import { ScegliMp, Uscita } from './Misura'
 import { Omino } from './Omino'
 import { controllaScheletro } from '../pulisciOmino'
@@ -163,7 +161,6 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
 export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
   const s = usaEstrai()
   const { modifica: m, setModifica, avvisa } = usaStato()
-  const turbo = useTurbo()
   const el = s.elementi.find((x) => x.id === s.scelto)
   const stima = stimaSecondi(usaStato.getState().imp?.tempi, m.mp, passiDi(m.qualita)) * m.quante
   const r = proporzioniEstrai(s, el, p.base)
@@ -173,10 +170,6 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
 
   const estrai = async (): Promise<void> => {
     if (!p.base || !el) return
-    if (m.qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
-      return
-    }
     try {
       const q = await richiestaEstrai(p.base, el, { qualita: m.qualita, mp: m.mp, quante: m.quante })
       const conOmino = persona && s.inquadratura === 'intera' && s.posa === 'omino'
@@ -281,8 +274,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
           </div>
           <Uscita w={fin.w} h={fin.h} nota={fin.w !== dim.w || fin.h !== dim.h ? `disegnata a ${dim.w}×${dim.h} e poi portata qui` : undefined} />
           <div style={{ marginTop: 12 }}>
-            <span className="piccolo tenue">Qualità · {passiDi(m.qualita)} passi · ~{durata(stima)}</span>
-            <ScegliQualita valore={m.qualita} cambia={(qualita) => setModifica({ qualita })} />
+            <span className="piccolo tenue">{passiDi(m.qualita)} passi · ~{durata(stima)}</span>
           </div>
           <div className="riga spazia" style={{ marginTop: 10 }}>
             <span className="tenue">Quante versioni</span>

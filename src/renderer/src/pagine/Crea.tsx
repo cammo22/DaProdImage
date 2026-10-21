@@ -12,7 +12,7 @@ import { MenuStili, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
 import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi } from '../util'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, richiestaBase, rifaiCon, rifacibileIn, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
 import { MODELLI, modelloDaImpostazioni, parametriModello } from '@shared/modelli'
 import { Casella } from '../componenti/Casella'
@@ -325,6 +325,8 @@ export function Crea(): JSX.Element {
           <div className="azioni-risultato">
             <button className="btn" onClick={() => apriInModifica(fotoDaOpera(op))}><I.modifica /> Modifica</button>
             <button className="btn" onClick={() => varia(op)} title="Due variazioni che tengono la composizione"><I.varia /> Varia</button>
+            {rifacibileIn(op).includes('klein-base') && <button className="btn primario" onClick={() => void rifaiCon(op, 'klein-base')} title="Rifà questa foto con Klein Base (50 passi, CFG 3,5): stesso prompt e stesso seed, la stessa famiglia di modelli"><I.crea /> Rifai in qualità piena</button>}
+            {rifacibileIn(op).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(op, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (40 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
             <button className="btn" onClick={() => rifinisci(op)} title="Ingrandisce fino al 2K e ridisegna i dettagli"><I.ingrandisci /> Rifinisci 2K</button>
             <button className="btn" onClick={() => ingrandisci(op, 2)} title="Ingrandimento veloce 2× (4x-UltraSharp)"><I.ingrandisci /> 2×</button>
             <button className="btn" onClick={() => riusa(op)} title="Rimette prompt e seed"><I.ricicla /> Riusa</button>

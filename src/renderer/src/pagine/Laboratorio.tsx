@@ -5,12 +5,10 @@ import { usaStato, scegliFoto, type FotoBase, type Qualita } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Casella } from '../componenti/Casella'
-import { ScegliQualita } from '../componenti/ScegliQualita'
 import { Segmenti } from '../componenti/Controlli'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { SceltaMisura, ScegliMp, MISURA0, type Misura } from '../componenti/Misura'
 import { AvvisoLora } from '../componenti/AvvisoLora'
-import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
 import { perQualita } from '../azioni'
 import { CAMERA0, ControlloCamera } from '../componenti/Camera'
@@ -40,7 +38,6 @@ const PERCHE: Record<string, string> = {
 export function Laboratorio(): JSX.Element {
   const { imp, lavori, avvisa } = usaStato()
   const { runs, attiva, vista, scelto } = usaLab()
-  const turbo = useTurbo()
   // le foto da lavorare (anche tante: la ricetta parte per ognuna)
   const [fotos, setFotos] = useState<FotoBase[]>([])
   const foto = fotos[0] ?? null
@@ -108,10 +105,6 @@ export function Laboratorio(): JSX.Element {
 
   const parti = async (): Promise<void> => {
     if (!w) return
-    if (qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA, o scegli Alta', 'errore')
-      return
-    }
     if (!scelti.length) {
       avvisa('Segna almeno una cosa da fare', 'errore')
       return
@@ -335,8 +328,7 @@ export function Laboratorio(): JSX.Element {
               )}
 
               <div className="sezione">
-                <h3>Qualità <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
-                <ScegliQualita valore={qualita} cambia={setQualita} senzaMassima />
+                <h3>Passi <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
                 {!passi.some((x) => !x.crea) && (
                   <div style={{ marginTop: 10 }}>
                     <span className="piccolo tenue">Grandezza della foto</span>
