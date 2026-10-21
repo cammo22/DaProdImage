@@ -2,11 +2,11 @@
 
 ## 1.0.2 — 2026-10-21
 
-Con Klein anche tutto il resto del testo (Migliora prompt, Foto → prompt, Idee, Estrai, Fusion, Esempio, Sorpresa) scrive col Qwen3-VL 4B: da circa 0,4 token al secondo a **15-40**.
+Con Klein anche tutto il resto del testo (Migliora prompt, Foto → prompt, Idee, Estrai, Fusion, Esempio, Sorpresa) lo scrive il Qwen3-VL 4B: da circa 0,4 token al secondo a **15-40**.
 
 - **Tutte le funzioni di testo usano il 4B di Klein.** Nella 1.0.1 ci arrivava solo il potenziamento del prompt; Migliora prompt, Foto → prompt, «Sorprendimi», Idee, Estrai, Fusion/Esempio, Sorpresa del Laboratorio,
   il controllo della guida di posa e la traduzione con l'LLM continuavano a usare l'encoder di Qwen (l'8B, quasi tutto sul processore). Ora, se la famiglia scelta è Klein o Klein Base e il file del 4B c'è, scrive lui
-  (lo decide il motore dell'app, `conEncoderDiTesto` in `lavori.ts`: le pagine non cambiano). Con Qwen-Image tutto resta com'era; se il 4B non si trova si ripiega sull'encoder di Qwen.
+  (lo decide il motore dell'app, `conEncoderDiTesto` in `lavori.ts`: le pagine restano uguali). Con Qwen-Image tutto resta com'era; se il 4B non si trova si ripiega sull'encoder di Qwen.
 - **Il 4B non risponde più «user», «assistant» o niente.** Il nodo `TextGenerate` con `thinking: false` aggiunge in fondo al prompt un blocco `<think></think>` vuoto e il 4B si confondeva (foto + richiesta breve → risposta vuota,
   traduzione → «user», Sorpresa → «assistant …»). Col 4B ora si manda `thinking: true`: il blocco non c'è, risponde subito e non ragiona (nessun token in più). Questo vale anche per il potenziamento della 1.0.1.
 - Se il 4B mette un titolo in grassetto prima del testo («**Image Idea:** …») l'app lo toglie.

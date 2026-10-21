@@ -9,7 +9,7 @@
 
 # DaProd Image
 
-**Qwen-Image 2.1 sul tuo PC. Scrivi, segna, fatto.**
+**Qwen-Image 2.1 e FLUX 3 Klein sul tuo PC. Scrivi, segna, fatto.**
 
 Crei immagini dal testo, anche **poster, infografiche, loghi e fumetti** con i testi scritti giusti.
 Modifichi le foto con una frase, o **solo la zona che segni col pennello**: il resto resta identico al pixel.
@@ -43,8 +43,7 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
    *Ulteriori informazioni → Esegui comunque*.
 2. Al primo avvio l'app guarda il PC (scheda, VRAM, RAM, disco) e **trova da sola il modello** se l'hai già
    scaricato (in Download, Desktop o Documenti): lo usa senza copiarlo.
-3. **Installa e inizia**: scarica il motore (ComfyUI + PyTorch CUDA, ~4 GB) e i file che mancano (text encoder
-   Qwen3-VL, VAE Texture-Fix, 4x-UltraSharp, il decoder delle anteprime), controllando ognuno con lo sha256.
+3. **Installa e inizia**: scarica il motore (ComfyUI + PyTorch CUDA, ~4 GB) e i file che mancano (per Qwen: text encoder Qwen3-VL, VAE Texture-Fix, 4x-UltraSharp; il decoder delle anteprime), controllando ognuno con lo sha256. I file di Klein, se li scegli, si scaricano con un clic.
    Se si interrompe, riparte da lì.
 
 Gli **aggiornamenti** arrivano da soli: l'app li scarica in sottofondo (solo i pezzi cambiati) e propone
@@ -102,8 +101,9 @@ Modifica → Estrai e nelle ricette del Laboratorio. Diventa un manichino grigio
 
 ## Due modelli: Qwen e FLUX 3 Klein
 
-In cima a Crea, Modifica ed Estrai scegli **chi disegna**: **Qwen-Image 2.1** (con i LoRA e il Turbo), **Klein** (veloce, 16 passi) o **Klein Base**
-(la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+In cima a Crea, Modifica ed Estrai scegli **chi disegna**: **Qwen-Image 2.1** (con i LoRA e il Turbo), **Klein** (veloce, 16 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+
+Con Klein anche la scrittura dei testi passa al suo encoder, **Qwen3-VL 4B**: Migliora prompt, Foto → prompt, Idee, Estrai, Fusion ed Esempio scrivono a 15-40 token al secondo sulla RTX 4060, invece di circa 0,4 con l'encoder di Qwen. Klein non usa i LoRA né il Turbo di Qwen: l'app li nasconde.
 
 ## Estrai
 
@@ -118,9 +118,10 @@ luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di
 
 ## I modelli
 
-Per tutti solo **Q4, Q6, Q8**. Denoiser: Qwen-Image 2.1 Uncensored (40 passi) o il **Turbo di AtomicChat** (8 passi,
+Per Qwen-Image solo **Q4, Q6, Q8**. Denoiser: Qwen-Image 2.1 Uncensored (40 passi) o il **Turbo di AtomicChat** (8 passi,
 senza LoRA). LLM (legge il prompt e guarda le foto; i prompt li traduce Opus-MT): Qwen3-VL 8B int8 di sempre, oppure GGUF uncensored di
 AtomicChat o di mradermacher. Si cambiano e si scaricano da Opzioni.
+Klein ha i suoi file (versioni int8 o bf16, più l'encoder Qwen3-VL 4B e il VAE FLUX.2): si scaricano con un clic dal selettore «Modello che disegna».
 
 ## E poi
 
