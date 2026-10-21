@@ -3,7 +3,7 @@
 // e alla fine porta l'immagine in galleria con dentro le impostazioni.
 import { nativeImage } from 'electron'
 import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import type { Famiglia, Impostazioni, Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
@@ -12,6 +12,7 @@ import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './trad
 import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nodiDisponibili, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
+import { pulisciDidascalia, senzaTitolo } from './didascalia'
 import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { encoderKleinFile, fileKlein } from './klein'
 import { elencoLora } from '../lora'
@@ -305,12 +306,12 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
     : `${q.larghezza > 0 && q.modalita === 'crea' ? `TARGET CANVAS: ${Math.round(q.larghezza / g0)}:${Math.round(q.altezza / g0)}\n` : ''}${p}`
   const sistema = conFoto ? (encoderKlein ? PUP_I2I_BREVE : PUP_I2I) : encoderKlein ? PUP_T2I_BREVE : PUP_T2I
   const g = costruisci(
-    { ...q, modalita: 'descrivi', encoderKlein, prompt: utente, sistema, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: 0, immagini: [] },
+    { ...q, modalita: 'descrivi', encoderKlein, prompt: utente, sistema, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: q.seed >= 0 ? q.seed : randomInt(1, 2 ** 31), immagini: [] },
     imp, { immagini: ing.immagini.slice(0, 1) }, 'pup'
   )
   g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Potenzio il prompt']))
   const u = await lancia(g, 'testo', l, true)
-  const t = (u.testo || '').trim().replace(/^["“]+|["”]+$/g, '').replace(/^(caption|instruction)\s*:\s*/i, '')
+  const t = pulisciDidascalia(u.testo || '').replace(/^["“]+|["”]+$/g, '').replace(/^(caption|instruction)\s*:\s*/i, '')
   if (t.length < 20) throw new Error('didascalia vuota')
   potenziati.set(chiave, t)
   if (potenziati.size > 100) potenziati.delete(potenziati.keys().next().value as string)
@@ -329,9 +330,6 @@ function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp
   if (!enc) return { q, imp }
   return { q: { ...q, encoderKlein: true }, imp: { ...imp, kleinEncoder: enc } }
 }
-
-/** il 4B scrive a volte un titolo in grassetto prima del testo («**Image Idea:** …»): si toglie */
-const senzaTitolo = (t: string): string => t.replace(/^\s*\*\*[^*\n]{1,40}\*\*:?\s*/, '').trim()
 
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
 async function inInglese(l: Lavoro): Promise<string> {

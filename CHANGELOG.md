@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.3 — 2026-10-21
+
+Il potenziamento del prompt di Klein non ricopia più le frasi di cortesia e le regole del 4B, e ogni volta scrive una didascalia diversa.
+
+- **Pulizia della didascalia.** Il Qwen3-VL 4B apre spesso con «Here’s the expanded, detailed caption for your image request:», con le regole del sistema ricopiate («You're a prompt upsampler…») o con un esempio «Input / Output»:
+  quella frase finiva nel prompt del modello e gli faceva male. `pulisciDidascalia` (ora in `src/main/motore/didascalia.ts`, file puro senza Electron) toglie preambolo, regole, etichette e titolo in grassetto e tiene la didascalia vera.
+  Lo stesso file ha `senzaTitolo`, che usano anche le altre funzioni di testo con Klein.
+- **Seme casuale nel potenziamento.** Prima era sempre 0, quindi lo stesso prompt dava sempre la stessa didascalia anche cambiando seme; ora, se il seme è casuale, ne esce una nuova (la cache per prompt resta: finché l'app è aperta, lo stesso prompt dà la stessa didascalia).
+- **Prove.** `test/pulisci_didascalia.mjs` importa il codice vero (non ne ricopia più la logica) e prova dieci casi più due risposte vere del 4B in `test/campioni-pup/`.
+  `scripts/bench_upsampler.mjs` misura tok/s, VRAM e RAM del potenziamento caricando il 4B come `krea2` e con `thinking: true`, come fa l'app.
+
 ## 1.0.2 — 2026-10-21
 
 Con Klein anche tutto il resto del testo (Migliora prompt, Foto → prompt, Idee, Estrai, Fusion, Esempio, Sorpresa) lo scrive il Qwen3-VL 4B: da circa 0,4 token al secondo a **15-40**.
