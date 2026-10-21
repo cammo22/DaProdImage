@@ -6,3 +6,6 @@ dist/
 test/.out/
 resources/bin/uv.exe
 __pycache__/
+
+# report dei benchmark (output locale)
+bench*.json
