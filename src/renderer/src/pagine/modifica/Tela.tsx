@@ -56,8 +56,7 @@ export function TelaModifica(p: Props): JSX.Element {
             valore={m.modo}
             cambia={(modo) => setModifica({ modo })}
             voci={[
-              { id: 'tutta', nome: 'Tutta la foto' },
-              { id: 'zona', nome: 'Solo una zona' },
+              { id: 'scrivi', nome: 'Scrivi', titolo: 'Scrivi cosa cambiare: se segni una zona col pennello cambia solo lì, se no tutta la foto' },
               { id: 'espandi', nome: 'Espandi' },
               { id: 'fusion', nome: 'Fusion', titolo: 'Più foto, tutte riferimenti: ne esce una immagine nuova' },
               { id: 'esempio', nome: 'Esempio', titolo: 'Dai le foto da usare e una foto di esempio di come vuoi il risultato' },
@@ -68,6 +67,7 @@ export function TelaModifica(p: Props): JSX.Element {
         {disegna && base && !confrontoAttivo && (
           <>
             <span className="sep" />
+            <span className="piccolo tenue" title="Segna col pennello la zona da cambiare: senza zona cambia tutta la foto">Zona</span>
             {([
               ['pennello', I.pennello, 'Pennello (B)'],
               ['gomma', I.gomma, 'Gomma (E)'],
@@ -113,7 +113,7 @@ export function TelaModifica(p: Props): JSX.Element {
           daPc={daPc}
           riusa={(o) => aggiungiFusion([fotoDaOpera(o)])}
           esempio={esempioMode ? { foto: m.esempio, cambia: (esempio) => setModifica({ esempio }), daGalleria: async () => { const [f] = await scegliFoto(false); if (f) setModifica({ esempio: f }) }, daPc: async () => { const [x] = await api.file.scegliImmagini(false); if (x) { try { setModifica({ esempio: await normalizza(x) }) } catch (e) { avvisa((e as Error).message, 'errore') } } } } : undefined}
-          apriInModifica={(o) => { apriInModifica(fotoDaOpera(o)); setModifica({ modo: 'tutta' }) }}
+          apriInModifica={(o) => { apriInModifica(fotoDaOpera(o)); setModifica({ modo: 'scrivi' }) }}
           mostra={(o) => void api.galleria.mostra(o.id)}
         />
       ) : null}
@@ -122,7 +122,7 @@ export function TelaModifica(p: Props): JSX.Element {
           <div className="vuoto">
             <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
             <p>Trascina qui una foto, incollala con <kbd>Ctrl</kbd>+<kbd>V</kbd>, o scegline una.</p>
-            <p className="piccolo">Cambi tutta la foto con una frase o un'azione rapida, o segni col pennello solo la zona da cambiare: il resto resta identico al pixel.</p>
+            <p className="piccolo">Scrivi cosa cambiare, o scegli un'idea: cambia tutta la foto. Se prima segni col pennello una zona, cambia solo quella e il resto resta identico al pixel.</p>
             <div className="riga" style={{ justifyContent: 'center', marginTop: 14 }}>
               <button className="btn primario" onClick={daGalleria}><I.galleria /> Dalla galleria</button>
               <button className="btn" onClick={daPc}><I.immagine /> Dal PC</button>

@@ -1,4 +1,4 @@
-// Modifica: tutta la foto, solo una zona (la segni col pennello) o allargarla oltre i bordi.
+// Modifica: scrivi cosa cambiare (tutta la foto, o solo la zona se l'hai segnata col pennello) o allarga la foto oltre i bordi.
 // Le azioni rapide (persone, vestiti, situazioni, camera, luce, stili, testi) mettono l'istruzione giusta;
 // dopo ogni modifica la nuova versione resta sulla tela, col confronto prima/dopo e il tasto "Continua da qui".
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
@@ -11,7 +11,8 @@ import { MAX_FUSION } from '../componenti/Fusion'
 import { ControlliEstrai } from '../componenti/Estrai'
 import { pianificaIdee, unisciRapide } from '../regista'
 import { TelaModifica } from './modifica/Tela'
-import { SchedeModifica, NIENTE } from './modifica/Schede'
+import { SchedeModifica } from './modifica/Schede'
+import { NIENTE, bordiPreset, type PresetEspandi } from './modifica/SchedaEspandi'
 import { FORMATI_FUSION, chiaveEsempio, pianificaEsempio, richiestaEsempio, richiestaFusion } from '../fusion'
 import { ascoltatoriLavoro } from '../stato'
 import { CAMERA0, componiCamera, conLora, type PosizioneCamera } from '../componenti/Camera'
@@ -49,6 +50,8 @@ export function Modifica(): JSX.Element {
   const estraiMode = m.modo === 'estrai'
   /** i modi con una griglia di foto al posto della tela: Fusion e Esempio */
   const griglia = fusion || esempioMode
+  /** in Scrivi: se c'è una zona disegnata vale la zona, se no tutta la foto (si decide da quello che hai sulla tela) */
+  const zona = m.modo === 'scrivi' && haMaschera
 
   const base = m.base
   const indice = base ? m.versioni.findIndex((v) => v.percorso === base.percorso) : -1
@@ -60,7 +63,7 @@ export function Modifica(): JSX.Element {
   const fusInCorso: Lavoro | undefined = lavori.find((l) => l.stato === 'in corso' && attesiFusion.has(l.id))
   const fusInAttesa = lavori.filter((l) => (l.stato === 'in coda' || l.stato === 'in corso') && attesiFusion.has(l.id)).length
   const forzaRapida = rapida?.forza
-  const stima = stimaSecondi(imp?.tempi, m.mp, m.modo === 'zona' && forzaRapida ? Math.max(Math.min(passi, 8), Math.round(passi * forzaRapida)) : passi) * m.quante
+  const stima = stimaSecondi(imp?.tempi, m.mp, zona && forzaRapida ? Math.max(Math.min(passi, 8), Math.round(passi * forzaRapida)) : passi) * m.quante
   /** a che risoluzione esce la foto (se si sa già) */
   const dimOut = ((): { w: number; h: number } | null => {
     const mis = m.misura ?? MISURA0
@@ -71,9 +74,9 @@ export function Modifica(): JSX.Element {
     }
     const rif = esempioMode ? m.esempio : base
     if (!rif || m.modo === 'espandi') return null
-    return m.modo === 'zona' || mis.tipo === 'originale' ? { w: rif.larghezza, h: rif.altezza } : dimMp(m.mp, rif.larghezza, rif.altezza)
+    return zona || mis.tipo === 'originale' ? { w: rif.larghezza, h: rif.altezza } : dimMp(m.mp, rif.larghezza, rif.altezza)
   })()
-  const categorie = categoriePer(m.modo === 'zona' ? 'zona' : 'tutta')
+  const categorie = categoriePer(zona ? 'zona' : 'tutta')
   const cat = categorie.find((c) => c.id === categoria) || categorie[0]
   const loraCamera = !!fileLoraCamera() && lore.length >= 0
 
@@ -118,8 +121,15 @@ export function Modifica(): JSX.Element {
   // cambiando modo si torna alla tela (per disegnare la zona o vedere la cornice)
   useEffect(() => {
     setConfronto(false)
-    if (!categoriePer(m.modo === 'zona' ? 'zona' : 'tutta').some((c) => c.id === categoria)) setCategoria(m.modo === 'zona' ? 'zona-base' : 'persone')
   }, [m.modo])
+  // con la zona o senza cambiano le idee che hanno senso
+  useEffect(() => {
+    if (!categoriePer(zona ? 'zona' : 'tutta').some((c) => c.id === categoria)) setCategoria(zona ? 'zona-base' : 'persone')
+  }, [zona])
+  // Fusion ed Estrai non hanno la tela: la zona disegnata si perde, e con lei il segno
+  useEffect(() => {
+    if (griglia || estraiMode) setHaMaschera(false)
+  }, [griglia, estraiMode])
 
   // un risultato nuovo: si apre il confronto prima/dopo (con "Continua da qui" bene in vista)
   const lunghezza = useRef(m.versioni.length)
@@ -189,7 +199,7 @@ export function Modifica(): JSX.Element {
   }
   /** la pagina torna com'era appena aperta, senza chiudere il programma */
   const togliFoto = (): void => {
-    setModifica({ base: null, versioni: [], riferimenti: [], prompt: '', modo: 'tutta', bordi: { ...NIENTE }, misura: MISURA0 })
+    setModifica({ base: null, versioni: [], riferimenti: [], prompt: '', modo: 'scrivi', bordi: { ...NIENTE }, misura: MISURA0 })
     setConfronto(false)
     setRapida(null)
     setHaMaschera(false)
@@ -236,7 +246,7 @@ export function Modifica(): JSX.Element {
       if (e.key === 'Enter' && e.ctrlKey) void manda()
       else if (e.ctrlKey && e.key.toLowerCase() === 'z') tela.current?.annulla()
       else if (e.ctrlKey && e.key.toLowerCase() === 'y') tela.current?.ripeti()
-      else if (m.modo === 'zona' && !e.ctrlKey) {
+      else if (m.modo === 'scrivi' && !e.ctrlKey) {
         const k = e.key.toLowerCase()
         if (k === 'b') setStrumento('pennello')
         else if (k === 'e') setStrumento('gomma')
@@ -300,17 +310,20 @@ export function Modifica(): JSX.Element {
       avvisa(`Serve ${rapida.rifNome || 'una foto di riferimento'}: aggiungila in Riferimenti (<image2>)`, 'errore')
       return
     }
+    // Scrivi: la zona disegnata (se c'è) decide se si cambia solo lì o tutta la foto
+    const disegnata = s.modo === 'scrivi' ? tela.current?.esporta() ?? null : null
+    const tipo: 'modifica' | 'zona' | 'espandi' = s.modo === 'espandi' ? 'espandi' : disegnata ? 'zona' : 'modifica'
     // le idee scelte: il modello guarda la foto e le mescola in una sola istruzione, inventando i dettagli
     let testo = s.prompt.trim()
     if (s.modo !== 'espandi' && idee.length) {
       if (s.fantasia === 'fedele' && idee.length === 1 && !testo) testo = idee[0].prompt
       else {
-        const chiave = JSON.stringify([s.base.percorso, idee.map((r) => r.id), testo, s.riferimenti.map((r) => r.percorso), s.fantasia, s.modo])
+        const chiave = JSON.stringify([s.base.percorso, idee.map((r) => r.id), testo, s.riferimenti.map((r) => r.percorso), s.fantasia, tipo === 'zona' ? 'zona' : s.modo])
         let piano = s.pianoIdee?.chiave === chiave ? s.pianoIdee.testo : ''
         if (!piano) {
           avvisa('Il modello guarda la foto e mescola le idee…', 'info')
           try {
-            piano = await pianificaIdee({ base: s.base, idee, nota: testo, riferimenti: s.riferimenti, fantasia: s.fantasia, zona: s.modo === 'zona' })
+            piano = await pianificaIdee({ base: s.base, idee, nota: testo, riferimenti: s.riferimenti, fantasia: s.fantasia, zona: tipo === 'zona' })
           } catch (er) {
             avvisa((er as Error).message, 'errore')
             return
@@ -326,7 +339,7 @@ export function Modifica(): JSX.Element {
     const q = {
       ...base0,
       lora: [...base0.lora, ...extra],
-      modalita: (s.modo === 'tutta' ? 'modifica' : s.modo) as 'modifica' | 'zona' | 'espandi',
+      modalita: tipo,
       prompt: conParoleLora(testo),
       immagini: [s.base.percorso, ...s.riferimenti.map((r) => r.percorso)],
       megapixel: s.mp,
@@ -334,20 +347,15 @@ export function Modifica(): JSX.Element {
       quante: s.quante,
       origine: s.base.operaId,
       // Klein: una richiesta breve scritta da te si espande; le istruzioni già costruite (idee, azioni rapide) no
-      potenzia: s.modo === 'tutta' && !rapida && !idee.length,
+      potenzia: tipo === 'modifica' && !rapida && !idee.length,
       etichetta: (rapida && rapida.id !== 'camera' ? rapida.nome + ' · ' : rapida ? 'Camera · ' : '') + (testo.slice(0, 50) || 'Espandi')
     }
     if (s.modo !== 'espandi') Object.assign(q, conMisura(s.misura, s.base))
-    if (s.modo === 'tutta') Object.assign(q, { trasparente: !!rapida?.trasparente })
-    if (s.modo === 'zona') {
-      const e = tela.current?.esporta()
-      if (!e) {
-        avvisa('Segna prima la zona da cambiare col pennello', 'errore')
-        return
-      }
-      const maschera = await api.file.salvaTemp(e.dataUrl)
+    if (tipo === 'modifica') Object.assign(q, { trasparente: !!rapida?.trasparente })
+    if (disegnata) {
+      const maschera = await api.file.salvaTemp(disegnata.dataUrl)
       // tutto il resto (contesto, bordi, riempimento per "rimuovi") lo decide il motore dalla zona e dall'istruzione
-      Object.assign(q, { maschera, riquadro: e.riquadro, forza: rapida?.forza })
+      Object.assign(q, { maschera, riquadro: disegnata.riquadro, forza: rapida?.forza })
     }
     if (s.modo === 'espandi') {
       const b = s.bordi
@@ -397,34 +405,15 @@ export function Modifica(): JSX.Element {
     setModifica({ prompt: v.slice(0, i) + testo + v.slice(i) })
   }
 
-  const espandiPreset = (tipo: 'tutto' | 'largo' | 'alto' | 'quadrato'): void => {
-    if (!base) return
-    const { larghezza: W, altezza: H } = base
-    let b: Bordi = { ...NIENTE }
-    const t32 = (x: number): number => Math.round(x / 32) * 32
-    if (tipo === 'tutto') {
-      const d = t32(Math.min(W, H) * 0.25)
-      b = { sinistra: d, sopra: d, destra: d, sotto: d }
-    } else if (tipo === 'largo') {
-      const nuovo = Math.max(W, Math.round((H * 16) / 9))
-      const d = t32((nuovo - W) / 2)
-      b = { sinistra: d, sopra: 0, destra: d, sotto: 0 }
-    } else if (tipo === 'alto') {
-      const nuovo = Math.max(H, Math.round((W * 16) / 9))
-      const d = t32((nuovo - H) / 2)
-      b = { sinistra: 0, sopra: d, destra: 0, sotto: d }
-    } else {
-      const lato = Math.max(W, H)
-      b = { sinistra: t32((lato - W) / 2), destra: t32((lato - W) / 2), sopra: t32((lato - H) / 2), sotto: t32((lato - H) / 2) }
-    }
-    setModifica({ bordi: b })
+  const espandiPreset = (tipo: PresetEspandi): void => {
+    if (base) setModifica({ bordi: bordiPreset(tipo, base.larghezza, base.altezza) })
   }
 
-  const disegna = m.modo === 'zona'
+  const disegna = m.modo === 'scrivi'
   const confrontoAttivo = confronto && !!precedente && !inCorso
   const mancaRif = !!rapida?.rif && m.riferimenti.length < rapida.rif
   /** per quali foto, idee e note vale il piano delle idee (come in manda()) */
-  const chiaveIdee = base ? JSON.stringify([base.percorso, idee.map((r) => r.id), m.prompt.trim(), m.riferimenti.map((r) => r.percorso), m.fantasia, m.modo]) : ''
+  const chiaveIdee = base ? JSON.stringify([base.percorso, idee.map((r) => r.id), m.prompt.trim(), m.riferimenti.map((r) => r.percorso), m.fantasia, zona ? 'zona' : m.modo]) : ''
 
   return (
     <div className="pagina">
@@ -506,6 +495,7 @@ export function Modifica(): JSX.Element {
           base={base}
           griglia={griglia}
           haMaschera={haMaschera}
+          zona={zona}
           scrivendo={scrivendo}
           migliora={migliora}
           setCameraRapida={setCameraRapida}

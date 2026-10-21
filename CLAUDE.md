@@ -93,7 +93,7 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 6 modi: tutta la foto, zona, espandi, **Fusion**, **Esempio** e **Estrai** (vedi sotto) (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
+- **Modifica** ha 5 modi (`ModoModifica`): **Scrivi** (tutta la foto, o solo la zona se ne hai disegnata una: `zona = modo==='scrivi' && haMaschera`, la `modalita` si decide in `manda()` da `tela.esporta()`; schede in `pagine/modifica/SchedaScrivi.tsx`), **Espandi** (`SchedaEspandi.tsx`, `bordiPreset`), **Fusion**, **Esempio** e **Estrai** (vedi sotto; Fusion/Esempio diventano ricette in T9); le impostazioni vecchie `tutta`/`zona` si migrano a `scrivi` in `daVecchioMod` (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
   Fusion = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
   componente, non diventano versioni; il confronto prima/dopo usa sempre `versioni[0]`);
   `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura

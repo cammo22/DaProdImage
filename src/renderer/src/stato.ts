@@ -10,7 +10,8 @@ import type { Misura } from './componenti/Misura'
 export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'impostazioni'
 export type SchedaOpzioni = 'generali' | 'lora'
 export type Qualita = 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
+/** Scrivi = tutta la foto, o solo la zona se ne hai disegnata una (si decide al momento dell'invio) */
+export type ModoModifica = 'scrivi' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
 
 export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, massima: 50 }
 
@@ -147,7 +148,7 @@ const CREA0: StatoCrea = {
   riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
 }
 const MOD0: StatoModifica = {
-  base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
+  base: null, versioni: [], riferimenti: [], esempio: null, modo: 'scrivi', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima',
   pianoEsempio: null, fantasia: 'normale', pianoIdee: null
 }
@@ -160,10 +161,12 @@ function daVecchio(c: StatoCrea & { mp?: number; qualita?: unknown; negativo?: u
   return mp ? { ...pulito, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : pulito
 }
 
-/** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion; la qualità «turbo» della 1.0 ora è «alta» */
+/** «Tutta la foto» e «Solo una zona» sono diventate Scrivi; la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion; la qualità «turbo» della 1.0 ora è «alta» */
 const daVecchioMod = (v: StatoModifica): StatoModifica => {
   const m = { ...v, qualita: senzaTurbo(v.qualita) }
-  return (m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : (m.modo as string) === 'personaggio' ? { ...m, modo: 'estrai' } : m
+  const vecchio = m.modo as string
+  if (vecchio === 'tutta' || vecchio === 'zona') return { ...m, modo: 'scrivi' }
+  return vecchio === 'nuova' ? { ...m, modo: 'fusion' } : vecchio === 'personaggio' ? { ...m, modo: 'estrai' } : m
 }
 
 let idAvviso = 0
