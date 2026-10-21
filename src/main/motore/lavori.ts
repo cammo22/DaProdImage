@@ -326,7 +326,7 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
  *  Se il 4B non c'è, o la richiesta dice `encoderKlein: false`, tutto resta com'era. */
 function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp: Impostazioni } {
   const fam = q.famiglia ?? imp.famiglia
-  // con Qwen il 4B scrive solo se l'hai acceso in Opzioni (`testoCon4B`, di serie spento); la regola è in spazio.ts
+  // con Qwen il 4B scrive solo se `testoCon4B` è acceso in Opzioni (di serie acceso: più veloce, vedi docs/misure-1.1.0.md); la regola è in spazio.ts
   if (q.modalita !== 'descrivi' || q.encoderKlein === false || (fam === 'qwen' && !imp.testoCon4B)) return { q, imp }
   const enc = encoderKleinFile(imp)
   if (!scriveCol4B(q.modalita, fam, q.encoderKlein, !!imp.testoCon4B, !!enc)) return { q, imp }

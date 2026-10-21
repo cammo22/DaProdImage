@@ -16,7 +16,7 @@ export const occupaImmagine = (fam: Famiglia): Occupa => (fam === 'klein' ? 'imm
 export const occupaTesto = (encoderKlein?: boolean): Occupa => (encoderKlein ? 'testo:4b' : 'testo:8b')
 
 /** chi scrive nei lavori di testo (`descrivi`): il 4B di Klein o l'encoder di Qwen.
- *  Con Klein scrive il 4B (salvo `encoderKlein: false` nella richiesta); con Qwen solo se l'impostazione `testoCon4B` è accesa (di serie è spenta).
+ *  Con Klein scrive il 4B (salvo `encoderKlein: false` nella richiesta); con Qwen solo se l'impostazione `testoCon4B` è accesa (di serie è accesa dalla 1.1.0, dopo le misure di T12).
  *  `c'è4B` = il file del 4B è sul disco: se no si resta con l'encoder della famiglia. */
 export function scriveCol4B(modalita: string, fam: Famiglia, encoderKlein: boolean | undefined, testoCon4B: boolean, ce4B: boolean): boolean {
   if (modalita !== 'descrivi' || encoderKlein === false || !ce4B) return false

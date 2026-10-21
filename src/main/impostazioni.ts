@@ -43,7 +43,7 @@ const PREDEFINITE: Impostazioni = {
   traduttore: 'dedicato',
   unaCosaAllaVolta: true,
   potenziaKlein: true,
-  testoCon4B: false,
+  testoCon4B: true, // misurato in T12 (docs/misure-1.1.0.md): Migliora prompt + Crea con Qwen passa da 186 s a 134 s (encoder 8B int8) o da 446 s a 150 s (8B GGUF)
   scaricaDopo: 120
 }
 

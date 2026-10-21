@@ -242,8 +242,8 @@ function OpzioniGenerali(): JSX.Element {
               <Interruttore acceso={imp.unaCosaAllaVolta} cambia={(unaCosaAllaVolta) => salva({ unaCosaAllaVolta })}>{imp.unaCosaAllaVolta ? 'Accesa' : 'Spenta'}</Interruttore>
             </div>
             <div className="voce">
-              <div className="et"><b>Scrivi i testi col Qwen3-VL 4B anche con Qwen</b><small>Migliora prompt, descrivi foto, Idee, Estrai… con Qwen girano sull'encoder 8B (lento, in buona parte sul processore). Col 4B di Klein sono molto più veloci, ma lo scrive un modello più piccolo e va scaricato. Con Klein il 4B scrive sempre. Il 4B e Qwen non stanno in VRAM insieme: a ogni cambio si scarica uno dei due</small></div>
-              <Interruttore acceso={imp.testoCon4B ?? false} cambia={(testoCon4B) => salva({ testoCon4B })}>{(imp.testoCon4B ?? false) ? 'Acceso' : 'Spento'}</Interruttore>
+              <div className="et"><b>Scrivi i testi col Qwen3-VL 4B anche con Qwen</b><small>Migliora prompt, descrivi foto, Idee, Estrai… con Qwen girano sull'encoder 8B (da 3 a 0,5 token al secondo, in buona parte sul processore). Col 4B di Klein sono 40-50 token al secondo (Migliora prompt in 5 secondi invece di 1-5 minuti), ma lo scrive un modello più piccolo e va scaricato; se il file manca resta l'8B. Con Klein il 4B scrive sempre. Il 4B e Qwen non stanno in VRAM insieme: a ogni cambio si scarica uno dei due</small></div>
+              <Interruttore acceso={imp.testoCon4B ?? true} cambia={(testoCon4B) => salva({ testoCon4B })}>{(imp.testoCon4B ?? true) ? 'Acceso' : 'Spento'}</Interruttore>
             </div>
             <div className="voce">
               <div className="et"><b>Scarica i modelli quando non li uso</b><small>Se per un po' non fai niente, i modelli escono dalla VRAM e la scheda torna libera per i giochi e gli altri programmi. La prossima immagine impiega qualche secondo in più a ripartire</small></div>
