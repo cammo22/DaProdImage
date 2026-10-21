@@ -79,3 +79,38 @@ Il 4B toglie solo il tempo di scrittura, e la qualità dei testi è quella attes
 
 Come ripeterle: avviare un ComfyUI sulla porta 8819 e lanciare `node scripts/misure_gpu.mjs --out <cartella> --prova <nome>` (`--prova elenco` stampa i nomi);
 `MOTORE_OUT` dice dove il motore salva le immagini, `ENCODER_QWEN` cambia l'encoder di Qwen, `PROMPT_ZONA` il prompt di zona e Modifica.
+
+---
+
+# ComfyUI 0.42.3 (T13)
+
+Prova su un ramo a parte (`prova/comfyui-0.42`), senza toccare l'engine installato (0.41.2, motore 7): zip del commit `edb3db0` (tag `v0.42.3`) estratto in una cartella di prova,
+stessi `custom_nodes` dell'app (`ComfyUI-GGUF` con la nostra correzione in `ops.py`, `DaProd-Nodi`), stesso Python/PyTorch (2.14 cu130), sulla porta 8820.
+Le tre dipendenze che la 0.42.3 alza nei `requirements.txt` (`comfy-kitchen` 0.2.37 → 0.2.39, `comfyui-frontend-package` 1.55.17 → 1.55.18, `comfyui-workflow-templates` 0.11.86 → 0.11.93)
+sono state messe in una cartella a parte, vicino alla prova (`PYTHONPATH`); l'installatore dell'app le aggiorna da solo (`requisiti` = commit).
+Stessa serie di grafi, stesso seed (424242), stessi file, scheda libera prima di ogni prova.
+
+| Prova | 0.41.2 | 0.42.3 | Immagine |
+|---|---:|---:|---|
+| Qwen base · Crea · 40 passi · a freddo (**GGUF Q4 + correzione `ops.py`**) | 165,9 s · 2,88 s/passo | 139,6 s · 2,87 s/passo | **identica al pixel** (differenza massima 0) |
+| Klein veloce · Crea · 8 passi · a freddo | 16,2 s · 0,47 s/passo | 14,3 s · 0,47 s/passo (9,7 s alla ripetizione) | identica |
+| Klein veloce · Crea · 8 / 16 passi · caldo (ripetuto) | 0,46 / 0,50 s/passo | 0,46 / 0,49 s/passo | 16 passi identica |
+| Klein veloce · zona · 8 passi | 26,4 s | 23,2-29,7 s (1,86-2,02 s/passo; la prova più lenta era dentro la serie lunga, le due ripetizioni a 1,86-1,88) | identica |
+| Klein veloce · Modifica · 8 passi | 13,9 s | 13,9 s | identica |
+| Klein veloce · riferimento con `ReferenceMultiLatent` · 8 passi | 20,3 s | 22,4 s | — |
+| Klein Base · Crea · 50 passi · a freddo | 59,9 s · 1,01 s/passo | 57,5 s · 1,01 s/passo | identica |
+| Testo col 4B (380 token al massimo) | 46 token/s | 49 token/s (129 token in 2,6 s) | — |
+| Testo con l'8B int8 (120 token) | 36,4 s · 3,3 token/s | 36,0 s · 3,3 token/s | — |
+| **Migliora prompt + Crea** con il 4B (8B int8 per il Crea) | 133,5 s | 134,7 s | — |
+| **Migliora prompt + Crea** senza il 4B (8B int8) | 185,9 s | 183,2 s | — |
+
+(Il totale a freddo dipende dalla cache dei file di Windows: il campionatore, che è la parte che conta per il confronto fra le due versioni, è uguale. Le piccole differenze sul caldo di Klein, in una prima serie 0.46 contro 0.56 s/passo, sono rumore: ripetute dopo, 0,46 / 0,49 come nella 0.41.2.)
+
+Esito:
+- **Tutte le immagini delle prove sono identiche al pixel** fra 0.41.2 e 0.42.3 (Qwen GGUF, Klein 8 e 16 passi, Klein zona, Klein Modifica, Klein Base 50 passi). Nessun cambio di qualità.
+- **La correzione GGUF in `ops.py` regge**: il KSampler di Qwen parte e termina, nessuna eccezione `unexpected keyword argument` né nel log del motore (0 `Traceback`). I cambi della 0.42 in `comfy/ops.py`
+  (`linear_input_act` per i pesi quantizzati) non toccano `GGMLOps.Linear`, che ha `comfy_force_forward = True`.
+- **Velocità**: uguale. Il «Qwen 3.x: generazione di testo più veloce» della 0.42.0 non si vede sul nostro `TextGenerate` (4B: 46 → 49 token/s, 8B: invariato, nella rumorosità delle misure).
+  Nessun vantaggio di velocità, ma nemmeno uno svantaggio; la prova di memoria («release memory reliably», 0.42.1) ha fatto tutti i `/free` fra le prove senza residui (VRAM a 0 MiB a fine serie).
+- Decisione: **`motore: 8`**, ComfyUI `edb3db00fd88f059e748c8a400391b5eab76266b` (0.42.3) in `engine/versioni.json`; al primo avvio dopo l'aggiornamento l'app aggiorna il motore da sola (modo «aggiorna»).
+- Non provato qui: l'aggiornamento vero dell'engine installato dall'app (passo di installazione in Electron). La 0.42.3 gira con lo stesso venv e le stesse dipendenze alzate, ma il percorso dell'installatore con `motore: 8` va visto una volta con l'app vera (`node test/setup.mjs --installa`, che richiede Electron e la scheda libera).

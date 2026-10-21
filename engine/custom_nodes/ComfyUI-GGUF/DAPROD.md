@@ -10,4 +10,4 @@ KSampler si ferma con `unexpected keyword argument 'input_act'`.
 Da ComfyUI 0.41 quei parametri non arrivano più alla `Linear` (c'è `comfy.ops.linear_input_act()`, che per i pesi GGUF
 ricade su `forward()`): la correzione resta compatibile con tutte e due le versioni. In più `GGMLOps.Linear` ha
 `comfy_force_forward = True`, così `--fast fp16_accumulation` non porta mai i pesi quantizzati nel percorso fp16.
-Provato (CPU, Q8_0 reali) con ComfyUI 0.39 e 0.41.2; il motore ora è alla 0.41.2.
+Provato (CPU, Q8_0 reali) con ComfyUI 0.39 e 0.41.2, e con una generazione vera (Qwen UC Q4 GGUF, 40 passi, RTX 4060) con la 0.42.3: immagine identica al pixel a quella della 0.41.2, stessa velocità; il motore ora è alla 0.42.3 (T13, docs/misure-1.1.0.md).

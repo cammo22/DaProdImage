@@ -17,7 +17,7 @@ interfaccia**, installato e guidato dall'app.
   Per preparare una versione c'è la skill `.claude/skills/rilascio`.
 
 ## Il motore (src/main/installa, src/main/motore)
-- **Versioni fissate** in `engine/versioni.json` (ora **ComfyUI 0.41.2**, motore 7): ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
+- **Versioni fissate** in `engine/versioni.json` (ora **ComfyUI 0.42.3**, motore 8): ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
   di Windows: il tar di Git non apre gli zip), Python 3.13 e PyTorch cu130 via **uv** (`resources/bin/uv.exe`,
   `npm run prendi-uv`). Tutto in `%LOCALAPPDATA%\DaProdImage\engine`; `stato.json` lì dentro dice quali passi sono fatti.
 - **ComfyUI-GGUF è copiato in `engine/custom_nodes/ComfyUI-GGUF`** (fork di leejet al commit `373048b`, l'unico che
