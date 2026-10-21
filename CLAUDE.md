@@ -57,6 +57,7 @@ interfaccia**, installato e guidato dall'app.
 - Grafo (`grafi.ts`, `condiziona`/`latenteVuota`/`campiona`): `UNETLoader` + `CLIPLoader` tipo `flux3` + `VAELoader`, `CLIPTextEncode`, foto di riferimento
   `VAEEncode` → `ReferenceLatent` (positivo e negativo, in catena), `EmptyFlux2LatentImage`, KSampler euler/simple (distillato cfg 1, base cfg 3,5).
   Niente LoRA, Turbo, cache KV; i tag `<imageN>` diventano ordinali. **I grafi Qwen non devono cambiare**: si controlla con un confronto sul grafo vecchio prima di ogni modifica.
+- **Testo con Klein**: ogni lavoro `descrivi` (migliora prompt, Foto→prompt, Idee, Estrai, Fusion/Esempio, Sorpresa, controllo omino, traduzione LLM) con famiglia Klein scrive col Qwen3-VL 4B (`conEncoderDiTesto` in `lavori.ts`, `encoderKleinFile` in `klein.ts`; `Richiesta.encoderKlein: false` per escluderlo): caricato come `krea2` e con `thinking: true` (con `false` il nodo mette un `<think></think>` vuoto e il 4B risponde «user»/vuoto). Con Qwen resta l'encoder di Qwen.
 - `motore/pup.ts` = i prompt upsampler ufficiali; `lavori.ts` `potenzia()` li manda al Qwen3-VL prima del disegno (`impostazioni.potenziaKlein`, cache per prompt).
 - Non provato con la GPU qui: qualità, INT8 su 6-8 GB, `ReferenceLatent` in catena (alternativa `ReferenceMultiLatent`).
 

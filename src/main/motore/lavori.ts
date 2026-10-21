@@ -13,7 +13,7 @@ import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nod
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
 import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
-import { fileKlein } from './klein'
+import { encoderKleinFile, fileKlein } from './klein'
 import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
@@ -319,6 +319,20 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
   return t
 }
 
+/** i lavori di testo (migliora prompt, descrivi foto, Estrai, Idee, Fusion, traduzione con l'LLM…) con una famiglia Klein scrivono col suo Qwen3-VL 4B,
+ *  che sta tutto in VRAM (decine di token al secondo), invece che con l'encoder di Qwen (8B: gira quasi tutto sul processore, ~0,5 tk/s).
+ *  Se il 4B non c'è, o la richiesta dice `encoderKlein: false`, tutto resta com'era. */
+function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp: Impostazioni } {
+  const fam = q.famiglia ?? imp.famiglia
+  if (q.modalita !== 'descrivi' || fam === 'qwen' || q.encoderKlein === false) return { q, imp }
+  const enc = encoderKleinFile(imp)
+  if (!enc) return { q, imp }
+  return { q: { ...q, encoderKlein: true }, imp: { ...imp, kleinEncoder: enc } }
+}
+
+/** il 4B scrive a volte un titolo in grassetto prima del testo («**Image Idea:** …»): si toglie */
+const senzaTitolo = (t: string): string => t.replace(/^\s*\*\*[^*\n]{1,40}\*\*:?\s*/, '').trim()
+
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
 async function inInglese(l: Lavoro): Promise<string> {
   const q = l.richiesta
@@ -336,7 +350,8 @@ async function inInglese(l: Lavoro): Promise<string> {
     const u = await lancia(g, 'cpu', l)
     t = (u.testo || '').trim() || p
   } else {
-    const g = costruisci({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, imp, { immagini: [] }, 'traduci')
+    const t4 = conEncoderDiTesto({ ...q, modalita: 'descrivi', prompt: p, sistema: SISTEMA_TRADUCI, maxToken: tokenPer(p), temperatura: 0.2, seed: 0, immagini: [] }, imp)
+    const g = costruisci(t4.q, t4.imp, { immagini: [] }, 'traduci')
     g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Traduco il prompt in inglese']))
     const u = await lancia(g, 'testo', l, true)
     t = pulisciTraduzione(u.testo || '', p)
@@ -425,7 +440,10 @@ async function esegui(l: Lavoro): Promise<void> {
     ultimoPasso = 0
     // l'ingranditore NVIDIA RTX, se il motore ce l'ha e non l'hai spento in Opzioni
     const rtx = imp.upscalerRtx ? await chiaviRtx().catch(() => null) : null
-    const grafo = costruisci({ ...l.richiesta, prompt: inglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
+    // lavori di testo con Klein: scrivono col suo 4B (vedi conEncoderDiTesto)
+    const lavoroTesto = conEncoderDiTesto(l.richiesta, impLavoro)
+    impLavoro = lavoroTesto.imp
+    const grafo = costruisci({ ...lavoroTesto.q, prompt: inglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
@@ -433,7 +451,7 @@ async function esegui(l: Lavoro): Promise<void> {
     const testo = l.richiesta.modalita === 'descrivi'
     const uscita = await lancia(grafo, testo ? 'testo' : 'immagine', l, testo)
     if (testo) {
-      l.testo = (uscita?.testo || '').trim()
+      l.testo = lavoroTesto.q.encoderKlein ? senzaTitolo(uscita?.testo || '') : (uscita?.testo || '').trim()
     } else {
       if (!uscita?.immagini.length) throw new Error('il motore non ha restituito immagini')
       const durata = (Date.now() - (l.inizio || Date.now())) / 1000

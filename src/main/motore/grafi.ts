@@ -315,8 +315,12 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   }
 
   if (q.modalita === 'descrivi') {
-    // l'upsampler di Klein scrive la didascalia col suo encoder 4B (decine di tk/s); tutto il resto, come sempre, con quello di Qwen
+    // con Klein tutti i lavori di testo (upsampler, migliora prompt, descrivi foto, Estrai, Idee, Fusion…) scrivono col suo encoder 4B (decine di tk/s);
+    // con Qwen, come sempre, con il suo
     const clip = caricaClipPerTesto(g, imp, q.encoderKlein)
+    // il 4B (caricato come `krea2`) con `thinking: false` riceve un blocco <think></think> vuoto in fondo al prompt e si confonde: risponde vuoto, «user» o «assistant».
+    // Con `thinking: true` il blocco non c'è e risponde subito (non è un modello che ragiona: niente token in più). Misurato su tutte le funzioni.
+    const col4B = !!q.encoderKlein && !!imp.kleinEncoder
     const inputs: Record<string, unknown> = {
       clip,
       prompt: q.prompt,
@@ -328,7 +332,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       'sampling_mode.min_p': 0,
       'sampling_mode.repetition_penalty': 1.05,
       'sampling_mode.seed': Math.max(0, q.seed),
-      thinking: false,
+      thinking: col4B,
       use_default_template: true,
       system_prompt: q.sistema || ''
     }

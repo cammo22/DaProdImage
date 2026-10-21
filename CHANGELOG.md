@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.2 — 2026-10-21
+
+Con Klein anche tutto il resto del testo (Migliora prompt, Foto → prompt, Idee, Estrai, Fusion, Esempio, Sorpresa) scrive col Qwen3-VL 4B: da circa 0,4 token al secondo a **15-40**.
+
+- **Tutte le funzioni di testo usano il 4B di Klein.** Nella 1.0.1 ci arrivava solo il potenziamento del prompt; Migliora prompt, Foto → prompt, «Sorprendimi», Idee, Estrai, Fusion/Esempio, Sorpresa del Laboratorio,
+  il controllo della guida di posa e la traduzione con l'LLM continuavano a usare l'encoder di Qwen (l'8B, quasi tutto sul processore). Ora, se la famiglia scelta è Klein o Klein Base e il file del 4B c'è, scrive lui
+  (lo decide il motore dell'app, `conEncoderDiTesto` in `lavori.ts`: le pagine non cambiano). Con Qwen-Image tutto resta com'era; se il 4B non si trova si ripiega sull'encoder di Qwen.
+- **Il 4B non risponde più «user», «assistant» o niente.** Il nodo `TextGenerate` con `thinking: false` aggiunge in fondo al prompt un blocco `<think></think>` vuoto e il 4B si confondeva (foto + richiesta breve → risposta vuota,
+  traduzione → «user», Sorpresa → «assistant …»). Col 4B ora si manda `thinking: true`: il blocco non c'è, risponde subito e non ragiona (nessun token in più). Questo vale anche per il potenziamento della 1.0.1.
+- Se il 4B mette un titolo in grassetto prima del testo («**Image Idea:** …») l'app lo toglie.
+- Misurato sul motore vero (ComfyUI 0.41.2, RTX 4060 8 GB), stessi prompt e stessa foto: Migliora prompt 75 token in 214 s con l'8B (0,35 tk/s) contro 190 token in 11 s col 4B (17 tk/s);
+  Foto → prompt 76 token in 256 s (0,3 tk/s) contro 181 token in 7,6 s (24 tk/s); Estrai (7 riquadri giusti, JSON valido) 9 s; Idee 5 s; piano di Fusion/Esempio (JSON con istruzione e ritagli) 4,5 s; potenziamento 39 tk/s.
+  Con `thinking: true` anche i prompt di sistema lunghi dell'upsampler ufficiale funzionano sul 4B (i brevi della 1.0.1 restano).
+
 ## 1.0.1 — 2026-10-21
 
 Klein non è più lento nel potenziare il prompt: da 0,5 token al secondo a **circa 49**.

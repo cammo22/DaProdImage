@@ -30,6 +30,13 @@ const preferisci = (nomi: string[], ordine: RegExp[]): string => {
 
 const NON_PESI = /vae|qwen|text_enc|mmproj/i
 
+/** il Qwen3-VL 4B di Klein (impostazioni → scaricato dall'app → cercato nelle cartelle), o '' se non c'è: serve anche a scrivere testo senza il modello che disegna */
+export function encoderKleinFile(imp: Impostazioni): string {
+  const encoder = sul(imp, 'text_encoders', imp.kleinEncoder) || sul(imp, 'text_encoders', risoltoSalvato('klein-te')?.file)
+  if (encoder) return encoder
+  return preferisci(lista(imp, 'text_encoders'), [/^qwen3vl_4b_int8/i, /(qwen3|qwen_3).*vl.*4b.*(int8|fp8|q8)/i, /(qwen3|qwen_3).*4b.*(int8|fp8|q8)/i, /(qwen3|qwen_3).*vl.*4b/i, /(qwen3|qwen_3).*4b/i, /klein/i])
+}
+
 /** i file di Klein (o di Klein Base) da usare adesso, o l'errore da mostrare in italiano se mancano */
 export function fileKlein(imp: Impostazioni, famiglia: Famiglia): FileKlein | string {
   const base = famiglia === 'klein-base'
@@ -41,8 +48,7 @@ export function fileKlein(imp: Impostazioni, famiglia: Famiglia): FileKlein | st
     const tutti = [...lista(imp, 'diffusion_models'), ...lista(imp, 'unet')].filter((n) => /klein/i.test(n) && !NON_PESI.test(n) && /base/i.test(n) === base)
     modello = preferisci(tutti, [/int8/i, /bf16/i, /fp8/i, /./])
   }
-  let encoder = sul(imp, 'text_encoders', imp.kleinEncoder) || sul(imp, 'text_encoders', risoltoSalvato('klein-te')?.file)
-  if (!encoder) encoder = preferisci(lista(imp, 'text_encoders'), [/^qwen3vl_4b_int8/i, /(qwen3|qwen_3).*vl.*4b.*(int8|fp8|q8)/i, /(qwen3|qwen_3).*4b.*(int8|fp8|q8)/i, /(qwen3|qwen_3).*vl.*4b/i, /(qwen3|qwen_3).*4b/i, /klein/i])
+  const encoder = encoderKleinFile(imp)
   let vae = sul(imp, 'vae', imp.kleinVae) || sul(imp, 'vae', risoltoSalvato('klein-vae')?.file)
   if (!vae) vae = preferisci(lista(imp, 'vae'), [/^flux2-vae\./i, /klein/i, /flux.?[23]/i, /^ae\./i, /flux/i])
   const mancano = [!modello && (base ? 'il modello Klein Base' : 'il modello Klein'), !encoder && 'il text encoder (Qwen3-VL 4B)', !vae && 'il VAE'].filter(Boolean)
