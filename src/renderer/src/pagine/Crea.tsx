@@ -18,7 +18,6 @@ import { presetDa } from '../preset'
 import { passiDi } from '../stato'
 import { Casella } from '../componenti/Casella'
 import { ScegliQualita } from '../componenti/ScegliQualita'
-import { ScegliModello } from '../componenti/ScegliModello'
 import type { Lavoro, Opera } from '@shared/tipi'
 
 
@@ -196,7 +195,6 @@ export function Crea(): JSX.Element {
       <BarraPreset prima={setPrecedente} />
       <div className="colonna">
         <div className="scorri">
-          <div className="sezione"><ScegliModello /></div>
           <SchedaPreset />
           <div className="sezione">
             <h3>

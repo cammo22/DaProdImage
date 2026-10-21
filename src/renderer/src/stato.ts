@@ -5,7 +5,10 @@ import { senzaTurbo } from '@shared/modelli'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
-export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'lora' | 'impostazioni'
+// 'laboratorio' non è più sulla rotaia (T7): la pagina resta montata finché T9 non la sposta in Modifica.
+// I LoRA stanno dentro Opzioni (`SchedaOpzioni`).
+export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'impostazioni'
+export type SchedaOpzioni = 'generali' | 'lora'
 export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
 export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
 
@@ -91,6 +94,8 @@ export interface Avviso {
 
 interface Stato {
   pagina: Pagina
+  /** la scheda aperta in Opzioni */
+  schedaOpzioni: SchedaOpzioni
   imp: Impostazioni | null
   motore: InfoMotore
   lavori: Lavoro[]
@@ -111,6 +116,8 @@ interface Stato {
   /** il selettore di foto aperto (galleria o PC): chi lo apre aspetta la scelta */
   selettore: { multi: boolean; ok: (f: FotoBase[]) => void } | null
   vai(p: Pagina): void
+  /** apre Opzioni su una scheda (i LoRA) */
+  vaiOpzioni(scheda: SchedaOpzioni): void
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
   setModifica(m: Partial<StatoModifica>): void
@@ -167,6 +174,7 @@ let idAvviso = 0
 
 export const usaStato = create<Stato>((set, get) => ({
   pagina: 'crea',
+  schedaOpzioni: 'generali',
   imp: null,
   motore: { stato: 'spento', porta: 0 },
   lavori: [],
@@ -182,6 +190,7 @@ export const usaStato = create<Stato>((set, get) => ({
   scarico: null,
   selettore: null,
   vai: (pagina) => set({ pagina }),
+  vaiOpzioni: (schedaOpzioni) => set({ pagina: 'impostazioni', schedaOpzioni }),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
     const crea = { ...get().crea, ...m }

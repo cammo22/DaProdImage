@@ -29,7 +29,7 @@ export function Copertina({ l, grande }: { l: InfoLora; grande?: boolean }): JSX
 }
 
 export function SceltaLora(): JSX.Element {
-  const { lore: tutte, loraAttive, setLoraAttive, toggleLora, vai, imp } = usaStato()
+  const { lore: tutte, loraAttive, setLoraAttive, toggleLora, vaiOpzioni, imp } = usaStato()
   // il Turbo si accende dalla Qualità, non da qui
   const lore = tutte.filter((l) => l.file !== imp?.loraTurbo)
   const [aperto, setAperto] = useState(false)
@@ -74,14 +74,14 @@ export function SceltaLora(): JSX.Element {
         <button className="btn piccolo" onClick={() => setAperto(!aperto)}>
           <I.piu /> LoRA
         </button>
-        {lore.length === 0 && <span className="piccolo spento">Nessun LoRA: aggiungili dalla pagina LoRA.</span>}
+        {lore.length === 0 && <span className="piccolo spento">Nessun LoRA: aggiungili da Opzioni → LoRA.</span>}
       </div>
       {aperto && (
         <div className="scelta-lora pannello" style={{ top: '100%', left: 0, marginTop: 6 }}>
           {lore.length === 0 && (
             <div className="col" style={{ padding: 10 }}>
               <span className="tenue">Non hai ancora LoRA.</span>
-              <button className="btn piccolo" onClick={() => vai('lora')}>Vai ai LoRA</button>
+              <button className="btn piccolo" onClick={() => vaiOpzioni('lora')}>Vai ai LoRA</button>
             </div>
           )}
           {lore.map((l) => {

@@ -11,7 +11,6 @@ import { percentuale } from './Coda'
 import { Contatore, Interruttore, Segmenti } from './Controlli'
 import { useTurbo } from './Turbo'
 import { ScegliQualita } from './ScegliQualita'
-import { ScegliModello } from './ScegliModello'
 import { ScegliMp, Uscita } from './Misura'
 import { Omino } from './Omino'
 import { controllaScheletro } from '../pulisciOmino'
@@ -196,7 +195,6 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
   return (
     <div className="colonna destra">
       <div className="scorri">
-        <div className="sezione"><ScegliModello /></div>
         <div className="sezione">
           <h3><span className="num-passo">1</span> Cosa estrarre <span className="dx">{s.elementi.length ? `${s.elementi.length} trovati` : ''}</span></h3>
           {el ? (

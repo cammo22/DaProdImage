@@ -37,7 +37,7 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
       const s = await api.setup.stato()
       setMotoreGia(s.motore)
       setCatalogo(s.modelli)
-      const presente = s.modelli.find((m) => m.tipo === 'diffusione' && m.presente)
+      const presente = s.modelli.find((m) => m.tipo === 'diffusione' && !m.turbo && m.presente)
       if (presente) setScelta(presente.id)
       else if (t[0]) setScelta('file:' + t[0].percorso)
     })().catch(() => undefined)
@@ -47,7 +47,8 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
     })
   }, [])
 
-  const diffusione = catalogo.filter((c) => c.tipo === 'diffusione')
+  // i Turbo di Qwen non si propongono più (restano nel catalogo per chi li ha già e per i PNG vecchi)
+  const diffusione = catalogo.filter((c) => c.tipo === 'diffusione' && !c.turbo)
   const lore = catalogo.filter((c) => c.tipo === 'lora' && !c.link)
   const necessari = catalogo.filter((c) => c.necessario)
   const sceltaVoce = scelta.startsWith('file:') ? null : catalogo.find((c) => c.id === scelta)
@@ -134,7 +135,7 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
                 <label key={d.id} className={`opzione ${scelta === d.id ? 'su' : ''}`}>
                   <input type="radio" checked={scelta === d.id} onChange={() => setScelta(d.id)} />
                   <div>
-                    <div className="t">{d.nome} {d.turbo && <span className="distintivo">nuovo · 8 passi</span>} {d.consigliato && <span className="distintivo si">consigliato per 8 GB</span>} {d.presente && <span className="distintivo si">già presente</span>}</div>
+                    <div className="t">{d.nome} {d.consigliato && <span className="distintivo si">consigliato per 8 GB</span>} {d.presente && <span className="distintivo si">già presente</span>}</div>
                     <small>{d.descrizione} · {d.circa ? 'circa ' : ''}{byte(d.byte)}{d.repo && ' · il file giusto lo trovo su Hugging Face'}</small>
                   </div>
                 </label>

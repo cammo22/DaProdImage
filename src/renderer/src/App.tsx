@@ -9,9 +9,9 @@ import { Modifica } from './pagine/Modifica'
 import { Album } from './pagine/Album'
 import { Laboratorio } from './pagine/Laboratorio'
 import { BarraStato } from './componenti/BarraStato'
+import { SelettoreModello } from './componenti/ScegliModello'
 import { SelettoreFoto } from './componenti/SelettoreFoto'
 import { Galleria } from './pagine/Galleria'
-import { Lora } from './pagine/Lora'
 import { Impostazioni } from './pagine/Impostazioni'
 import { Setup } from './pagine/Setup'
 import { normalizza } from './util'
@@ -20,10 +20,8 @@ import { apriInModifica } from './azioni'
 const VOCI: { id: Pagina; nome: string; icona: () => JSX.Element }[] = [
   { id: 'crea', nome: 'Crea', icona: I.crea },
   { id: 'modifica', nome: 'Modifica', icona: I.modifica },
-  { id: 'laboratorio', nome: 'Lab', icona: I.laboratorio },
-  { id: 'album', nome: 'Album', icona: I.album },
   { id: 'galleria', nome: 'Galleria', icona: I.galleria },
-  { id: 'lora', nome: 'LoRA', icona: I.lora }
+  { id: 'album', nome: 'Album', icona: I.album }
 ]
 
 const gb = (b: number): string => (b / 1073741824).toFixed(b >= 10 * 1073741824 ? 0 : 1)
@@ -59,7 +57,7 @@ function Indicatori(): JSX.Element | null {
 }
 
 export function App(): JSX.Element {
-  const { pagina, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
+  const { pagina, schedaOpzioni, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
   const [pronto, setPronto] = useState(false)
   const [installato, setInstallato] = useState(true)
   // il motore era installato ma la sua versione è cambiata (aggiornamento dell'app): si aggiorna da solo
@@ -148,6 +146,7 @@ export function App(): JSX.Element {
           <img src="./icona.svg" alt="" />
           DAPROD <b>IMAGE</b>
         </div>
+        {pronto && installato && <SelettoreModello />}
         <span className="spazio" />
         {agg.stato === 'scarico' && (
           <span className="pillola" title={`Scarico DaProd Image ${agg.versione}`} onClick={() => vai('impostazioni')}>
@@ -203,7 +202,6 @@ export function App(): JSX.Element {
             <div className={pagina === 'laboratorio' ? '' : 'nascosto'}><Laboratorio /></div>
             <div className={pagina === 'album' ? '' : 'nascosto'}>{pagina === 'album' && <Album />}</div>
             <div className={pagina === 'galleria' ? '' : 'nascosto'}>{pagina === 'galleria' && <Galleria />}</div>
-            <div className={pagina === 'lora' ? '' : 'nascosto'}>{pagina === 'lora' && <Lora />}</div>
             <div className={pagina === 'impostazioni' ? '' : 'nascosto'}>{pagina === 'impostazioni' && <Impostazioni />}</div>
             <Coda />
           </main>
@@ -219,7 +217,7 @@ export function App(): JSX.Element {
       </div>
       {rilascio && (
         <div className="velo-rilascio">
-          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
+          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'impostazioni' && schedaOpzioni === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 // Impostazioni: modelli, prestazioni, cartelle, motore.
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, ricaricaImp } from '../stato'
+import { Lora } from './Lora'
 import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
@@ -13,7 +14,21 @@ const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
+/** Opzioni: due schede, le impostazioni di sempre e i LoRA (prima avevano una voce a sinistra, nella rotaia). */
 export function Impostazioni(): JSX.Element {
+  const scheda = usaStato((s) => s.schedaOpzioni)
+  return (
+    <div className="pagina opzioni-schede">
+      <div className="schede-opzioni">
+        <button className={scheda === 'generali' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'generali' })}>Impostazioni</button>
+        <button className={scheda === 'lora' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'lora' })}>LoRA</button>
+      </div>
+      <div className="corpo-opzioni">{scheda === 'lora' ? <Lora /> : <OpzioniGenerali />}</div>
+    </div>
+  )
+}
+
+function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
   const turbo = useTurbo()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
@@ -107,8 +122,12 @@ export function Impostazioni(): JSX.Element {
               <div className="et"><b>Ingranditore</b><small>Per "2×", "Rifinisci" e le misure grandi. NVIDIA RTX (RTX Video Super Resolution) usa i Tensor core della scheda: più nitido e veloce; se non c'è, si usa quello a modello</small></div>
               <Segmenti valore={imp.upscalerRtx ? 'rtx' : 'modello'} cambia={(v) => salva({ upscalerRtx: v === 'rtx' })} voci={[{ id: 'rtx', nome: 'NVIDIA RTX', sotto: 'consigliato' }, { id: 'modello', nome: 'A modello', sotto: '4x-UltraSharp' }]} />
             </div>
-            {voceScelta('FLUX 3 Klein · veloce', 'Il file di Klein (16 passi). Vuoto = lo trova da solo fra quelli scaricati', imp.kleinModello, ['', ...file.klein.filter((n) => !/base/i.test(n))], (kleinModello) => salva({ kleinModello }))}
+            {voceScelta('FLUX 3 Klein · veloce', 'Il file di Klein (8 passi). Vuoto = lo trova da solo fra quelli scaricati', imp.kleinModello, ['', ...file.klein.filter((n) => !/base/i.test(n))], (kleinModello) => salva({ kleinModello }))}
             {voceScelta('FLUX 3 Klein Base', 'Il file di Klein Base (50 passi, CFG)', imp.kleinBase, ['', ...file.klein.filter((n) => /base/i.test(n))], (kleinBase) => salva({ kleinBase }))}
+            <div className="voce">
+              <div className="et"><b>Espandi il prompt prima di disegnare</b><small>Con Klein. Black Forest Labs lo consiglia: Klein dà il meglio con didascalie lunghe. Lo scrive il Qwen3-VL (circa mezzo minuto in più per immagine)</small></div>
+              <Interruttore acceso={imp.potenziaKlein ?? true} cambia={(potenziaKlein) => salva({ potenziaKlein })}>{(imp.potenziaKlein ?? true) ? 'Acceso' : 'Spento'}</Interruttore>
+            </div>
             {voceScelta('Text encoder di Klein', 'Qwen3-VL 4B (diverso dall\'encoder 8B di Qwen)', imp.kleinEncoder, ['', ...file.kleinTe], (kleinEncoder) => salva({ kleinEncoder }))}
             {voceScelta('VAE di Klein', 'Il decoder di FLUX 3 Klein', imp.kleinVae, ['', ...file.kleinVae], (kleinVae) => salva({ kleinVae }))}
             {!imp.upscalerRtx && voceScelta('Ingranditore a modello', 'Il file in upscale_models', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
