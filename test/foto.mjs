@@ -41,7 +41,7 @@ for (let i = 0; i < 120; i++) {
 log('motore: ' + (await win.locator('.barra-titolo .pillola').innerText()))
 await foto('10-crea')
 
-for (const [n, nome] of [['11-modifica', 'Modifica'], ['12-galleria', 'Galleria'], ['13-lora', 'LoRA'], ['14-opzioni', 'Opzioni']]) {
+for (const [n, nome] of [['11-modifica', 'Modifica'], ['12-galleria', 'Galleria'], ['13-album', 'Album'], ['14-opzioni', 'Opzioni']]) {
   await win.click(`.rotaia button:has-text("${nome}")`)
   await pausa(1200)
   await foto(n)

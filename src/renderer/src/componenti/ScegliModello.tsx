@@ -1,32 +1,34 @@
-// Il selettore del modello che disegna: Qwen-Image 2.1, FLUX 3 Klein (veloce, 16 passi) o FLUX 3 Klein Base (50 passi con CFG).
-// Se i file di Klein non ci sono, la scheda dice quanto pesano e li scarica con un clic.
-import { useEffect, useState, type JSX } from 'react'
-import { FAMIGLIE, type Download, type Famiglia } from '@shared/tipi'
+// Il selettore del modello che disegna, nella barra in alto: tre pillole (Qwen base, Klein veloce, Klein Base) da ORDINE_MODELLI.
+// Salva `modelloScelto` (la famiglia si allinea da sola nel main). Se i file di Klein non ci sono, la pillola ha un puntino
+// e un clic apre il pannellino che dice quanto pesano e li scarica.
+import { useEffect, useRef, useState, type JSX } from 'react'
+import type { Download } from '@shared/tipi'
+import { MODELLI, ORDINE_MODELLI, modelloDaImpostazioni, type IdModello } from '@shared/modelli'
 import { api } from '../api'
 import { ricaricaImp, usaStato } from '../stato'
 import { I } from './Icone'
-import { Interruttore } from './Controlli'
 
-const ORDINE: Famiglia[] = ['qwen', 'klein', 'klein-base']
 /** le voci del catalogo da avere per usare un modello (il modello INT8 sta nelle schede da 8 GB) */
-const SERVONO: Record<Exclude<Famiglia, 'qwen'>, string[]> = { klein: ['klein-int8', 'klein-te', 'klein-vae'], 'klein-base': ['klein-base-int8', 'klein-te', 'klein-vae'] }
-const PESO: Record<Exclude<Famiglia, 'qwen'>, string> = { klein: 'circa 10 GB', 'klein-base': 'circa 10 GB (4,7 se hai già Klein)' }
-const ICONA: Record<Famiglia, () => JSX.Element> = { qwen: I.stella, klein: I.fulmine, 'klein-base': I.ritratto }
+const SERVONO: Record<Exclude<IdModello, 'qwen-base'>, string[]> = { klein: ['klein-int8', 'klein-te', 'klein-vae'], 'klein-base': ['klein-base-int8', 'klein-te', 'klein-vae'] }
+const PESO: Record<Exclude<IdModello, 'qwen-base'>, string> = { klein: 'circa 10 GB', 'klein-base': 'circa 10 GB (4,7 se hai già Klein)' }
+const ETICHETTA: Record<IdModello, string> = { 'qwen-base': 'Qwen base', klein: 'Klein veloce', 'klein-base': 'Klein Base' }
 
-export function ScegliModello(): JSX.Element {
-  const famiglia = usaStato((s) => s.imp?.famiglia || 'qwen')
+export function SelettoreModello(): JSX.Element {
+  const imp = usaStato((s) => s.imp)
   const avvisa = usaStato((s) => s.avvisa)
-  const potenzia = usaStato((s) => s.imp?.potenziaKlein ?? true)
-  const [pronti, setPronti] = useState<Record<Famiglia, boolean>>({ qwen: true, klein: false, 'klein-base': false })
-  const [aperto, setAperto] = useState<Famiglia | null>(null)
-  const [scarico, setScarico] = useState<{ f: Famiglia; passo: string; perc: number } | null>(null)
+  const inCorso = usaStato((s) => s.lavori.some((l) => l.stato === 'in coda' || l.stato === 'in corso'))
+  const scelto = modelloDaImpostazioni(imp)
+  const [pronti, setPronti] = useState<Record<IdModello, boolean>>({ 'qwen-base': true, klein: false, 'klein-base': false })
+  const [aperto, setAperto] = useState<IdModello | null>(null)
+  const [scarico, setScarico] = useState<{ id: IdModello; passo: string; perc: number } | null>(null)
+  const radice = useRef<HTMLDivElement>(null)
 
   /** i file di Klein ci sono? (si guardano le cartelle: vale anche per chi li ha messi a mano) */
   const ricarica = async (): Promise<void> => {
     const f = await api.modelli.file()
     const comuni = (f.kleinTe?.length ?? 0) > 0 && (f.kleinVae?.length ?? 0) > 0
     setPronti({
-      qwen: true,
+      'qwen-base': true,
       klein: comuni && !!f.klein?.some((n) => !/base/i.test(n)),
       'klein-base': comuni && !!f.klein?.some((n) => /base/i.test(n))
     })
@@ -37,32 +39,46 @@ export function ScegliModello(): JSX.Element {
       setScarico((s) => (s && d.totali ? { ...s, perc: Math.round((d.ricevuti / d.totali) * 100) } : s))
     })
   }, [])
-
-  const scegli = async (f: Famiglia): Promise<void> => {
-    if (f !== 'qwen' && !pronti[f]) {
-      setAperto(aperto === f ? null : f)
-      return
+  // un clic fuori chiude il pannellino
+  useEffect(() => {
+    if (!aperto) return
+    const fuori = (e: MouseEvent): void => {
+      if (radice.current && !radice.current.contains(e.target as Node)) setAperto(null)
     }
-    setAperto(null)
-    await api.impostazioni.salva({ famiglia: f })
+    window.addEventListener('mousedown', fuori)
+    return () => window.removeEventListener('mousedown', fuori)
+  }, [aperto])
+
+  const salva = async (id: IdModello): Promise<void> => {
+    await api.impostazioni.salva({ modelloScelto: id })
     await ricaricaImp()
   }
 
-  const scarica = async (f: Exclude<Famiglia, 'qwen'>): Promise<void> => {
+  const scegli = async (id: IdModello): Promise<void> => {
+    if (id !== 'qwen-base' && !pronti[id]) {
+      setAperto(aperto === id ? null : id)
+      return
+    }
+    setAperto(null)
+    if (id === scelto) return
+    await salva(id)
+    if (inCorso) avvisa(`${MODELLI[id].nome}: vale dal prossimo lavoro`, 'ok')
+  }
+
+  const scarica = async (id: Exclude<IdModello, 'qwen-base'>): Promise<void> => {
     try {
       const stato = await api.modelli.stato()
       const nomi: Record<string, string> = { 'klein-int8': 'il modello Klein', 'klein-base-int8': 'il modello Klein Base', 'klein-te': 'il text encoder', 'klein-vae': 'il VAE' }
-      for (const id of SERVONO[f]) {
-        if (stato.find((v) => v.id === id)?.presente) continue
-        setScarico({ f, passo: nomi[id], perc: 0 })
-        const d = await api.modelli.scarica(id)
+      for (const voce of SERVONO[id]) {
+        if (stato.find((v) => v.id === voce)?.presente) continue
+        setScarico({ id, passo: nomi[voce], perc: 0 })
+        const d = await api.modelli.scarica(voce)
         if (d.stato !== 'fatto') throw new Error(d.errore || 'Download non riuscito')
       }
       await ricarica()
-      await api.impostazioni.salva({ famiglia: f })
-      await ricaricaImp()
+      await salva(id)
       setAperto(null)
-      avvisa(`${FAMIGLIE[f].nome} pronto: ora disegna con lui`, 'ok')
+      avvisa(`${MODELLI[id].nome} pronto: ora disegna con lui`, 'ok')
     } catch (e) {
       avvisa((e as Error).message, 'errore')
     } finally {
@@ -71,42 +87,42 @@ export function ScegliModello(): JSX.Element {
   }
 
   return (
-    <div className="sel-modello">
-      <div className="piccolo tenue" style={{ marginBottom: 6 }}>Modello che disegna</div>
-      <div className="sel-modello-card">
-        {ORDINE.map((f) => {
-          const Ic = ICONA[f]
-          const m = FAMIGLIE[f]
-          const su = f === famiglia
+    <div className="sel-modello" ref={radice}>
+      <div className="sel-modello-pillole" role="radiogroup" aria-label="Modello che disegna">
+        {ORDINE_MODELLI.map((id) => {
+          const m = MODELLI[id]
           return (
-            <button key={f} className={`${su ? 'su' : ''} ${!pronti[f] ? 'da-scaricare' : ''}`} onClick={() => void scegli(f)} title={m.sotto}>
-              <span className="ic"><Ic /></span>
-              <b>{f === 'qwen' ? 'Qwen-Image 2.1' : f === 'klein' ? 'Klein' : 'Klein Base'}</b>
-              <small>{f === 'qwen' ? '40 passi · LoRA' : f === 'klein' ? 'veloce · 16 passi' : 'normale · 50 passi'}</small>
-              {!pronti[f] && <em>da scaricare</em>}
+            <button
+              key={id}
+              role="radio"
+              aria-checked={id === scelto}
+              className={`${id === scelto ? 'su' : ''} ${!pronti[id] ? 'da-scaricare' : ''}`}
+              onClick={() => void scegli(id)}
+              title={`${m.nome}: ${m.sotto}${!pronti[id] ? ' (da scaricare)' : ''}${inCorso ? ' · vale dal prossimo lavoro' : ''}`}
+            >
+              {ETICHETTA[id]} <small>· {m.passi} passi</small>
+              {!pronti[id] && <i className="puntino" />}
             </button>
           )
         })}
       </div>
-      {aperto && aperto !== 'qwen' && !pronti[aperto] && (
-        <div className="turbo-box" style={{ marginTop: 8 }}>
-          <b>{FAMIGLIE[aperto].nome}</b>
-          <div className="piccolo tenue">{FAMIGLIE[aperto].sotto}. Servono il modello (INT8, adatto a 8 GB), il text encoder e il VAE: {PESO[aperto]}, una volta sola.</div>
-          {scarico?.f === aperto ? (
+      {aperto && aperto !== 'qwen-base' && !pronti[aperto] && (
+        <div className="sel-modello-pop">
+          <b>{MODELLI[aperto].nome}</b>
+          <div className="piccolo tenue">{MODELLI[aperto].sotto}. Servono il modello (INT8, adatto a 8 GB), il text encoder e il VAE: {PESO[aperto]}, una volta sola.</div>
+          {scarico?.id === aperto ? (
             <div className="piccolo oro" style={{ marginTop: 6 }}>Scarico {scarico.passo}… {scarico.perc}%</div>
           ) : (
-            <button className="btn piccolo primario" style={{ marginTop: 8 }} onClick={() => void scarica(aperto)}><I.scarica /> Scarica {FAMIGLIE[aperto].nome}</button>
+            <button className="btn piccolo primario" style={{ marginTop: 8 }} onClick={() => void scarica(aperto)}><I.scarica /> Scarica {MODELLI[aperto].nome}</button>
           )}
-        </div>
-      )}
-      {famiglia !== 'qwen' && (
-        <div style={{ marginTop: 8 }}>
-          <Interruttore acceso={potenzia} cambia={(potenziaKlein) => void api.impostazioni.salva({ potenziaKlein }).then(ricaricaImp)} sotto="Black Forest Labs lo consiglia: Klein dà il meglio con didascalie lunghe. Lo scrive il Qwen3-VL (circa mezzo minuto in più per immagine)">
-            Espandi il prompt prima di disegnare
-          </Interruttore>
-          <div className="piccolo spento" style={{ marginTop: 6 }}>I LoRA e il Turbo sono di Qwen: con Klein non servono. Migliora prompt, Idee e Estrai usano sempre il Qwen3-VL. Lo sfondo trasparente è solo di Qwen.</div>
         </div>
       )}
     </div>
   )
+}
+
+/** Il vecchio selettore a schede dentro Crea, Estrai e Modifica: ora il modello si sceglie nella barra in alto (`SelettoreModello`).
+ *  Resta vuoto (e il `.sezione:empty` in stile.css lo nasconde) finché Modifica.tsx non ne toglie la riga (T6). */
+export function ScegliModello(): null {
+  return null
 }

@@ -1,18 +1,23 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
 import { FAMIGLIE, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
+import { senzaTurbo } from '@shared/modelli'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
-export type Pagina = 'crea' | 'modifica' | 'laboratorio' | 'album' | 'galleria' | 'lora' | 'impostazioni'
-export type Qualita = 'turbo' | 'bozza' | 'alta' | 'massima'
-export type ModoModifica = 'tutta' | 'zona' | 'espandi' | 'fusion' | 'esempio' | 'estrai'
+// 'laboratorio' è sparito dalla rotaia (T7): T9 ha spostato le sue ricette nella scheda 'ricette' di Modifica.
+// I LoRA stanno dentro Opzioni (`SchedaOpzioni`).
+export type Pagina = 'crea' | 'modifica' | 'album' | 'galleria' | 'impostazioni'
+export type SchedaOpzioni = 'generali' | 'lora'
+export type Qualita = 'bozza' | 'alta' | 'massima'
+/** Scrivi = tutta la foto, o solo la zona se ne hai disegnata una (si decide al momento dell'invio) */
+export type ModoModifica = 'scrivi' | 'espandi' | 'ricette' | 'estrai'
 
-export const PASSI_QUALITA: Record<Qualita, number> = { turbo: 8, bozza: 20, alta: 40, massima: 50 }
+export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, massima: 50 }
 
 /** il modello che disegna adesso (Qwen, Klein veloce, Klein Base) */
 export const famigliaCorrente = (): Famiglia => usaStato.getState().imp?.famiglia || 'qwen'
-/** i passi per una qualità col modello scelto (Klein non ha il Turbo: lì «turbo» vale come bozza) */
+/** i passi per una qualità col modello scelto (il Turbo di Qwen non c'è più) */
 export const passiDi = (q: Qualita, f: Famiglia = famigliaCorrente()): number => FAMIGLIE[f].passi[q]
 
 export interface FotoBase {
@@ -25,20 +30,16 @@ export interface FotoBase {
 
 export interface StatoCrea {
   prompt: string
-  negativo: string
   formato: string
   /** risoluzione: il lato corto in pixel (256p … 2048, il massimo nativo) */
   ris: number
   /** megapixel a cui lavora il modello (0 = come la misura finale); più alti della misura = disegna grande e poi riduce */
   mpLavoro: number
-  qualita: Qualita
+  /** 1, 2 o 4 immagini */
   quante: number
   seed: number
   casuale: boolean
   trasparente: boolean
-  cfg: number
-  sampler: string
-  scheduler: string
   /** foto di riferimento (<image1>…): persone, vestiti, oggetti, stili. Non si salvano fra un avvio e l'altro */
   riferimenti: FotoBase[]
   /** il preset scelto a sinistra ('' = libero) e i suoi campi */
@@ -90,6 +91,8 @@ export interface Avviso {
 
 interface Stato {
   pagina: Pagina
+  /** la scheda aperta in Opzioni */
+  schedaOpzioni: SchedaOpzioni
   imp: Impostazioni | null
   motore: InfoMotore
   lavori: Lavoro[]
@@ -110,6 +113,8 @@ interface Stato {
   /** il selettore di foto aperto (galleria o PC): chi lo apre aspetta la scelta */
   selettore: { multi: boolean; ok: (f: FotoBase[]) => void } | null
   vai(p: Pagina): void
+  /** apre Opzioni su una scheda (i LoRA) */
+  vaiOpzioni(scheda: SchedaOpzioni): void
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
   setModifica(m: Partial<StatoModifica>): void
@@ -139,29 +144,36 @@ const leggiLista = <T,>(k: string): T[] => {
 }
 
 const CREA0: StatoCrea = {
-  prompt: '', negativo: '', formato: '1:1', ris: 1024, mpLavoro: 0, qualita: 'alta', quante: 1, seed: 0, casuale: true, trasparente: false,
-  cfg: 1, sampler: 'euler', scheduler: 'simple', riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
+  prompt: '', formato: '1:1', ris: 1024, mpLavoro: 0, quante: 1, seed: 0, casuale: true, trasparente: false,
+  riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
 }
 const MOD0: StatoModifica = {
-  base: null, versioni: [], riferimenti: [], esempio: null, modo: 'tutta', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
+  base: null, versioni: [], riferimenti: [], esempio: null, modo: 'scrivi', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima',
   pianoEsempio: null, fantasia: 'normale', pianoIdee: null
 }
 
-/** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione */
-function daVecchio(c: StatoCrea & { mp?: number }): StatoCrea {
-  const { mp, ...resto } = c
+/** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione; fino alla 1.0 c'era la qualità «turbo» (ora «alta») */
+function daVecchio(c: StatoCrea & { mp?: number; qualita?: unknown; negativo?: unknown; cfg?: unknown; sampler?: unknown; scheduler?: unknown }): StatoCrea {
+  // qualità, negativo, CFG, sampler e scheduler non ci sono più in Crea (dalla 1.1 contano solo i valori del modello): si buttano
+  const { mp, qualita: _q, negativo: _n, cfg: _c, sampler: _s, scheduler: _sc, ...pulito } = c
   // appena si salva, il campo mp sparisce: la conversione avviene una volta sola
-  return mp ? { ...resto, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : resto
+  return mp ? { ...pulito, ris: mp >= 4 ? 2048 : mp >= 2 ? 1440 : 1024 } : pulito
 }
 
-/** la modalità "Nuova dalle foto" della 0.4.x ora si chiama Fusion */
-const daVecchioMod = (m: StatoModifica): StatoModifica => ((m.modo as string) === 'nuova' ? { ...m, modo: 'fusion' } : (m.modo as string) === 'personaggio' ? { ...m, modo: 'estrai' } : m)
+/** «Tutta la foto» e «Solo una zona» sono diventate Scrivi; «Fusion» ed «Esempio» sono ricette (Unisci foto, Come l'esempio): si apre il catalogo; la qualità «turbo» della 1.0 ora è «alta» */
+const daVecchioMod = (v: StatoModifica): StatoModifica => {
+  const m = { ...v, qualita: senzaTurbo(v.qualita) }
+  const vecchio = m.modo as string
+  if (vecchio === 'tutta' || vecchio === 'zona') return { ...m, modo: 'scrivi' }
+  return vecchio === 'nuova' || vecchio === 'fusion' || vecchio === 'esempio' ? { ...m, modo: 'ricette' } : vecchio === 'personaggio' ? { ...m, modo: 'estrai' } : m
+}
 
 let idAvviso = 0
 
 export const usaStato = create<Stato>((set, get) => ({
   pagina: 'crea',
+  schedaOpzioni: 'generali',
   imp: null,
   motore: { stato: 'spento', porta: 0 },
   lavori: [],
@@ -177,6 +189,7 @@ export const usaStato = create<Stato>((set, get) => ({
   scarico: null,
   selettore: null,
   vai: (pagina) => set({ pagina }),
+  vaiOpzioni: (schedaOpzioni) => set({ pagina: 'impostazioni', schedaOpzioni }),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
     const crea = { ...get().crea, ...m }

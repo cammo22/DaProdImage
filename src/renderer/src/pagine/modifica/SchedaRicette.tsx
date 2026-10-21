@@ -1,26 +1,27 @@
-// Laboratorio: workflow già pronti, per tutto. Scegli una ricetta, dai la foto (o il testo), premi Avvia:
+// Modifica, scheda Ricette (era il Laboratorio): workflow già pronti, per tutto. Scegli una ricetta, dai la foto (o il testo), premi Avvia:
 // il motore fa tutti i passi uno dopo l'altro e qui trovi la griglia dei risultati, con il prima/dopo e il foglio unico.
+// Qui, e solo qui, si possono mettere più foto (il lotto). «Unisci foto» e «Come l'esempio» sono ricette speciali:
+// usano la tela di Modifica (Modifica.tsx) e la colonna di destra di sempre.
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { usaStato, scegliFoto, type FotoBase, type Qualita } from '../stato'
-import { api, urlFile } from '../api'
-import { I } from '../componenti/Icone'
-import { Casella } from '../componenti/Casella'
-import { ScegliQualita } from '../componenti/ScegliQualita'
-import { Segmenti } from '../componenti/Controlli'
-import { Riferimenti } from '../componenti/Riferimenti'
-import { SceltaMisura, ScegliMp, MISURA0, type Misura } from '../componenti/Misura'
-import { AvvisoLora } from '../componenti/AvvisoLora'
-import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
-import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../util'
-import { perQualita } from '../azioni'
-import { CAMERA0, ControlloCamera } from '../componenti/Camera'
-import { Omino } from '../componenti/Omino'
-import { leggiPosa, posaDi, posaInTesto } from '../omino'
-import { fileLoraCamera } from '../azioni'
-import { POSA_TUA, VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../workflow'
-import { usaRicette, type RicettaUtente } from '../ricette'
-import { EditorRicetta } from '../componenti/EditorRicetta'
-import { Catalogo, Dettaglio, Risultati, icona } from '../componenti/LabVista'
+import { usaStato, scegliFoto, type FotoBase, type Qualita } from '../../stato'
+import { api, urlFile } from '../../api'
+import { I } from '../../componenti/Icone'
+import { Casella } from '../../componenti/Casella'
+import { Segmenti } from '../../componenti/Controlli'
+import { Riferimenti } from '../../componenti/Riferimenti'
+import { SceltaMisura, ScegliMp, MISURA0, type Misura } from '../../componenti/Misura'
+import { AvvisoLora } from '../../componenti/AvvisoLora'
+import { daDataUrl, durata, immagineDaIncolla, normalizza, stimaSecondi } from '../../util'
+import { perQualita } from '../../azioni'
+import { CAMERA0, ControlloCamera } from '../../componenti/Camera'
+import { Omino } from '../../componenti/Omino'
+import { leggiPosa, posaDi, posaInTesto } from '../../omino'
+import { fileLoraCamera } from '../../azioni'
+import { specialeOra, POSA_TUA, VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLotto, avviaWorkflow, creaFoglio, elencoWorkflow, inUtente, manca, passiDi, usaLab, valoriIniziali, workflowDa, type Workflow } from '../../workflow'
+import { usaRicette, type RicettaUtente } from '../../ricette'
+import { EditorRicetta } from '../../componenti/EditorRicetta'
+import { Catalogo, Dettaglio, Risultati, icona } from '../../componenti/LabVista'
+import { SelettoreModo } from './SelettoreModo'
 import type { Opera } from '@shared/tipi'
 
 
@@ -37,10 +38,9 @@ const PERCHE: Record<string, string> = {
   camera: 'Rifà la foto da un\'altra posizione della camera, molto più fedele.'
 }
 
-export function Laboratorio(): JSX.Element {
+export function SchedaRicette(): JSX.Element {
   const { imp, lavori, avvisa } = usaStato()
   const { runs, attiva, vista, scelto } = usaLab()
-  const turbo = useTurbo()
   // le foto da lavorare (anche tante: la ricetta parte per ognuna)
   const [fotos, setFotos] = useState<FotoBase[]>([])
   const foto = fotos[0] ?? null
@@ -61,11 +61,6 @@ export function Laboratorio(): JSX.Element {
 
   const w = scelto ? workflowDa(scelto) : undefined
   const run = runs.find((r) => r.id === attiva)
-
-  // il Turbo, se c'è, è il modo giusto per fare serie di immagini
-  useEffect(() => {
-    if (turbo.presente) setQualita((q) => (q === 'alta' ? 'turbo' : q))
-  }, [turbo.presente])
 
   const scegli = (id: string): void => {
     const nuovo = workflowDa(id)!
@@ -91,7 +86,7 @@ export function Laboratorio(): JSX.Element {
   // incolla una foto: la prima è la foto, le altre i riferimenti
   useEffect(() => {
     const incolla = async (e: ClipboardEvent): Promise<void> => {
-      if (usaStato.getState().pagina !== 'laboratorio') return
+      if (usaStato.getState().pagina !== 'modifica' || usaStato.getState().modifica.modo !== 'ricette' || specialeOra()) return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       const d = immagineDaIncolla(e)
       if (!d) return
@@ -113,10 +108,6 @@ export function Laboratorio(): JSX.Element {
 
   const parti = async (): Promise<void> => {
     if (!w) return
-    if (qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA, o scegli Alta', 'errore')
-      return
-    }
     if (!scelti.length) {
       avvisa('Segna almeno una cosa da fare', 'errore')
       return
@@ -171,13 +162,61 @@ export function Laboratorio(): JSX.Element {
   }
 
   return (
-    <div className="pagina">
-      <div className="colonna">
+    <>
+      <div className="editor">
+        <div className="attrezzi"><SelettoreModo /></div>
+        <div className="palco palco-lab" style={{ flex: 1, minHeight: 0 }}>
+        <div className="schede-lab">
+          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW_BASE.length - ricette.nascoste.length + ricette.utente.length}</span></button>
+          <button className={vista === 'risultati' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'risultati' })} disabled={!runs.length}>
+            <I.serie /> Risultati {runs.length > 0 && <span className="n">{runs.length}</span>}
+          </button>
+          <span className="flex1" />
+          {vista === 'catalogo' && <button className="btn piccolo" onClick={nuovaRicetta}><I.piu /> Nuova ricetta</button>}
+          {vista === 'catalogo' && ricette.nascoste.length > 0 && <button className="btn piccolo fantasma" onClick={() => usaRicette.getState().mostraTutte()} title="Rimette le ricette che avevi nascosto">{ricette.nascoste.length === 1 ? 'Mostra la ricetta nascosta' : `Mostra le ${ricette.nascoste.length} nascoste`}</button>}
+          {vista === 'catalogo' && <input type="search" placeholder="Cerca una ricetta…" value={cerca} onChange={(e) => setCerca(e.target.value)} style={{ width: 240 }} />}
+          {vista === 'risultati' && runs.length > 1 && (
+            <select value={attiva || ''} onChange={(e) => usaLab.setState({ attiva: e.target.value })} style={{ width: 300 }}>
+              {runs.map((r) => <option key={r.id} value={r.id}>{r.nome} · {new Date(r.creato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</option>)}
+            </select>
+          )}
+        </div>
+
+        {vista === 'catalogo' || !run ? (
+          <Catalogo cerca={cerca} scelto={scelto} scegli={scegli} elenco={elencoWorkflow()} />
+        ) : (
+          <Risultati
+            run={run}
+            opere={opere}
+            lavori={lavori}
+            apri={(i) => setAperto({ run: run.id, i })}
+            foglio={foglio}
+            faiFoglio={async () => {
+              setFoglio(true)
+              try {
+                await creaFoglio(run)
+                avvisa('Foglio creato: lo trovi in Galleria', 'ok')
+              } catch (e) {
+                avvisa((e as Error).message, 'errore')
+              } finally {
+                setFoglio(false)
+              }
+            }}
+            rifai={() => {
+              const wf = workflowDa(run.wfId)
+              if (wf) void avviaWorkflow(wf, { foto: run.base, rif: run.rif, valori: run.ctx.v, opzioni: run.opzioni })
+            }}
+          />
+        )}
+      
+        </div>
+      </div>
+      <div className="colonna destra">
         <div className="scorri">
           {!w ? (
             <div className="sezione">
-              <h3>Laboratorio</h3>
-              <p className="tenue" style={{ margin: '0 0 10px' }}>Ricette già pronte: scegline una a destra, dai la foto (o il testo) e premi Avvia. Il motore fa tutti i passi da solo, uno dopo l'altro, e i risultati restano in Galleria.</p>
+              <h3>Ricette</h3>
+              <p className="tenue" style={{ margin: '0 0 10px' }}>Ricette già pronte: scegline una a sinistra, dai la foto (o il testo) e premi Avvia. Il motore fa tutti i passi da solo, uno dopo l'altro, e i risultati restano in Galleria.</p>
               <p className="piccolo spento" style={{ margin: 0 }}>Due tipi: le <b>serie</b> (la stessa foto in tante versioni: pose, stili, luci…) e le <b>catene</b> (ogni passo parte dal risultato del precedente: restauro, il tempo che passa…).</p>
             </div>
           ) : (
@@ -340,8 +379,7 @@ export function Laboratorio(): JSX.Element {
               )}
 
               <div className="sezione">
-                <h3>Qualità <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
-                <ScegliQualita valore={qualita} cambia={setQualita} senzaMassima />
+                <h3>Passi <span className="dx">{perQualita(qualita).passi} passi · ~{durata(stima)} in tutto</span></h3>
                 {!passi.some((x) => !x.crea) && (
                   <div style={{ marginTop: 10 }}>
                     <span className="piccolo tenue">Grandezza della foto</span>
@@ -362,53 +400,8 @@ export function Laboratorio(): JSX.Element {
         )}
       </div>
 
-      <div className="palco palco-lab">
-        <div className="schede-lab">
-          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW_BASE.length - ricette.nascoste.length + ricette.utente.length}</span></button>
-          <button className={vista === 'risultati' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'risultati' })} disabled={!runs.length}>
-            <I.serie /> Risultati {runs.length > 0 && <span className="n">{runs.length}</span>}
-          </button>
-          <span className="flex1" />
-          {vista === 'catalogo' && <button className="btn piccolo" onClick={nuovaRicetta}><I.piu /> Nuova ricetta</button>}
-          {vista === 'catalogo' && ricette.nascoste.length > 0 && <button className="btn piccolo fantasma" onClick={() => usaRicette.getState().mostraTutte()} title="Rimette le ricette che avevi nascosto">{ricette.nascoste.length === 1 ? 'Mostra la ricetta nascosta' : `Mostra le ${ricette.nascoste.length} nascoste`}</button>}
-          {vista === 'catalogo' && <input type="search" placeholder="Cerca una ricetta…" value={cerca} onChange={(e) => setCerca(e.target.value)} style={{ width: 240 }} />}
-          {vista === 'risultati' && runs.length > 1 && (
-            <select value={attiva || ''} onChange={(e) => usaLab.setState({ attiva: e.target.value })} style={{ width: 300 }}>
-              {runs.map((r) => <option key={r.id} value={r.id}>{r.nome} · {new Date(r.creato).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</option>)}
-            </select>
-          )}
-        </div>
-
-        {vista === 'catalogo' || !run ? (
-          <Catalogo cerca={cerca} scelto={scelto} scegli={scegli} elenco={elencoWorkflow()} />
-        ) : (
-          <Risultati
-            run={run}
-            opere={opere}
-            lavori={lavori}
-            apri={(i) => setAperto({ run: run.id, i })}
-            foglio={foglio}
-            faiFoglio={async () => {
-              setFoglio(true)
-              try {
-                await creaFoglio(run)
-                avvisa('Foglio creato: lo trovi in Galleria', 'ok')
-              } catch (e) {
-                avvisa((e as Error).message, 'errore')
-              } finally {
-                setFoglio(false)
-              }
-            }}
-            rifai={() => {
-              const wf = workflowDa(run.wfId)
-              if (wf) void avviaWorkflow(wf, { foto: run.base, rif: run.rif, valori: run.ctx.v, opzioni: run.opzioni })
-            }}
-          />
-        )}
-      </div>
-
       {editor && <EditorRicetta ricetta={editor} chiudi={() => setEditor(null)} salvata={(r) => { usaRicette.getState().salva(r); setEditor(null); scegli(r.id) }} />}
       {aperto && run && <Dettaglio run={run} opere={opere} i={aperto.i} cambia={(i) => setAperto({ run: aperto.run, i })} chiudi={() => setAperto(null)} />}
-    </div>
+    </>
   )
 }

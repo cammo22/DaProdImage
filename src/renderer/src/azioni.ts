@@ -1,8 +1,8 @@
 // Le azioni che servono a più pagine: costruire le richieste, aprire una foto in Modifica, rifinire, variare.
-import { modelloTurbo } from '@shared/tipi'
+import { inQualitaPiena, modelloDaOpera, parametriModello, senzaTurbo, type IdModello } from '@shared/modelli'
 import type { Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
-import { famigliaCorrente, passiDi, usaStato, type FotoBase, type Qualita } from './stato'
+import { passiDi, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
 import type { ChiaveLora } from './rapide'
 
@@ -47,25 +47,13 @@ export function richiestaBase(): Richiesta {
   }
 }
 
-/** il LoRA Turbo è fra i LoRA? */
-export function turboPresente(): boolean {
-  const { imp, lore } = usaStato.getState()
-  // Klein non usa il LoRA Turbo (è già distillato): per lui non manca niente
-  if (imp && imp.famiglia !== 'qwen') return true
-  if (imp && modelloTurbo(imp.modello)) return true
-  return !!imp?.loraTurbo && lore.some((l) => l.file === imp.loraTurbo)
-}
-
-/** passi (e Turbo) per una qualità; il Turbo vuole CFG 1, euler, simple */
+/** passi per una qualità. Il Turbo di Qwen non c'è più (D1 del piano): una qualità «turbo» salvata vale «alta» e non accende il LoRA */
 export function perQualita(q: Qualita): Pick<Richiesta, 'passi' | 'turbo'> & Partial<Pick<Richiesta, 'cfg' | 'sampler' | 'scheduler'>> {
-  // Klein: niente Turbo (è già distillato), il CFG e il sampler li decide il motore
-  if (famigliaCorrente() !== 'qwen') return { passi: passiDi(q), turbo: false }
-  if (q === 'turbo') return { passi: passiDi('turbo'), turbo: true, cfg: 1, sampler: 'euler', scheduler: 'simple' }
-  return { passi: passiDi(q), turbo: false }
+  return { passi: passiDi(senzaTurbo(q)), turbo: false }
 }
 
-/** la qualità per i lavori "di servizio" (rifinisci, varia): Turbo se è acceso in Crea */
-const qualitaServizio = (): Qualita => (usaStato.getState().crea.qualita === 'turbo' && turboPresente() ? 'turbo' : 'alta')
+/** la qualità per i lavori "di servizio" (rifinisci, varia) */
+const qualitaServizio = (): Qualita => 'alta'
 
 export const fotoDaOpera = (o: Opera): FotoBase => ({ percorso: o.file, larghezza: o.larghezza, altezza: o.altezza, operaId: o.id, prompt: o.prompt })
 
@@ -140,10 +128,51 @@ export function ingrandisci(o: Opera, fattore = 2): Promise<void> {
   )
 }
 
+/** i modelli con cui si può rifare una foto di Klein veloce (lista vuota per tutte le altre): `inQualitaPiena` di src/shared/modelli.ts.
+ *  Solo le foto fatte da zero (Crea): le modifiche partono da una foto che l'opera non ricorda. */
+export function rifacibileIn(o: Opera): IdModello[] {
+  return o.modalita === 'crea' ? inQualitaPiena(modelloDaOpera(o)) : []
+}
+
+/** «Rifai in qualità piena» (Klein veloce → Klein Base) e «Rifai con Qwen»: stesso prompt e stesso seed.
+ *  Da Klein veloce a Klein Base la famiglia è la stessa e l'immagine si somiglia; con Qwen è un altro modello, non promette la stessa immagine. */
+export function rifaiCon(o: Opera, id: IdModello): Promise<void> {
+  const w = Math.max(256, Math.round(o.larghezza / 16) * 16)
+  const h = Math.max(256, Math.round(o.altezza / 16) * 16)
+  const stessaFamiglia = parametriModello(id).famiglia !== 'qwen'
+  return accoda(
+    {
+      ...richiestaBase(),
+      modalita: 'crea',
+      prompt: o.prompt,
+      // se la foto originale era una didascalia espansa da Klein (non un preset), si espande di nuovo: dalla cache esce lo stesso testo
+      potenzia: !o.etichetta,
+      negativo: '',
+      seed: o.seed,
+      cfg: 1,
+      sampler: 'euler',
+      scheduler: 'simple',
+      larghezza: w,
+      altezza: h,
+      megapixel: (w * h) / 1048576,
+      ...(w !== o.larghezza || h !== o.altezza ? { uscita: { w: o.larghezza, h: o.altezza } } : {}),
+      quante: 1,
+      immagini: [],
+      trasparente: o.trasparente,
+      ...parametriModello(id),
+      // i LoRA sono fatti per Qwen: con Klein Base non valgono
+      lora: stessaFamiglia ? [] : richiestaBase().lora,
+      origine: o.id,
+      etichetta: stessaFamiglia ? 'Qualità piena' : 'Con Qwen'
+    },
+    stessaFamiglia ? 'Rifatta in qualità piena (Klein Base, stesso seed)' : 'Rifatta con Qwen in coda'
+  )
+}
+
 /** Riusa: rimette prompt, seed e LoRA dell'opera nella pagina Crea */
 export function riusa(o: Opera): void {
   const s = usaStato.getState()
-  s.setCrea({ prompt: o.prompt, negativo: o.negativo, seed: o.seed, casuale: false, cfg: o.cfg, sampler: o.sampler, scheduler: o.scheduler, trasparente: !!o.trasparente })
+  s.setCrea({ prompt: o.prompt, seed: o.seed, casuale: false, trasparente: !!o.trasparente })
   if (o.lora?.length) s.setLoraAttive(o.lora.filter((l) => s.lore.some((x) => x.file === l.file)))
   s.apriVisore(null)
   s.vai('crea')

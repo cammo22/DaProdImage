@@ -1,11 +1,11 @@
 // Impostazioni: modelli, prestazioni, cartelle, motore.
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, ricaricaImp } from '../stato'
+import { Lora } from './Lora'
 import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
-import { scaricaTurbo, useTurbo } from '../componenti/Turbo'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
 
@@ -13,9 +13,22 @@ const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
+/** Opzioni: due schede, le impostazioni di sempre e i LoRA (prima avevano una voce a sinistra, nella rotaia). */
 export function Impostazioni(): JSX.Element {
+  const scheda = usaStato((s) => s.schedaOpzioni)
+  return (
+    <div className="pagina opzioni-schede">
+      <div className="schede-opzioni">
+        <button className={scheda === 'generali' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'generali' })}>Impostazioni</button>
+        <button className={scheda === 'lora' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'lora' })}>LoRA</button>
+      </div>
+      <div className="corpo-opzioni">{scheda === 'lora' ? <Lora /> : <OpzioniGenerali />}</div>
+    </div>
+  )
+}
+
+function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
-  const turbo = useTurbo()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
@@ -107,8 +120,12 @@ export function Impostazioni(): JSX.Element {
               <div className="et"><b>Ingranditore</b><small>Per "2×", "Rifinisci" e le misure grandi. NVIDIA RTX (RTX Video Super Resolution) usa i Tensor core della scheda: più nitido e veloce; se non c'è, si usa quello a modello</small></div>
               <Segmenti valore={imp.upscalerRtx ? 'rtx' : 'modello'} cambia={(v) => salva({ upscalerRtx: v === 'rtx' })} voci={[{ id: 'rtx', nome: 'NVIDIA RTX', sotto: 'consigliato' }, { id: 'modello', nome: 'A modello', sotto: '4x-UltraSharp' }]} />
             </div>
-            {voceScelta('FLUX 3 Klein · veloce', 'Il file di Klein (16 passi). Vuoto = lo trova da solo fra quelli scaricati', imp.kleinModello, ['', ...file.klein.filter((n) => !/base/i.test(n))], (kleinModello) => salva({ kleinModello }))}
+            {voceScelta('FLUX 3 Klein · veloce', 'Il file di Klein (8 passi). Vuoto = lo trova da solo fra quelli scaricati', imp.kleinModello, ['', ...file.klein.filter((n) => !/base/i.test(n))], (kleinModello) => salva({ kleinModello }))}
             {voceScelta('FLUX 3 Klein Base', 'Il file di Klein Base (50 passi, CFG)', imp.kleinBase, ['', ...file.klein.filter((n) => /base/i.test(n))], (kleinBase) => salva({ kleinBase }))}
+            <div className="voce">
+              <div className="et"><b>Espandi il prompt prima di disegnare</b><small>Con Klein. Black Forest Labs lo consiglia: Klein dà il meglio con didascalie lunghe. Lo scrive il Qwen3-VL (circa mezzo minuto in più per immagine)</small></div>
+              <Interruttore acceso={imp.potenziaKlein ?? true} cambia={(potenziaKlein) => salva({ potenziaKlein })}>{(imp.potenziaKlein ?? true) ? 'Acceso' : 'Spento'}</Interruttore>
+            </div>
             {voceScelta('Text encoder di Klein', 'Qwen3-VL 4B (diverso dall\'encoder 8B di Qwen)', imp.kleinEncoder, ['', ...file.kleinTe], (kleinEncoder) => salva({ kleinEncoder }))}
             {voceScelta('VAE di Klein', 'Il decoder di FLUX 3 Klein', imp.kleinVae, ['', ...file.kleinVae], (kleinVae) => salva({ kleinVae }))}
             {!imp.upscalerRtx && voceScelta('Ingranditore a modello', 'Il file in upscale_models', imp.upscaler, file.upscaler, (upscaler) => salva({ upscaler }))}
@@ -185,7 +202,7 @@ export function Impostazioni(): JSX.Element {
           <h2 className="chiudibile" onClick={() => alterna('PRESTAZIONI E MEMORIA')}>{chiusi['PRESTAZIONI E MEMORIA'] ? '▸' : '▾'} PRESTAZIONI E MEMORIA</h2>
           <div className="pannello" style={chiusi['PRESTAZIONI E MEMORIA'] ? { display: 'none' } : undefined}>
             <div className="voce">
-              <div className="et"><b>Scarica da solo quello che manca</b><small>Quando l'app è ferma per un minuto, scarica i file consigliati che non hai (il LoRA Turbo, il traduttore…). I modelli grandi li scegli tu</small></div>
+              <div className="et"><b>Scarica da solo quello che manca</b><small>Quando l'app è ferma per un minuto, scarica i file consigliati che non hai (il traduttore…). I modelli grandi li scegli tu</small></div>
               <Interruttore acceso={imp.scaricaInIdle} cambia={(scaricaInIdle) => salva({ scaricaInIdle })}>{imp.scaricaInIdle ? 'Sì' : 'No'}</Interruttore>
             </div>
             <div className="voce">
@@ -202,18 +219,6 @@ export function Impostazioni(): JSX.Element {
                 cambia={(memoria) => salva({ memoria })}
                 voci={[{ id: 'auto', nome: 'Auto' }, { id: 'bassa', nome: '6 GB' }, { id: 'normale', nome: '8-12 GB' }, { id: 'alta', nome: '16 GB+' }]}
               />
-            </div>
-            <div className="voce">
-              <div className="et"><b>Turbo (8 passi)</b><small>Il LoRA Turbo8: circa 5 volte più veloce. Si sceglie da Qualità in Crea e Modifica</small></div>
-              <div className="riga">
-                {turbo.presente ? (
-                  <span className="distintivo si">✓ pronto · {imp.loraTurbo}</span>
-                ) : turbo.dl?.stato === 'in corso' || turbo.dl?.stato === 'verifica' ? (
-                  <span className="piccolo tenue">Scarico… {turbo.dl.totali ? Math.round((turbo.dl.ricevuti / turbo.dl.totali) * 100) : 0}%</span>
-                ) : (
-                  <button className="btn piccolo primario" onClick={() => void scaricaTurbo()}><I.fulmine /> Scarica il Turbo (~1,4 GB)</button>
-                )}
-              </div>
             </div>
             <div className="voce">
               <div className="et"><b>Traduci in inglese da solo</b><small>Qwen-Image capisce meglio l'inglese: i prompt in italiano si traducono prima di disegnare. I testi fra virgolette restano identici</small></div>
@@ -237,6 +242,10 @@ export function Impostazioni(): JSX.Element {
               <Interruttore acceso={imp.unaCosaAllaVolta} cambia={(unaCosaAllaVolta) => salva({ unaCosaAllaVolta })}>{imp.unaCosaAllaVolta ? 'Accesa' : 'Spenta'}</Interruttore>
             </div>
             <div className="voce">
+              <div className="et"><b>Scrivi i testi col Qwen3-VL 4B anche con Qwen</b><small>Migliora prompt, descrivi foto, Idee, Estrai… con Qwen girano sull'encoder 8B (da 3 a 0,5 token al secondo, in buona parte sul processore). Col 4B di Klein sono 40-50 token al secondo (Migliora prompt in 5 secondi invece di 1-5 minuti), ma lo scrive un modello più piccolo e va scaricato; se il file manca resta l'8B. Con Klein il 4B scrive sempre. Il 4B e Qwen non stanno in VRAM insieme: a ogni cambio si scarica uno dei due</small></div>
+              <Interruttore acceso={imp.testoCon4B ?? true} cambia={(testoCon4B) => salva({ testoCon4B })}>{(imp.testoCon4B ?? true) ? 'Acceso' : 'Spento'}</Interruttore>
+            </div>
+            <div className="voce">
               <div className="et"><b>Scarica i modelli quando non li uso</b><small>Se per un po' non fai niente, i modelli escono dalla VRAM e la scheda torna libera per i giochi e gli altri programmi. La prossima immagine impiega qualche secondo in più a ripartire</small></div>
               <Segmenti valore={imp.scaricaDopo} cambia={(scaricaDopo) => salva({ scaricaDopo })} voci={[{ id: 0, nome: 'Mai' }, { id: 60, nome: '1 min' }, { id: 120, nome: '2 min' }, { id: 300, nome: '5 min' }, { id: 900, nome: '15 min' }]} />
             </div>
@@ -249,7 +258,7 @@ export function Impostazioni(): JSX.Element {
                 <b>Ci mette minuti per una foto?</b> Su Windows, quando la VRAM finisce, il driver NVIDIA continua nella RAM
                 del PC e tutto va 5-10 volte più piano senza dare errori. Apri <i>Pannello di controllo NVIDIA → Gestisci
                 impostazioni 3D → Impostazioni globali</i> e metti <i>Criterio di fallback della memoria di sistema CUDA</i> su
-                <b> Preferisci nessun fallback</b>: così il motore sposta lui i pezzi in RAM, molto più in fretta. Poi: Turbo,
+                <b> Preferisci nessun fallback</b>: così il motore sposta lui i pezzi in RAM, molto più in fretta. Poi: scegli Klein veloce (8 passi),
                 profilo 6 GB se la scheda è piccola, e chiudi browser e giochi che usano la GPU.
               </div>
             </div>

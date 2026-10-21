@@ -8,7 +8,7 @@ import { PrimaDopo } from '../componenti/PrimaDopo'
 import { durata, ETICHETTE_MODALITA, normalizza } from '../util'
 import { VistaZoom } from '../componenti/VistaZoom'
 import { MenuContestuale, type VoceMenu } from '../componenti/MenuContestuale'
-import { apriInModifica, fotoDaOpera, ingrandisci, rifinisci, riusa, varia } from '../azioni'
+import { apriInModifica, fotoDaOpera, ingrandisci, rifaiCon, rifacibileIn, rifinisci, riusa, varia } from '../azioni'
 import type { FiltroGalleria, Opera } from '@shared/tipi'
 
 const giorno = (t: number): string => {
@@ -405,6 +405,8 @@ function Visore({ opere }: { opere: Opera[] }): JSX.Element | null {
             <div className="riga a-capo">
               <button className="btn" onClick={() => apriInModifica(fotoDaOpera(attuale))}><I.modifica /> Modifica</button>
               <button className="btn" onClick={() => varia(attuale)}><I.varia /> Varia</button>
+              {rifacibileIn(attuale).includes('klein-base') && <button className="btn primario" onClick={() => void rifaiCon(attuale, 'klein-base')} title="Rifà questa foto con Klein Base (50 passi, CFG 3,5): stesso prompt e stesso seed, la stessa famiglia di modelli"><I.crea /> Rifai in qualità piena</button>}
+              {rifacibileIn(attuale).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(attuale, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (40 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
               {attuale.etichetta === 'Bozza' ? (
                 <button className="btn primario" onClick={() => rifinisci(attuale)}><I.crea /> Rifinisci</button>
               ) : (

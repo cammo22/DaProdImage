@@ -1,24 +1,21 @@
 // Crea: dal testo all'immagine.
 import { useEffect, useMemo, useState, type JSX } from 'react'
-import { usaStato, type Qualita } from '../stato'
+import { usaStato } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { AdattaFoto } from '../componenti/AdattaFoto'
-import { Contatore, Cursore, Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
+import { Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
 import { SceltaMisura, ScegliMp, Uscita, MISURA0, dimMp } from '../componenti/Misura'
 import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
-import { BarraPreset, SchedaPreset } from '../componenti/Preset'
+import { MenuStili, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
-import { AvvisoTurbo, useTurbo } from '../componenti/Turbo'
 import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi } from '../util'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, perQualita, richiestaBase, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, richiestaBase, rifaiCon, rifacibileIn, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
-import { passiDi } from '../stato'
+import { MODELLI, modelloDaImpostazioni, parametriModello } from '@shared/modelli'
 import { Casella } from '../componenti/Casella'
-import { ScegliQualita } from '../componenti/ScegliQualita'
-import { ScegliModello } from '../componenti/ScegliModello'
 import type { Lavoro, Opera } from '@shared/tipi'
 
 
@@ -29,10 +26,8 @@ const ar = (f: string): string => {
 
 export function Crea(): JSX.Element {
   const { crea, setCrea, imp, lavori, avvisa } = usaStato()
-  const turbo = useTurbo()
   const [precedente, setPrecedente] = useState<string | null>(null)
   const [scrivendo, setScrivendo] = useState(false)
-  const [avanzate, setAvanzate] = useState(false)
   const [scelto, setScelto] = useState<string | null>(null)
   const [opere, setOpere] = useState<Record<string, Opera>>({})
   const [vedoInCorso, setVedoInCorso] = useState(true)
@@ -42,23 +37,24 @@ export function Crea(): JSX.Element {
     void api.galleria.elenco({ modalita: 'tutte' }).then((l) => setRecenti(l.slice(0, 8)))
   }, [lavori.filter((l) => l.stato === 'fatto').length])
 
-  const bozza = crea.qualita === 'bozza'
-  // la bozza lavora a metà dei pixel (lato corto / √2)
-  const dim = dimensioniRis(crea.formato, bozza ? Math.max(256, Math.round(crea.ris / Math.SQRT2)) : crea.ris)
+  const dim = dimensioniRis(crea.formato, crea.ris)
   // la foto che esce (la misura precisa se c'è, se no la risoluzione scelta) e le dimensioni a cui la disegna il modello: con i megapixel
   // scelti il modello lavora a quelli (anche 4 MP per una foto da 480p) e poi la riduce alla misura finale
   const mis = crea.misura?.tipo === 'custom' ? crea.misura : null
   const finale = mis ? { w: mis.w, h: mis.h } : dim
-  const mpLav = crea.mpLavoro ? Math.min(crea.mpLavoro * (bozza ? 0.5 : 1), 4.19) : 0
+  const mpLav = crea.mpLavoro ? Math.min(crea.mpLavoro, 4.19) : 0
   const m16 = (x: number): number => Math.max(256, Math.round(x / 16) * 16)
   const lav = mpLav
     ? dimMp(mpLav, finale.w, finale.h)
     : mis
       ? { w: m16(Math.sqrt(dim.w * dim.h * (mis.w / mis.h))), h: m16(Math.sqrt((dim.w * dim.h) / (mis.w / mis.h))) }
       : dim
-  const { passi } = perQualita(crea.qualita)
+  // il modello si sceglie dalla barra in alto e porta con sé i passi (e il CFG): qui non c'è niente da regolare
+  const modello = MODELLI[modelloDaImpostazioni(imp)]
+  const passi = modello.passi
+  const quante = crea.quante <= 1 ? 1 : crea.quante <= 2 ? 2 : 4
   const preset = presetDa(crea.preset)
-  const stima = stimaSecondi(imp?.tempi, (lav.w * lav.h) / 1048576, passi) * crea.quante
+  const stima = stimaSecondi(imp?.tempi, (lav.w * lav.h) / 1048576, passi) * quante
 
   // i lavori di questa pagina (creati, rifiniti, variati)
   const miei = useMemo(() => lavori.filter((l) => ['crea', 'rifinisci', 'varia'].includes(l.richiesta.modalita)), [lavori])
@@ -89,34 +85,31 @@ export function Crea(): JSX.Element {
       avvisa('Scrivi prima cosa vuoi vedere', 'errore')
       return
     }
-    if (crea.qualita === 'turbo' && !turbo.presente) {
-      avvisa('Per il Turbo scarica prima il suo LoRA (il pulsante sotto Qualità), o scegli Alta', 'errore')
-      return
-    }
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
       prompt: conParoleLora(crea.prompt.trim()),
       // Klein: la richiesta breve si espande in una didascalia dettagliata (se non è un preset, che il prompt lo scrive già lungo)
       potenzia: !preset,
-      negativo: crea.negativo,
+      // i valori ufficiali del modello (Klein sceglie CFG, sampler e scheduler da sé nel motore)
+      negativo: '',
       seed: crea.casuale ? -1 : crea.seed,
-      cfg: crea.cfg,
-      sampler: crea.sampler,
-      scheduler: crea.scheduler,
+      cfg: 1,
+      sampler: 'euler',
+      scheduler: 'simple',
       larghezza: lav.w,
       altezza: lav.h,
       megapixel: (lav.w * lav.h) / 1048576,
       // se il modello lavora a una misura diversa da quella che vuoi, il motore porta la foto alla misura finale
       ...(Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? { uscita: { w: finale.w, h: finale.h } } : {}),
-      quante: crea.quante,
+      quante,
       immagini: crea.riferimenti.map((r) => r.percorso),
       trasparente: crea.trasparente,
-      ...perQualita(crea.qualita),
-      etichetta: bozza ? 'Bozza' : preset ? preset.nome : undefined
+      ...parametriModello(modello.id),
+      etichetta: preset ? preset.nome : undefined
     }
     await api.lavori.accoda(q)
-    if (crea.quante > 1) avvisa(`${crea.quante} immagini in coda`, 'ok')
+    if (quante > 1) avvisa(`${quante} immagini in coda`, 'ok')
   }
 
   useEffect(() => {
@@ -193,10 +186,11 @@ export function Crea(): JSX.Element {
 
   return (
     <div className="pagina">
-      <BarraPreset prima={setPrecedente} />
       <div className="colonna">
         <div className="scorri">
-          <div className="sezione"><ScegliModello /></div>
+          <div className="sezione">
+            <MenuStili prima={setPrecedente} />
+          </div>
           <SchedaPreset />
           <div className="sezione">
             <h3>
@@ -229,7 +223,8 @@ export function Crea(): JSX.Element {
             {(imp?.famiglia || 'qwen') === 'qwen' && <div style={{ marginTop: 10 }}><SceltaLora /></div>}
           </div>
 
-          <SezioneChiudibile id="crea-formato" titolo="Formato e risoluzione" destra={crea.misura?.tipo === 'custom' ? `${crea.misura.w} × ${crea.misura.h}` : `${dim.w} × ${dim.h}`}>
+          <div className="sezione">
+            <h3>Formato <span className="dx">{finale.w} × {finale.h} px</span></h3>
             <div className="formati">
               {FORMATI.map((f) => {
                 const k = 22 / Math.max(f.w, f.h)
@@ -241,7 +236,7 @@ export function Crea(): JSX.Element {
                 )
               })}
             </div>
-            <h3 style={{ marginTop: 14 }}>Risoluzione finale <span className="dx">{dim.w} × {dim.h} px{bozza ? ' · bozza' : ''}</span></h3>
+            <h3 style={{ marginTop: 14 }}>Lato corto</h3>
             <div className="risoluzioni">
               {RISOLUZIONI.map((r) => (
                 <button key={r.id} className={`formato ${crea.ris === r.id ? 'su' : ''}`} onClick={() => setCrea({ ris: r.id })} title={r.titolo}>
@@ -250,18 +245,7 @@ export function Crea(): JSX.Element {
                 </button>
               ))}
             </div>
-            <h3 style={{ marginTop: 14 }}>Megapixel del modello <span className="dx">{crea.mpLavoro ? `${(lav.w * lav.h / 1048576).toFixed(2).replace('.', ',')} MP` : 'come la misura finale'}</span></h3>
-            <span className="piccolo spento" style={{ display: 'block', marginBottom: 6 }}>A quanti megapixel disegna il modello. Con più megapixel della risoluzione finale disegna grande e poi riduce: più dettagli e linee più pulite anche per una foto piccola (es. 480p disegnata a 4 MP).</span>
-            <ScegliMp mp={crea.mpLavoro} cambia={(mpLavoro) => setCrea({ mpLavoro })} ar={{ w: finale.w, h: finale.h }} auto="come la misura" />
-            <Uscita w={finale.w} h={finale.h} nota={Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? `disegnata a ${lav.w}×${lav.h} e poi portata qui` : undefined} />
-            <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
-            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} senzaUscita />
-          </SezioneChiudibile>
-
-          <SezioneChiudibile id="crea-qualita" titolo="Qualità" destra={`${passi} passi · ~${durata(stima)}`}>
-            <ScegliQualita valore={crea.qualita} cambia={(qualita) => setCrea({ qualita })} bozza={{ nome: 'Bozza', sotto: `${passiDi('bozza')} passi, ½ pixel`, titolo: 'Per esplorare: poi "Rifinisci" porta la bozza scelta in alta qualità' }} />
-            {bozza && <div className="piccolo tenue" style={{ marginTop: 8 }}>Esplori più idee in poco tempo; sulla bozza che ti piace premi <b className="oro">Rifinisci</b>.</div>}
-          </SezioneChiudibile>
+          </div>
 
           <div className="sezione">
             <Riferimenti
@@ -274,12 +258,13 @@ export function Crea(): JSX.Element {
           </div>
 
           <div className="sezione">
-            <div className="riga spazia">
-              <div className="col" style={{ gap: 4 }}>
-                <h3 style={{ margin: 0 }}>Quante</h3>
-                <Contatore valore={crea.quante} min={1} max={12} cambia={(quante) => setCrea({ quante })} />
-              </div>
-              <div className="col" style={{ gap: 4, alignItems: 'flex-end' }}>
+            <h3>Quante <span className="dx">{quante > 1 ? `${quante} immagini, una dopo l'altra` : ''}</span></h3>
+            <Segmenti valore={quante} voci={[{ id: 1, nome: '1' }, { id: 2, nome: '2' }, { id: 4, nome: '4' }]} cambia={(q) => setCrea({ quante: q })} />
+          </div>
+
+          <SezioneChiudibile id="crea-altro" titolo="Altro" aperta={false} destra="seed, megapixel, misura, sfondo">
+            <div className="col" style={{ gap: 14 }}>
+              <div className="col" style={{ gap: 6 }}>
                 <h3 style={{ margin: 0 }}>Seed</h3>
                 <div className="riga">
                   <button className={`btn piccolo ${crea.casuale ? 'attivo' : ''}`} onClick={() => setCrea({ casuale: !crea.casuale })} title="Seed casuale a ogni immagine">
@@ -288,49 +273,23 @@ export function Crea(): JSX.Element {
                   {!crea.casuale && <input type="number" value={crea.seed} onChange={(e) => setCrea({ seed: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 130 }} />}
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="sezione">
-            <Interruttore acceso={crea.trasparente} cambia={(trasparente) => setCrea({ trasparente })} sotto="PNG con sfondo trasparente (canale alfa nativo di Qwen-Image 2.1)">
-              Sfondo trasparente
-            </Interruttore>
-          </div>
-
-          <div className="sezione">
-            <h3 style={{ cursor: 'pointer' }} onClick={() => setAvanzate(!avanzate)}>
-              {avanzate ? '▾' : '▸'} Avanzate
-            </h3>
-            {avanzate && (
-              <div className="col" style={{ gap: 12 }}>
-                {crea.qualita === 'turbo' && <div className="piccolo oro">Col Turbo CFG, sampler e scheduler restano quelli suoi (1, euler, simple).</div>}
-                <Cursore etichetta="CFG (1 = percorso ufficiale)" valore={crea.cfg} min={1} max={6} passo={0.1} formato={(v) => v.toFixed(1)} cambia={(cfg) => setCrea({ cfg })} />
-                <div className="col" style={{ gap: 4 }}>
-                  <span className="piccolo tenue">Prompt negativo {crea.cfg <= 1 && <span className="spento">(conta solo con CFG sopra 1, e raddoppia il tempo)</span>}</span>
-                  <Casella valore={crea.negativo} cambia={(negativo) => setCrea({ negativo })} minimo={60} placeholder="es. sfocato, mani storte, testo" />
-                </div>
-                <div className="riga">
-                  <div className="col flex1" style={{ gap: 4 }}>
-                    <span className="piccolo tenue">Sampler</span>
-                    <select value={crea.sampler} onChange={(e) => setCrea({ sampler: e.target.value })}>
-                      {['euler', 'euler_ancestral', 'dpmpp_2m', 'res_multistep', 'heun', 'uni_pc', 'deis'].map((s) => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div className="col flex1" style={{ gap: 4 }}>
-                    <span className="piccolo tenue">Scheduler</span>
-                    <select value={crea.scheduler} onChange={(e) => setCrea({ scheduler: e.target.value })}>
-                      {['simple', 'sgm_uniform', 'beta', 'normal', 'karras', 'linear_quadratic', 'kl_optimal'].map((s) => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <button className="btn piccolo fantasma" onClick={() => setCrea({ cfg: 1, sampler: 'euler', scheduler: 'simple', negativo: '' })}>Rimetti quelli ufficiali</button>
+              <Interruttore acceso={crea.trasparente} cambia={(trasparente) => setCrea({ trasparente })} sotto="PNG con sfondo trasparente (canale alfa nativo di Qwen-Image 2.1)">
+                Sfondo trasparente
+              </Interruttore>
+              <div>
+            <h3>Megapixel del modello <span className="dx">{crea.mpLavoro ? `${(lav.w * lav.h / 1048576).toFixed(2).replace('.', ',')} MP` : 'come la misura finale'}</span></h3>
+            <span className="piccolo spento" style={{ display: 'block', marginBottom: 6 }}>A quanti megapixel disegna il modello. Con più megapixel della risoluzione finale disegna grande e poi riduce: più dettagli e linee più pulite anche per una foto piccola (es. 480p disegnata a 4 MP).</span>
+            <ScegliMp mp={crea.mpLavoro} cambia={(mpLavoro) => setCrea({ mpLavoro })} ar={{ w: finale.w, h: finale.h }} auto="come la misura" />
+            <Uscita w={finale.w} h={finale.h} nota={Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? `disegnata a ${lav.w}×${lav.h} e poi portata qui` : undefined} />
+            <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
+            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} senzaUscita />
               </div>
-            )}
-          </div>
+            </div>
+          </SezioneChiudibile>
         </div>
         <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
           <button className="btn primario grande" style={{ width: '100%' }} onClick={vai}>
-            <I.crea /> {crea.quante > 1 ? `Crea ${crea.quante} immagini` : 'Crea'}
+            <I.crea /> {quante > 1 ? `Crea ${quante} immagini` : 'Crea'}
           </button>
           <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>Ctrl+Invio · ~{durata(stima)}</div>
         </div>
@@ -364,14 +323,11 @@ export function Crea(): JSX.Element {
         </div>
         {op && !mostraInCorso && (
           <div className="azioni-risultato">
-            {op.etichetta === 'Bozza' && (
-              <button className="btn primario" onClick={() => rifinisci(op)} title="La porta alla grandezza scelta e ridisegna i dettagli">
-                <I.crea /> Rifinisci
-              </button>
-            )}
             <button className="btn" onClick={() => apriInModifica(fotoDaOpera(op))}><I.modifica /> Modifica</button>
             <button className="btn" onClick={() => varia(op)} title="Due variazioni che tengono la composizione"><I.varia /> Varia</button>
-            {op.etichetta !== 'Bozza' && <button className="btn" onClick={() => rifinisci(op)} title="Ingrandisce fino al 2K e ridisegna i dettagli"><I.ingrandisci /> Rifinisci 2K</button>}
+            {rifacibileIn(op).includes('klein-base') && <button className="btn primario" onClick={() => void rifaiCon(op, 'klein-base')} title="Rifà questa foto con Klein Base (50 passi, CFG 3,5): stesso prompt e stesso seed, la stessa famiglia di modelli"><I.crea /> Rifai in qualità piena</button>}
+            {rifacibileIn(op).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(op, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (40 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
+            <button className="btn" onClick={() => rifinisci(op)} title="Ingrandisce fino al 2K e ridisegna i dettagli"><I.ingrandisci /> Rifinisci 2K</button>
             <button className="btn" onClick={() => ingrandisci(op, 2)} title="Ingrandimento veloce 2× (4x-UltraSharp)"><I.ingrandisci /> 2×</button>
             <button className="btn" onClick={() => riusa(op)} title="Rimette prompt e seed"><I.ricicla /> Riusa</button>
             <button className={`btn icona ${op.preferita ? 'attivo' : ''}`} onClick={async () => { await api.galleria.preferita(op.id, !op.preferita); setOpere({ ...opere, [op.id]: { ...op, preferita: !op.preferita } }) }} title="Preferita">

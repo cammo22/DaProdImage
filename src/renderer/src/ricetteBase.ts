@@ -332,6 +332,20 @@ export const WORKFLOW_BASE: Workflow[] = [
       E('A colori', `Color this line art as a vibrant, polished digital illustration with soft shading. Keep the composition and every element.`),
       E('Realistico', `Turn this illustration into a photorealistic image with natural lighting and real textures. Keep the composition and every element.`)
     ]
+  },
+  {
+    id: 'unisci', nome: 'Unisci foto', categoria: 'grafica', icona: 'foto', modo: 'speciale',
+    descrizione: 'Più foto sono tutti riferimenti: il modello le guarda insieme e crea una immagine nuova da quello che scrivi.',
+    foto: false, rif: 'serve', rifNome: 'le foto da fondere',
+    ingressi: [],
+    passi: () => [E('Foto nuova', 'Crea una immagine nuova partendo dalle foto di riferimento.')]
+  },
+  {
+    id: 'esempio', nome: "Come l'esempio", categoria: 'grafica', icona: 'foto', modo: 'speciale',
+    descrizione: "Una foto mostra com'è il risultato che vuoi: le tue foto portano dentro i dettagli (persone, volti, vestiti, oggetti, stili) e il modello rifà l'esempio.",
+    foto: false, rif: 'serve', rifNome: 'le foto da cui prendere i dettagli',
+    ingressi: [],
+    passi: () => [E("Come l'esempio", "Rifà l'esempio <image1> usando i dettagli delle foto di riferimento.")]
   }
 ]
 

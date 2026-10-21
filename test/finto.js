@@ -26,7 +26,7 @@
   const asc = {}
   const su = new Proxy({}, { get: (_, k) => (f) => { (asc[k] ||= []).push(f); return () => {} } })
   const emetti = (k, ...a) => (asc[k] || []).forEach((f) => f(...a))
-  const imp = { cartellaModelli: 'C:\\m', cartellaGalleria: 'C:\\g', modello: 'qwen-image-2.1-UC-Q4_K_M.gguf', encoder: 'qwen3vl_8b_int8_convrot.safetensors', vae: 'texture_fix.safetensors', upscaler: '4x-UltraSharp.pth', porta: 8818, cacheKV: 'auto', cacheTipo: 'default', encoderSuCpu: false, anteprimaLive: true, riservaVram: 0, argomentiExtra: '', predefiniti: { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }, installato: true, tokenCivitai: '', tokenHF: '', tempi: { '1.00': 3.1 }, loraTurbo: 'turbo8_lora_step2500.safetensors', memoria: 'auto', vramMB: 6144, veloce: false }
+  const imp = { cartellaModelli: 'C:\\m', cartellaGalleria: 'C:\\g', modello: 'qwen-image-2.1-UC-Q4_K_M.gguf', famiglia: 'qwen', modelloScelto: 'qwen-base', encoder: 'qwen3vl_8b_int8_convrot.safetensors', vae: 'texture_fix.safetensors', upscaler: '4x-UltraSharp.pth', porta: 8818, cacheKV: 'auto', cacheTipo: 'default', encoderSuCpu: false, anteprimaLive: true, riservaVram: 0, argomentiExtra: '', predefiniti: { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }, installato: true, tokenCivitai: '', tokenHF: '', tempi: { '1.00': 3.1 }, loraTurbo: 'turbo8_lora_step2500.safetensors', memoria: 'auto', vramMB: 6144, veloce: false }
   let n = 0
   const v = (x) => async () => x
   window.daprod = {

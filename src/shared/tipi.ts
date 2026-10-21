@@ -1,4 +1,6 @@
 // Tipi condivisi fra il processo principale (Electron) e l'interfaccia.
+import { MODELLI, type IdModello } from './modelli'
+export type { IdModello } from './modelli'
 
 /** Cosa fa un lavoro. */
 export type Modalita =
@@ -35,11 +37,16 @@ export interface Riquadro {
 /** il modello che disegna: Qwen-Image 2.1, o FLUX 3 Klein (veloce, distillato) o FLUX 3 Klein Base (50 passi con CFG) */
 export type Famiglia = 'qwen' | 'klein' | 'klein-base'
 
-/** quello che distingue i modelli: passi per qualità (il Turbo è solo di Qwen), CFG e cosa sanno fare */
-export const FAMIGLIE: Record<Famiglia, { nome: string; corto: string; sotto: string; passi: { turbo: number; bozza: number; alta: number; massima: number }; cfg: number | null; lora: boolean }> = {
-  qwen: { nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA · Turbo', passi: { turbo: 8, bozza: 20, alta: 40, massima: 50 }, cfg: null, lora: true },
-  klein: { nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '16 passi · senza CFG · il più veloce', passi: { turbo: 8, bozza: 8, alta: 16, massima: 24 }, cfg: 1, lora: false },
-  'klein-base': { nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', passi: { turbo: 25, bozza: 25, alta: 50, massima: 64 }, cfg: 3.5, lora: false }
+/** quello che distingue i modelli: passi per qualità, CFG e cosa sanno fare. Nomi e passi «alti» vengono da `modelli.ts`
+ *  (la mappa unica); «turbo» resta solo per le qualità salvate prima della 1.1 e vale come «alta» (`senzaTurbo`). */
+const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string; corto: string; sotto: string; passi: { turbo: number; bozza: number; alta: number; massima: number }; cfg: number | null; lora: boolean } => {
+  const m = MODELLI[id]
+  return { nome: m.nome, corto: m.corto, sotto: m.sotto, passi: { turbo: m.passi, bozza, alta: m.passi, massima }, cfg: m.cfg, lora: m.lora }
+}
+export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
+  qwen: famiglia('qwen-base', 20, 50),
+  klein: famiglia('klein', 8, 16),
+  'klein-base': famiglia('klein-base', 25, 64)
 }
 
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
@@ -201,8 +208,10 @@ export interface Impostazioni {
   encoder: string
   vae: string
   upscaler: string
-  /** il modello che disegna adesso */
+  /** la famiglia che disegna adesso (va sempre d'accordo con `modelloScelto`: `allineaScelta` in `modelli.ts`) */
   famiglia: Famiglia
+  /** il modello scelto nell'interfaccia (qwen-base / klein / klein-base); `modello` invece è il file del denoiser di Qwen */
+  modelloScelto: IdModello
   /** i file di FLUX 3 Klein (vuoto = li trova da solo nelle cartelle dei modelli) */
   kleinModello: string
   kleinBase: string
@@ -241,6 +250,9 @@ export interface Impostazioni {
   unaCosaAllaVolta: boolean
   /** Klein: espande i prompt brevi in didascalie dettagliate col Qwen3-VL (come l'upsampler ufficiale; +circa mezzo minuto per immagine) */
   potenziaKlein: boolean
+  /** i lavori di testo (migliora prompt, descrivi foto, Idee, Estrai, traduzione LLM…) scrivono col Qwen3-VL 4B (veloce, tutto in VRAM) anche con Qwen.
+   *  Spento di serie: con Qwen scrive il suo encoder 8B. Con Klein il 4B scrive sempre. */
+  testoCon4B: boolean
   /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
   scaricaDopo: number
 }

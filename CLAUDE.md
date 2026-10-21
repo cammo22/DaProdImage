@@ -17,7 +17,7 @@ interfaccia**, installato e guidato dall'app.
   Per preparare una versione c'è la skill `.claude/skills/rilascio`.
 
 ## Il motore (src/main/installa, src/main/motore)
-- **Versioni fissate** in `engine/versioni.json` (ora **ComfyUI 0.41.2**, motore 7): ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
+- **Versioni fissate** in `engine/versioni.json` (ora **ComfyUI 0.42.3**, motore 8): ComfyUI a un commit preciso (zip da codeload, estratto col `tar.exe`
   di Windows: il tar di Git non apre gli zip), Python 3.13 e PyTorch cu130 via **uv** (`resources/bin/uv.exe`,
   `npm run prendi-uv`). Tutto in `%LOCALAPPDATA%\DaProdImage\engine`; `stato.json` lì dentro dice quali passi sono fatti.
 - **ComfyUI-GGUF è copiato in `engine/custom_nodes/ComfyUI-GGUF`** (fork di leejet al commit `373048b`, l'unico che
@@ -50,6 +50,7 @@ interfaccia**, installato e guidato dall'app.
 
 ## FLUX 3 Klein (famiglie di modelli)
 - `Famiglia = 'qwen' | 'klein' | 'klein-base'` (`shared/tipi.ts`, `FAMIGLIE` = passi per qualità), `Richiesta.famiglia`, `impostazioni.famiglia`.
+- **Tre modelli, niente Turbo di Qwen** (1.1, `src/shared/modelli.ts`, la mappa unica, provata da `node test/modelli.mjs`): `qwen-base` (40 passi), `klein` (veloce, 8 passi), `klein-base` (50, CFG 3,5). `impostazioni.modelloScelto` va sempre d'accordo con `famiglia` (`allineaScelta` in `salvaImpostazioni`); le impostazioni vecchie si migrano una volta (`migra`: Turbo GGUF → UC dello stesso quant). La qualità «turbo» salvata vale «alta» (`senzaTurbo`): l'interfaccia non manda più `turbo: true`, i grafi del Turbo restano per i PNG vecchi.
   Il selettore è `componenti/ScegliModello.tsx` (3 schede, "da scaricare", download di modello + `klein-te` + `klein-vae`), la qualità `ScegliQualita.tsx`.
 - Catalogo: `klein-int8/bf16`, `klein-base-int8/bf16`, `klein-te` (Qwen3-VL 4B), `klein-vae` dal repo `black-forest-labs/flux-3-image-klein-comfy`
   (`repo` + `cerca` regex, risolti a runtime da `installa/risolvi.ts`: **i nomi vengono dai template ufficiali, vanno confermati con i file veri**).
@@ -92,8 +93,8 @@ interfaccia**, installato e guidato dall'app.
 - **Descrivi** (Migliora prompt, Foto → prompt): `TextGenerate` con lo stesso Qwen3-VL già caricato, niente modelli in più.
 
 ## Interfaccia (src/renderer)
-- **Modifica** ha 6 modi: tutta la foto, zona, espandi, **Fusion**, **Esempio** e **Estrai** (vedi sotto) (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
-  Fusion = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
+- **Modifica** ha 4 modi (`ModoModifica`): **Scrivi** (tutta la foto, o solo la zona se ne hai disegnata una: `zona = modo==='scrivi' && haMaschera`, la `modalita` si decide in `manda()` da `tela.esporta()`; schede in `pagine/modifica/SchedaScrivi.tsx`), **Espandi** (`SchedaEspandi.tsx`, `bordiPreset`), **Ricette** (`pagine/modifica/SchedaRicette.tsx`: il catalogo che era il Laboratorio, con il lotto su più foto; la pagina «Laboratorio» non c'è più) ed **Estrai** (vedi sotto). **Unisci foto** e **Come l'esempio** sono due ricette `modo: 'speciale'` (`ricetteBase.ts`) che non usano SchedaRicette ma la tela e la colonna di destra di Modifica (`usaSpeciale()` / `specialeOra()` in `workflow.ts` dicono quale è scelta; `griglia` in `Modifica.tsx`); le impostazioni vecchie `tutta`/`zona` si migrano a `scrivi` e `fusion`/`esempio` a `ricette` in `daVecchioMod` (`componenti/Fusion.tsx`, richieste in `fusion.ts`: nessuna base, `m.riferimenti` sono le foto;
+  Unisci foto = `modalita: 'crea'` con `images.image_N`, Esempio = `modalita: 'modifica'` con l'esempio come `image_1`; i risultati stanno nel
   componente, non diventano versioni; il confronto prima/dopo usa sempre `versioni[0]`);
   `★ base` scambia base e riferimento. **Dimensioni** (`componenti/Misura.tsx`, `Richiesta.uscita`): auto / come l'originale / misura
   tua; `allaMisura()` in `grafi.ts` porta il risultato alla misura esatta (ingranditore se serve > 1,5×, taglio al centro). **Laboratorio** (`workflow.ts` = esecuzione, `ricetteBase.ts` = le ricette di serie, `ricette.ts` = le tue e i preset in localStorage,
