@@ -1,5 +1,5 @@
 // La cornice dell'app: barra del titolo, rotaia a sinistra, pagine, coda, avvisi.
-import { useEffect, useState, type JSX } from 'react'
+import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, collegaEventi, ricaricaLore, type Pagina } from './stato'
 import { api } from './api'
 import { I } from './componenti/Icone'
@@ -63,6 +63,11 @@ export function App(): JSX.Element {
   // il motore era installato ma la sua versione è cambiata (aggiornamento dell'app): si aggiorna da solo
   const [aggiornaMotore, setAggiornaMotore] = useState(false)
   const [rilascio, setRilascio] = useState(false)
+  // VRAM che resta alta a coda ferma: avviso con pulsante Libera (T16)
+  const [vramNonLiberata, setVramNonLiberata] = useState(false)
+  const vramAltoDa = useRef<number | null>(null)
+  const risorse = usaStato((s) => s.risorse)
+  const scarico = usaStato((s) => s.scarico)
 
   useEffect(() => {
     void (async () => {
@@ -134,6 +139,21 @@ export function App(): JSX.Element {
       window.removeEventListener('drop', h)
     }
   }, [])
+
+  // Monitoraggio VRAM: se resta sopra il 95% per più di 10 s a coda ferma, avvisa.
+  useEffect(() => {
+    const attiviNow = lavori.some((l) => l.stato === 'in coda' || l.stato === 'in corso')
+    const piena = !!risorse && (risorse.vramTotale || 0) > 0 && ((risorse.vramUsata || 0) / (risorse.vramTotale || 1)) > 0.95
+    const idle = !attiviNow && !scarico
+    const motorePronto = motore.stato === 'pronto'
+    if (piena && idle && motorePronto) {
+      if (vramAltoDa.current === null) vramAltoDa.current = Date.now()
+      if (Date.now() - (vramAltoDa.current || 0) >= 10000) setVramNonLiberata(true)
+    } else {
+      vramAltoDa.current = null
+      setVramNonLiberata(false)
+    }
+  }, [risorse, lavori, motore, scarico])
 
   const attivi = lavori.filter((l) => l.stato === 'in coda' || l.stato === 'in corso').length
   const statoMotore = motore.stato === 'pronto' ? 'pronto' : motore.stato === 'avvio' ? 'avvio' : motore.stato === 'errore' ? 'errore' : ''
@@ -211,6 +231,12 @@ export function App(): JSX.Element {
       {pronto && installato && <BarraStato />}
       <SelettoreFoto />
       <div className="avvisi">
+        {vramNonLiberata && (
+          <div className="avviso" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span>La memoria della scheda non si è liberata, premi Libera</span>
+            <button className="btn piccolo" onClick={() => { setVramNonLiberata(false); vramAltoDa.current = null; void api.motore.libera().catch((e: Error) => avvisa(e.message, 'errore')) }}>Libera</button>
+          </div>
+        )}
         {avvisi.map((a) => (
           <div key={a.id} className={`avviso ${a.tipo}`}>{a.testo}</div>
         ))}
