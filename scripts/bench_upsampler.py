@@ -42,6 +42,9 @@ _RE_VRAM_COMPLETO = re.compile(
     r"loaded completely; ([\d.]+) MB usable, ([\d.]+) MB loaded, full load: True"
 )
 _RE_PASSI = re.compile(r"^\[INFO\] Prompt executed in ([\d.]+) seconds$")
+_RE_STAGED = re.compile(
+    r"Model ([A-Za-z0-9_]+) prepared for dynamic VRAM loading\. (\d+)MB Staged"
+)
 _RE_DEVICE = re.compile(
     r"CLIP/text encoder model load device: ([^,]+), offload device: ([^,]+),"
     r" current: ([^,]+), dtype: (\S+)"
@@ -66,6 +69,7 @@ def _analizza_log(percorso_log: str) -> dict:
     file_diffusione = "?"
     vram_gpu = None
     vram_offload = None
+    staged_mb = None
     device = None
     offload_device = None
     current_device = None
@@ -95,6 +99,14 @@ def _analizza_log(percorso_log: str) -> dict:
             offload_device = m_dev.group(2)
             current_device = m_dev.group(3)
             dtype = m_dev.group(4)
+        m_st = _RE_STAGED.search(riga)
+        if m_st:
+            # il modello sta tutto in VRAM: azzera i valori "loaded partially"
+            # del modello precedente, non valido piu' per questo
+            encoder = m_st.group(1)
+            vram_gpu = None
+            vram_offload = None
+            staged_mb = int(m_st.group(2))
         m_v = _RE_VRAM.search(riga)
         if m_v:
             vram_gpu = float(m_v.group(2))
@@ -115,7 +127,7 @@ def _analizza_log(percorso_log: str) -> dict:
         n = int(n)
         totale = int(totale)
         s_per_token = float(valore)
-        elapsed = minuti * 60 + secondi
+        elapsed = int(minuti) * 60 + int(secondi)
         if unita == "it/s":
             # il 4B veloce scrive in it/s: il valore e' gia' token al secondo
             s_per_token = 1.0 / s_per_token if s_per_token else None
@@ -135,6 +147,7 @@ def _analizza_log(percorso_log: str) -> dict:
                     "file_diffusione": file_diffusione,
                     "vram_gpu_mb": vram_gpu,
                     "vram_offload_mb": vram_offload,
+                    "staged_mb": staged_mb,
                     "device": device,
                     "offload_device": offload_device,
                     "current_device": current_device,
@@ -184,6 +197,7 @@ def _riepilogo(gruppo: list[dict]) -> dict:
         "tok_s_medio": _media("tok_s"),
         "s_per_token_medio": _media("s_per_token"),
         "vram_gpu_mb_medio": _media("vram_gpu_mb"),
+        "staged_mb_medio": _media("staged_mb"),
         "vram_offload_mb_medio": _media("vram_offload_mb"),
         "token_totali": sum(r["token"] for r in gruppo),
         "secondi_totali": sum(r["tempo_s"] for r in gruppo),
@@ -250,15 +264,15 @@ def analizza(percorso_log: str, soglia_s: float = 20.0) -> dict:
 
 def _tabella(report: dict) -> str:
     righe = [
-        f"{'riga':>7} | {'encoder':<22} | {'file':<34} | {'token':>9} | "
+        f"{'riga':>7} | {'scopo':<18} | {'file':<34} | {'token':>9} | "
         f"{'tempo':>7} | {'s/tok':>6} | {'tok/s':>6} | GPU / offload (MB)",
-        "-" * 140,
+        "-" * 150,
     ]
     for b in report["blocchi"]:
         righe.append(
-            f"{b['riga_log']:>7} | {b['encoder']:<22} | {b['file_encoder'][:33]:<34} | "
+            f"{b['riga_log']:>7} | {b['scopo']:<18} | {b['file_encoder'][:33]:<34} | "
             f"{b['token']:>4}/{b['totale']:<4} | {b['tempo_s']:>6} s | "
-            f"{b['s_per_token']:>6.2f} | {str(b['tok_s']):>6} | "
+            f"{str(b['s_per_token']):>6} | {str(b['tok_s']):>6} | "
             f"{b['vram_gpu_mb']} / {b['vram_offload_mb']}"
         )
     return "\n".join(righe)
@@ -292,6 +306,17 @@ def main(argv: list[str] | None = None) -> int:
             f"tok/s={dati['tok_s_medio']}  s/tok={dati['s_per_token_medio']}  "
             f"GPU={dati['vram_gpu_mb_medio']} MB  offload={dati['vram_offload_mb_medio']} MB  "
             f"tempo totale={dati['secondi_totali']} s"
+        )
+
+    print("\nPer ruolo dell'encoder (tutti i blocchi, soglia compresa):")
+    for scopo, dati in report["per_scopo"].items():
+        if not dati["blocchi"]:
+            continue
+        print(
+            f"  {scopo:<18} blocchi={dati['blocchi']:<3} "
+            f"tok/s={dati['tok_s_medio']}  s/tok={dati['s_per_token_medio']}  "
+            f"token={dati['token_totali']}  tempo={dati['secondi_totali']} s  "
+            f"GPU={dati['vram_gpu_mb_medio']} MB  offload={dati['vram_offload_mb_medio']} MB"
         )
 
     print("\nSampler (tempo totale dei passi, per modello di diffusione):")
