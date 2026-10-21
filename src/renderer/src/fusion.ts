@@ -41,7 +41,7 @@ export function richiestaFusion(s: StatoModifica): Esito {
       immagini: s.riferimenti.map((r) => r.percorso),
       ...perQualita(s.qualita),
       quante: s.quante,
-      etichetta: 'Fusion · ' + s.prompt.trim().slice(0, 50),
+      etichetta: 'Unisci foto · ' + s.prompt.trim().slice(0, 50),
       // la misura esatta scelta: il modello lavora ai megapixel, poi il motore porta l'immagine a quella misura
       ...(mis ? { uscita: { w: mis.w, h: mis.h } } : {})
     }

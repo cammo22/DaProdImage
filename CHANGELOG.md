@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.1.0 — 2026-10-21
+
+Un'app più semplice da usare: tre modelli al posto delle «qualità», una sola scheda per scrivere cosa cambiare (tutta la foto o solo una zona), le ricette dentro Modifica e il testo scritto dal Qwen3-VL 4B anche con Qwen. Il motore passa a ComfyUI 0.42.3.
+
+- **Tre modelli, scelti in alto.** In barra ci sono tre pillole: **Qwen base** (40 passi), **Klein veloce** (8 passi) e **Klein Base** (50 passi, CFG 3,5). Il selettore «Qualità» (bozza, alta, massima, Turbo) è sparito da Crea, Modifica e dalle ricette:
+  i passi li decide il modello. Il **Turbo di Qwen non c'è più** (né il LoRA Turbo8 né i GGUF Turbo nel Setup); resta per chi li ha già e per aprire i PNG vecchi. La scelta di prima si migra da sola
+  (un Turbo GGUF diventa il denoiser normale della stessa quantizzazione, una qualità «turbo» salvata vale «alta»). La mappa dei modelli sta in `src/shared/modelli.ts`, provata da `test/modelli.mjs`.
+- **Klein veloce passa da 16 a 8 passi.** Misurato in Modifica e in zona (rosso lucido su una teiera, 8, 12 e 16 passi): il risultato è lo stesso a occhio, e 8 passi costano circa un terzo in meno (zona 26 s contro 41 s, Modifica 14 s contro 21 s).
+- **Rifai in qualità piena.** Dal risultato di Crea o dalla Galleria, una foto fatta con Klein veloce si rifà con **Klein Base** (stesso prompt, stesso seme). C'è anche **Rifai con Qwen** (non promette la stessa immagine). Sostituiscono il vecchio Turbo e i suoi avvisi.
+- **Crea essenziale.** Via «Qualità» e le opzioni avanzate: gli stili stanno in un menu, «Quante» è 1, 2 o 4, e **Altro** (chiuso) raccoglie seme, megapixel, misura e sfondo.
+- **Modifica: una scheda «Scrivi» al posto di «Tutta la foto» e «Solo una zona».** Se sulla tela hai disegnato una zona, il cambiamento resta lì dentro; se no, vale tutta la foto. **Espandi** ha la sua scheda, **Estrai** resta com'era.
+- **Il Laboratorio è dentro Modifica come scheda «Ricette»**: stesso catalogo (e le tue ricette, i preset, il lotto su più foto), ma nella stessa pagina della tela. **Unisci foto** (prima «Fusion») e **Come l'esempio** sono due ricette
+  che usano la tela e la colonna di destra di Modifica. Le impostazioni salvate dei vecchi modi si portano da sole alla scheda giusta. Nella rotaia a sinistra ci sono quattro voci: Crea, Modifica, Galleria, Album. I **LoRA** si gestiscono da Opzioni.
+- **Il testo si scrive col Qwen3-VL 4B anche con Qwen** (impostazione `testoCon4B`, accesa di serie, interruttore in Opzioni): Migliora prompt, Foto → prompt, Idee, Estrai e il resto sono più rapidi e occupano meno VRAM. Se il file del 4B non c'è,
+  si usa l'encoder di Qwen come prima, senza errori. Misurato su una RTX 4060 da 8 GB: **Migliora prompt + Crea** con Qwen passa da 186 a **134 secondi** (con l'encoder GGUF di questa macchina da 446 a 150), 46-47 token al secondo contro 3,3 dell'8B int8 e 0,55 dell'8B GGUF.
+- **Una cosa alla volta in VRAM, più precisa.** Il motore scarica i modelli (`/free`) anche passando da Qwen a Klein, da Klein a Klein Base e dal 4B all'8B, non solo fra disegno e testo (`src/main/motore/spazio.ts`, `test/spazio.mjs`).
+  Se dopo lo scarico la VRAM non scende compare un avviso **«VRAM non liberata»** con il pulsante **Libera**.
+- **ComfyUI 0.42.3 (motore 8).** Al primo avvio dopo l'aggiornamento il motore si aggiorna da solo. Provato con un disegno vero: Qwen GGUF (con la nostra correzione di `ops.py`), Klein a 8 e 16 passi, zona, Modifica e Klein Base a 50 passi danno
+  immagini **identiche al pixel** a quelle della 0.41.2, alla stessa velocità, senza errori nel log.
+- **Misure su RTX 4060 8 GB, 1 MP** (`docs/misure-1.1.0.md`): Klein veloce 8 passi in 16 s a freddo e 7 s a caldo (picco 6,9 GB), in zona 26 s; Klein Base 50 passi 60 s in Crea (picco 6,9 GB) e 3,2 minuti in zona (picco 7,3 GB: entra negli 8 GB);
+  Qwen base 40 passi 166 s. Il nodo `ReferenceMultiLatent` dà la stessa immagine e lo stesso tempo della catena di `ReferenceLatent`: il grafo di Klein non cambia.
+- **I grafi di Qwen non sono cambiati.** `test/confronta_grafi.mjs` costruisce Crea, Modifica in zona ed Espandi (bozza, alta, massima) con il codice della 1.0.3 e con questo: 9 casi su 9 identici.
+- **Testi.** «Fusion» diventa «Unisci foto»; le descrizioni di Klein dicono 8 passi; l'avviso sulla VRAM non nomina più il Turbo.
+- **Prove.** `test/foto.mjs` (app vera a motore spento: Crea, Modifica, Galleria, Album, Opzioni) segue la nuova rotaia; `test/ricette.mjs` prova le ricette in Chromium con il finto `window.daprod`; `scripts/misure_gpu.mjs` ripete le misure.
+
 ## 1.0.3 — 2026-10-21
 
 Il potenziamento del prompt di Klein non ricopia più le frasi di cortesia e le regole del 4B, e ogni volta scrive una didascalia diversa.

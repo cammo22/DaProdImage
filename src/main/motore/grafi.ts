@@ -172,7 +172,7 @@ function latenteVuota(g: Grafo, fam: Famiglia, w: number, h: number): Rif {
 }
 
 function campiona(g: Grafo, q: Richiesta, fam: Famiglia, model: Rif, c: Condizioni, latente: Rif, passi: number, denoise = 1): Rif {
-  // Klein veloce è distillato (16 passi, senza CFG); Klein Base vuole CFG 3,5; sampler e scheduler sono quelli del riferimento (euler, e la scaletta del modello)
+  // Klein veloce è distillato (8 passi, senza CFG); Klein Base vuole CFG 3,5; sampler e scheduler sono quelli del riferimento (euler, e la scaletta del modello)
   const cfg = fam === 'qwen' ? q.cfg : fam === 'klein' ? 1 : q.cfg > 1 ? q.cfg : 3.5
   return r(
     g.add(

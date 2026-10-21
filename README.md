@@ -33,7 +33,7 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 ---
 
 <div align="center">
-<img src="risorse/crea.png" width="860" alt="Crea: il preset Foto a sinistra, risoluzione e Turbo, la Vespa a Positano generata in 8 passi">
+<img src="risorse/crea.png" width="860" alt="Crea: il preset Foto a sinistra, i tre modelli in alto, la Vespa a Positano">
 </div>
 
 ## Installare
@@ -59,9 +59,10 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
   formato e risoluzione giusti, chiede due o tre cose in italiano, ha i suoi stili e scrive il prompt da solo.
 - **Risoluzioni da 256p al massimo**: 256p per un'idea in pochi secondi, poi 480p, 720p, 1K, 1080p, 1440p (per i
   testi piccoli) e MAX, i 4,2 MP del 2K nativo. Formati da 1:1 a 21:9, compresi 4:5 e 9:16.
-- **Turbo**: 8 passi invece di 40 col LoRA di distillazione Turbo8, circa 5 volte più veloce. Si scarica con un clic.
-- **Migliora** riscrive il prompt in un paragrafo ricco; **Da foto** trasforma una foto in prompt.
-- **Bozza → Rifinisci**: esplori tante idee a metà pixel, poi porti quella giusta in alta qualità.
+- **Il modello lo scegli in alto**: **Klein veloce** (8 passi) per esplorare tante idee, **Klein Base** o **Qwen-Image 2.1** quando conta la qualità.
+  Un risultato di Klein veloce lo rifai con **Rifai in qualità piena** (Klein Base, stesso prompt e stesso seme) o **Rifai con Qwen**.
+- **Migliora** riscrive il prompt in un paragrafo ricco; **Da foto** trasforma una foto in prompt; **Sorprendimi** ne inventa uno.
+- **Altro** (chiuso di serie) tiene seme, megapixel, misura e sfondo, per non riempire la pagina.
 
 | I preset: infografica, poster, menù… | La galleria, a righe con le proporzioni vere |
 | --- | --- |
@@ -69,17 +70,18 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
 
 ## Modifica
 
-- **Tutta la foto** con una frase ("fallo di notte con la neve"), azioni rapide (rimuovi sfondo, restaura, colora
-  il bianco e nero, luce da studio, cambia o traduci i testi, stili) e **fino a 9 foto di riferimento** (`<image2>`…).
-- **Più foto**: trascini quante ne vuoi, con **★ base** scegli quale modificare e le altre sono riferimenti; oppure
-  **Fusion**: tutte le foto sono riferimenti e ne esce una foto nuova (persone, vestiti, oggetti, luoghi, stili) in base al prompt;
-  **Esempio**: dai le tue foto e una foto di esempio, il modello rifà l'esempio con le tue foto.
+Quattro schede in alto: **Scrivi**, **Espandi**, **Ricette**, **Estrai**.
+
+- **Scrivi**: dici cosa cambiare con una frase («fallo di notte con la neve»), o scegli una o più **idee** (persone, vestiti, luce, stili, testi…)
+  che il modello mescola. Se sulla foto hai disegnato una zona (pennello, rettangolo o lazo) cambia **solo lì**: il modello guarda **tutta la foto**
+  con la zona evidenziata e fuori dalla zona la foto resta identica al pixel. Se non c'è nessuna zona, vale tutta la foto.
+  Niente cursori da regolare: bordi e sfumatura si adattano alla zona, e se scrivi «rimuovi…» la zona si ripulisce prima di ridisegnarla.
+- **Fino a 9 foto di riferimento** (`<image2>`…), e con **★ base** scegli quale foto modificare.
 - **Dimensioni**: come la foto originale, secondo i megapixel, o una misura tua.
-- **Solo una zona**: la segni con pennello, rettangolo o lazo e scrivi cosa farci. Il modello guarda **tutta la foto**
-  con la zona evidenziata e cambia **solo lì**: fuori, la foto resta identica al pixel. Niente cursori da regolare:
-  bordi e sfumatura si adattano alla zona, e se scrivi "rimuovi…" la zona si ripulisce prima di ridisegnarla.
-- **La vedi nascere al suo posto**: l'anteprima dal vivo si posa sulla foto, nitida a ogni passo.
 - **Espandi**: allarga la foto oltre i bordi (16:9, 9:16, quadrata, +25%).
+- **Ricette**: il catalogo di prima, ora dentro Modifica (vedi sotto). **Unisci foto** (tutte le foto sono riferimenti e ne esce una foto nuova)
+  e **Come l'esempio** (dai le tue foto e una foto di esempio: il modello rifà l'esempio con le tue) sono due ricette.
+- **La vedi nascere al suo posto**: l'anteprima dal vivo si posa sulla foto, nitida a ogni passo.
 - Ogni risultato è una **versione**: continui a modificare da lì, passi da una all'altra, tieni premuto per vedere
   com'era prima, confronti con la linea da trascinare, torni indietro.
 
@@ -97,13 +99,15 @@ a 300 dpi con l'abbondanza.
 ## L'omino
 
 Un manichino con le ossa che muovi come vuoi (anche **mani e dita**, una per una, e la **testa**) per dare una posa al personaggio: in
-Modifica → Estrai e nelle ricette del Laboratorio. Diventa un manichino grigio che il modello usa solo come guida di posa.
+Modifica → Estrai e nelle ricette. Diventa un manichino grigio che il modello usa solo come guida di posa.
 
-## Due modelli: Qwen e FLUX 3 Klein
+## Tre modelli: Qwen e FLUX 3 Klein
 
-In cima a Crea, Modifica ed Estrai scegli **chi disegna**: **Qwen-Image 2.1** (con i LoRA e il Turbo), **Klein** (veloce, 16 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+Nella barra in alto scegli **chi disegna**: **Qwen base** (Qwen-Image 2.1, 40 passi, con i LoRA), **Klein veloce** (8 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+Il Turbo di Qwen non c'è più: Klein veloce è il modo rapido.
 
-Con Klein anche la scrittura dei testi passa al suo encoder, **Qwen3-VL 4B**: Migliora prompt, Foto → prompt, Idee, Estrai, Fusion ed Esempio scrivono a 15-40 token al secondo sulla RTX 4060, invece di circa 0,4 con l'encoder di Qwen. Klein non usa i LoRA né il Turbo di Qwen: l'app li nasconde.
+Anche la scrittura dei testi (Migliora prompt, Foto → prompt, Idee, Estrai, Unisci foto, Come l'esempio) usa il **Qwen3-VL 4B** di Klein, con Klein e con Qwen: scrive a 46 token al secondo sulla RTX 4060,
+contro 3,3 dell'encoder 8B int8 e 0,55 dell'8B GGUF. «Migliora prompt + Crea» con Qwen passa da 186 a 134 secondi. In Opzioni puoi tornare all'encoder di Qwen. Klein non usa i LoRA: l'app li nasconde.
 
 ## Estrai
 
@@ -111,16 +115,15 @@ In Modifica: dai una foto e il modello trova **persone e oggetti**; clicchi quel
 pulito: una persona a figura intera (T-pose, A-pose, disegnata con l'omino), fino alla vita o il volto; un oggetto intero, da davanti,
 di lato o dall'alto. Vedi sempre a che risoluzione esce.
 
-## Laboratorio
+## Ricette
 
-Oltre 50 ricette pronte (e **quelle che fai tu**: nuove, copie modificate, preset), in serie o a catena, anche su più foto insieme: il personaggio in 9 pose, espressioni, età, armadio, **camera da trascinare**,
+La scheda **Ricette** di Modifica ha oltre 50 ricette pronte (e **quelle che fai tu**: nuove, copie modificate, preset), in serie o a catena, anche su più foto insieme: il personaggio in 9 pose, espressioni, età, armadio, **camera da trascinare**,
 luce, what-if, stili, prodotto, testi, restauro… Una foto dentro, un foglio di risultati fuori, con prima/dopo. Segni solo i passi che ti servono, e ogni ricetta ha il passo **🎲 Sorpresa**.
 
 ## I modelli
 
-Per Qwen-Image solo **Q4, Q6, Q8**. Denoiser: Qwen-Image 2.1 Uncensored (40 passi) o il **Turbo di AtomicChat** (8 passi,
-senza LoRA). LLM (legge il prompt e guarda le foto; i prompt li traduce Opus-MT): Qwen3-VL 8B int8 di sempre, oppure GGUF uncensored di
-AtomicChat o di mradermacher. Si cambiano e si scaricano da Opzioni.
+Per Qwen-Image solo **Q4, Q6, Q8**. Denoiser: Qwen-Image 2.1 Uncensored (40 passi). LLM (legge il prompt e guarda le foto; i prompt li traduce Opus-MT): Qwen3-VL 8B int8 di sempre, oppure GGUF uncensored di
+AtomicChat o di mradermacher. Per scrivere i testi, di serie, si usa il Qwen3-VL 4B di Klein se c'è. Si cambiano e si scaricano da Opzioni, dove stanno anche i **LoRA**.
 Klein ha i suoi file (versioni int8 o bf16, più l'encoder Qwen3-VL 4B e il VAE FLUX.2): si scaricano con un clic dal selettore «Modello che disegna».
 
 ## E poi
@@ -129,7 +132,7 @@ Klein ha i suoi file (versioni int8 o bf16, più l'encoder Qwen3-VL 4B e il VAE 
   **Riusa**, **Varia**, **Rifinisci 2K**, **Ingrandisci 2×/4×**. Le impostazioni stanno dentro ogni PNG: trascini
   un'immagine fatta con DaProd Image e torna con prompt, seed e LoRA.
 - **Ogni foto entra come PNG**: JPG, WEBP, AVIF, HEIC, TIFF, i RAW delle fotocamere, girata per il verso giusto.
-- **LoRA con un clic**: trascini i `.safetensors` o incolli un link Hugging Face / Civitai, l'app controlla che
+- **LoRA con un clic** (in Opzioni): trascini i `.safetensors` o incolli un link Hugging Face / Civitai, l'app controlla che
   siano davvero per Qwen-Image 2.1, aggiunge le parole chiave al prompt.
 - **La barra in alto** dice sempre quanta RAM e VRAM stai usando e quanto lavora la scheda video.
 
@@ -140,21 +143,22 @@ Klein ha i suoi file (versioni int8 o bf16, più l'encoder Qwen3-VL 4B e il VAE 
 
 **Ci mette minuti per una foto?** Quasi sempre è la VRAM finita: Windows continua nella RAM del PC e tutto va 5-10
 volte più piano senza dare errori. Nel *Pannello di controllo NVIDIA → Gestisci impostazioni 3D* metti
-*Criterio di fallback della memoria di sistema CUDA* su **Preferisci nessun fallback**, poi usa il **Turbo** e,
+*Criterio di fallback della memoria di sistema CUDA* su **Preferisci nessun fallback**, poi scegli **Klein veloce** e,
 se la scheda è da 6 GB, il profilo **6 GB** in Opzioni. L'app ti avvisa da sola quando va troppo piano.
 
 ## Come funziona dentro
 
-- Il motore è **ComfyUI** a una versione fissata, senza la sua interfaccia, installato con **uv** in
+- Il motore è **ComfyUI 0.42.3**, a una versione fissata, senza la sua interfaccia, installato con **uv** in
   `%LOCALAPPDATA%\DaProdImage`. Il modello è [Qwen-Image 2.1 Uncensored GGUF](https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-GGUF)
   (Q4_K_M per 6-8 GB) con i passi della pipeline ufficiale (40, euler, CFG 1). In alternativa **FLUX 3 Klein** (`black-forest-labs/flux-3-image-klein-comfy`), con il suo
   encoder Qwen3-VL 4B e il VAE FLUX.2.
 - **ComfyUI-GGUF** viaggia dentro l'app: il fork di leejet, l'unico che conosce `qwen_image21`, con una nostra
-  correzione per ComfyUI 0.39 (`engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`). I **DaProd-Nodi** riempiono la zona
+  correzione per ComfyUI 0.39 e successive (`engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`). I **DaProd-Nodi** riempiono la zona
   prima di "rimuovi" e accordano i colori dopo il VAE, così l'incollaggio non si vede.
 - Anteprime dal vivo con **TAEQI 2.1** di madebyollin; traduzione dei prompt con **Opus-MT** (un modello di sola
   traduzione, sul processore, ~300 MB, scaricato da solo); foto convertite con WIC di Windows, come in [DaP Convertitore](https://github.com/cammo22/DaP-Convertitore).
-- Su una RTX 4060: circa 3 secondi per passo a 1 MP, un'immagine da 40 passi in circa 2 minuti, col Turbo in circa 30 secondi.
+- Su una RTX 4060 da 8 GB, a 1 MP: Qwen base circa 3 secondi per passo (40 passi in poco meno di 3 minuti a freddo), **Klein veloce 8 passi in circa 7-16 secondi**,
+  Klein Base 50 passi in circa un minuto. Le misure complete sono in [docs/misure-1.1.0.md](docs/misure-1.1.0.md).
 
 ## Sviluppare
 
@@ -170,5 +174,5 @@ quando su `main` arriva un `version` nuovo in `package.json`. Le regole del prog
 ## Licenze
 
 App: MIT. Qwen-Image 2.1 e Texture-Fix VAE: Qwen Research License. ComfyUI: GPL-3.0. ComfyUI-GGUF: Apache-2.0.
-4x-UltraSharp: CC-BY-NC-SA 4.0. TAESD/TAEQI: MIT. Turbo8: vedi la sua [pagina](https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1).
+4x-UltraSharp: CC-BY-NC-SA 4.0. TAESD/TAEQI: MIT.
 Il modello "Uncensored" non ha filtri: quello che generi è responsabilità tua.

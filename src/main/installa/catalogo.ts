@@ -77,11 +77,11 @@ export const CATALOGO: VoceCatalogo[] = [
     repo: 'Helsinki-NLP/opus-mt-it-en', cerca: ['^model\\.safetensors$', '^pytorch_model\\.bin$'],
     accanto: ['^config\\.json$', '^generation_config\\.json$', '^tokenizer_config\\.json$', '^source\\.spm$', '^target\\.spm$', '^vocab\\.json$']
   },
-  // --- FLUX 3 Image Klein (Black Forest Labs): il repo «comfy» ha bf16, int8 («convrot») e NVFP4 per Klein (veloce, 16 passi) e Klein Base (50 passi, CFG).
+  // --- FLUX 3 Image Klein (Black Forest Labs): il repo «comfy» ha bf16, int8 («convrot») e NVFP4 per Klein (veloce, 8 passi) e Klein Base (50 passi, CFG).
   //     I nomi dei file vengono dai workflow ufficiali di ComfyUI; il nome esatto lo chiede installa/risolvi.ts a Hugging Face. Per una scheda da 6-8 GB va bene l'INT8.
   //     L'encoder è un Qwen3-VL 4B (diverso dal nostro 8B); il VAE è quello di FLUX.2. ---
   ...([
-    ['klein-int8', 'FLUX 3 Klein · veloce · INT8', 'Il più veloce: 16 passi senza CFG. L\'INT8 sta nelle schede da 8 GB.', 5_700_000_000, ['^flux3_image_klein_sd_int8', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
+    ['klein-int8', 'FLUX 3 Klein · veloce · INT8', 'Il più veloce: 8 passi senza CFG. L\'INT8 sta nelle schede da 8 GB.', 5_700_000_000, ['^flux3_image_klein_sd_int8', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
     ['klein-bf16', 'FLUX 3 Klein · veloce · BF16', 'Stessa qualità dell\'originale, ma pesa il doppio: serve molta RAM.', 11_300_000_000, ['^flux3_image_klein_sd(_bf16)?\\.safetensors$', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']],
     ['klein-base-int8', 'FLUX 3 Klein Base · INT8', 'La versione «normale»: 50 passi con CFG 3,5, la qualità piena (3 volte più lenta di Klein).', 5_700_000_000, ['^flux3_image_klein_base_int8', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
     ['klein-base-bf16', 'FLUX 3 Klein Base · BF16', 'Klein Base non quantizzato.', 11_300_000_000, ['^flux3_image_klein_base(_bf16)?\\.safetensors$', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']]
@@ -134,7 +134,7 @@ export const CATALOGO: VoceCatalogo[] = [
   {
     // Turbo8 (chriswritescode): distillazione a 8 passi, CFG 1, euler/simple. Niente sha256 pubblicato: basta che ci sia
     id: 'lora-turbo', tipo: 'lora', nome: 'Turbo 8 passi (Turbo8)',
-    descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Il modo Turbo di Crea e Modifica.',
+    descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Dalla 1.1 non serve più: il Turbo di Qwen non esiste più.',
     file: 'turbo8_lora_step2500.safetensors', cartella: 'loras',
     url: 'https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1/resolve/main/turbo8_lora_step2500.safetensors',
     // dalla 1.1 il Turbo di Qwen non si usa più (D1 del piano): resta per chi ce l'ha, ma non si scarica da solo

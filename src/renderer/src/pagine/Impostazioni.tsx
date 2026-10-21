@@ -258,7 +258,7 @@ function OpzioniGenerali(): JSX.Element {
                 <b>Ci mette minuti per una foto?</b> Su Windows, quando la VRAM finisce, il driver NVIDIA continua nella RAM
                 del PC e tutto va 5-10 volte più piano senza dare errori. Apri <i>Pannello di controllo NVIDIA → Gestisci
                 impostazioni 3D → Impostazioni globali</i> e metti <i>Criterio di fallback della memoria di sistema CUDA</i> su
-                <b> Preferisci nessun fallback</b>: così il motore sposta lui i pezzi in RAM, molto più in fretta. Poi: Turbo,
+                <b> Preferisci nessun fallback</b>: così il motore sposta lui i pezzi in RAM, molto più in fretta. Poi: scegli Klein veloce (8 passi),
                 profilo 6 GB se la scheda è piccola, e chiudi browser e giochi che usano la GPU.
               </div>
             </div>
