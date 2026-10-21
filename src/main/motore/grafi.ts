@@ -66,6 +66,16 @@ function caricaClip(g: Grafo, imp: Impostazioni): Rif {
   return r(g.add('CLIPLoader', { clip_name: imp.encoder, type: 'qwen_image', device: imp.encoderSuCpu ? 'cpu' : 'default' }, titolo))
 }
 
+/** il text encoder che SCRIVE TESTO (upsampler, migliora prompt, descrivi foto…) per la famiglia: con Klein si usa il suo Qwen3-VL 4B
+ *  (sta tutto nella VRAM: decine di token al secondo, contro lo 0,5 dell'8B di Qwen-Image che gira quasi tutto sul processore).
+ *  Va caricato con il tipo `krea2` (lo stesso Qwen3-VL 4B completo, con il suo generatore) e NON con `flux3`: il tokenizer di `flux3`
+ *  riempie il prompt con fino a 79 token di riempimento (serve al disegno, non alla scrittura) e il modello risponde «#» o «Assistant:».
+ *  Se il file manca si torna all'encoder generale. */
+function caricaClipPerTesto(g: Grafo, imp: Impostazioni, kleinEncoder: boolean | undefined): Rif {
+  if (!kleinEncoder || !imp.kleinEncoder) return caricaClip(g, imp)
+  return r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: 'krea2', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+}
+
 /** il modello che disegna questa richiesta */
 export const famigliaDi = (q: Richiesta, imp: Impostazioni): Famiglia => q.famiglia ?? imp.famiglia ?? 'qwen'
 
@@ -305,7 +315,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   }
 
   if (q.modalita === 'descrivi') {
-    const clip = caricaClip(g, imp)
+    // l'upsampler di Klein scrive la didascalia col suo encoder 4B (decine di tk/s); tutto il resto, come sempre, con quello di Qwen
+    const clip = caricaClipPerTesto(g, imp, q.encoderKlein)
     const inputs: Record<string, unknown> = {
       clip,
       prompt: q.prompt,

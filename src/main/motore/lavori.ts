@@ -4,7 +4,7 @@
 import { nativeImage } from 'electron'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import type { Lavoro, Richiesta } from '@shared/tipi'
+import type { Famiglia, Impostazioni, Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
@@ -12,7 +12,7 @@ import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './trad
 import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nodiDisponibili, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
-import { PUP_I2I, PUP_T2I } from './pup'
+import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { fileKlein } from './klein'
 import { elencoLora } from '../lora'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
@@ -278,25 +278,34 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
 const potenziati = new Map<string, string>()
 
 /** Klein: espande una richiesta breve in una didascalia dettagliata (come l'upsampler ufficiale); in inglese anche se la richiesta era in italiano.
- *  Se non riesce si ripiega sulla traduzione normale. */
-async function potenzia(l: Lavoro, ing: Ingressi): Promise<string> {
+ *  Se non riesce si ripiega sulla traduzione normale.
+ *  `impLavoro` sono le impostazioni del lavoro (con i file di Klein già risolti): l'upsampler usa l'encoder della famiglia,
+ *  così con Klein scrive col suo Qwen3-VL 4B, che è molto più scattante del Qwen 8B. */
+async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: Famiglia): Promise<string> {
   const q = l.richiesta
   const p = q.prompt.trim()
   const conFoto = ing.immagini.length > 0
-  const chiave = `${conFoto}|${q.larghezza}x${q.altezza}|${p}`
+  const chiave = `${fam}|${conFoto}|${q.larghezza}x${q.altezza}|${p}`
   const gia = potenziati.get(chiave)
   if (gia) return gia
-  const imp = impostazioni()
+  const imp = impLavoro
   l.fase = 'Potenzio il prompt'
   avvisa(l)
   // il testo che l'upsampler vede: con foto, la richiesta di modifica; da zero, la richiesta e la forma della tela (TARGET CANVAS)
   const mcd = (a: number, b: number): number => (b ? mcd(b, a % b) : a)
   const g0 = mcd(q.larghezza || 1, q.altezza || 1)
+  // il Klein 4B capisce solo i prompt di sistema brevi (con quello lungo ricopia le regole): con lui si usano quelli, e la richiesta da foto va nuda
+  // (con «Reference images follow… Output the caption» risponde «user»)
+  const encoderKlein = fam !== 'qwen' && !!imp.kleinEncoder
+  const richiesta = p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)
   const utente = conFoto
-    ? `Reference images follow in order (the first image, the second image, ...).\nUser request: ${p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)}\nOutput the caption.`
+    ? encoderKlein
+      ? richiesta
+      : `Reference images follow in order (the first image, the second image, ...).\nUser request: ${richiesta}\nOutput the caption.`
     : `${q.larghezza > 0 && q.modalita === 'crea' ? `TARGET CANVAS: ${Math.round(q.larghezza / g0)}:${Math.round(q.altezza / g0)}\n` : ''}${p}`
+  const sistema = conFoto ? (encoderKlein ? PUP_I2I_BREVE : PUP_I2I) : encoderKlein ? PUP_T2I_BREVE : PUP_T2I
   const g = costruisci(
-    { ...q, modalita: 'descrivi', prompt: utente, sistema: conFoto ? PUP_I2I : PUP_T2I, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: 0, immagini: [] },
+    { ...q, modalita: 'descrivi', encoderKlein, prompt: utente, sistema, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: 0, immagini: [] },
     imp, { immagini: ing.immagini.slice(0, 1) }, 'pup'
   )
   g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Potenzio il prompt']))
@@ -405,7 +414,7 @@ async function esegui(l: Lavoro): Promise<void> {
     let inglese: string
     if (usaKlein && imp.potenziaKlein && l.richiesta.potenzia && l.richiesta.prompt.trim() && (l.richiesta.modalita === 'crea' || l.richiesta.modalita === 'modifica')) {
       try {
-        inglese = await potenzia(l, ing)
+        inglese = await potenzia(l, ing, impLavoro, fam)
       } catch (e) {
         if ((e as Error).message === 'annullato') throw e
         inglese = await inInglese(l)

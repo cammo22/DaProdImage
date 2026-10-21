@@ -97,6 +97,8 @@ export interface Richiesta {
   maxToken?: number
   /** descrivi: quanto è creativo (0.7 di solito; bassa per tradurre) */
   temperatura?: number
+  /** descrivi: scrive col Qwen3-VL 4B di Klein (caricato come `krea2`) invece che con l'encoder di Qwen; lo usa solo l'upsampler, che ha i prompt di sistema adatti */
+  encoderKlein?: boolean
   /** descrivi: penalità di presenza (l'upsampler di Klein usa 1,5 per le didascalie da zero) */
   presenza?: number
   /** per la galleria: da quale opera nasce */

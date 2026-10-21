@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1 — 2026-10-21
+
+Klein non è più lento nel potenziare il prompt: da 0,5 token al secondo a **circa 49**.
+
+- **Il prompt potenziato di Klein si scrive col suo Qwen3-VL 4B.** Prima il potenziamento usava l'encoder di Qwen-Image (l'8B, o il GGUF scelto in Opzioni): 8,9 GB non entrano
+  nella VRAM da 8 GB e il modello girava quasi tutto sul processore, a **0,55 token/s** (150 token in 290 secondi, una didascalia intera oltre 10 minuti). Ora scrive il 4B di Klein,
+  che sta tutto in VRAM: **49 token/s**, una didascalia intera in circa 8 secondi (carico del modello compreso).
+- **Caricato come `krea2`, non come `flux3`.** Il tokenizer `flux3` serve al disegno e riempie il prompt di token di riempimento (fino a 79): per *scrivere* il modello
+  rispondeva solo «#». Lo stesso file caricato come `krea2` (Qwen3-VL 4B completo) scrive bene. Il disegno di Klein continua a usare `flux3`.
+- **Prompt di sistema brevi per il 4B** (`PUP_T2I_BREVE`, `PUP_I2I_BREVE`): con quelli ufficiali lunghi il 4B ricopia le regole invece di applicarle. Con la foto, la richiesta va
+  nuda (con «Reference images follow… Output the caption» rispondeva «user»). Con Qwen come prima, i prompt ufficiali.
+- Migliora prompt, Foto → prompt, Estrai, Idee e Fusion continuano a usare l'encoder di Qwen (hanno i loro prompt di sistema, pensati per l'8B).
+- Misurato sul motore vero (ComfyUI 0.41.2, RTX 4060 8 GB): potenziamento 0,55 → 49 token/s; Klein 1024², 16 passi: 0,55 s/passo, 16,5 s a freddo (Qwen-Image 2.1: 5,6 s/passo, 40 passi).
+
 ## 1.0.0 — 2026-10-16
 
 La versione fine: **FLUX 3 Klein**, meno sorprese ovunque, e tutto quello che era rimasto trascurato messo a posto. Niente funzioni nuove oltre a Klein: solo cose che già c'erano, più solide.
