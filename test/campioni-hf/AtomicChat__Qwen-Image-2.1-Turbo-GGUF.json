@@ -1,0 +1,88 @@
+{
+ "repo": "AtomicChat/Qwen-Image-2.1-Turbo-GGUF",
+ "revisione": "main",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 2447
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-AD-Q2_K.gguf",
+   "size": 2553333472,
+   "lfs": {
+    "size": 2553333472
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-AD-Q3_K.gguf",
+   "size": 3599812320,
+   "lfs": {
+    "size": 3599812320
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-AD-Q4_K.gguf",
+   "size": 4201694944,
+   "lfs": {
+    "size": 4201694944
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-AD-Q5_K.gguf",
+   "size": 5399168736,
+   "lfs": {
+    "size": 5399168736
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-AD-Q6_K.gguf",
+   "size": 6711985888,
+   "lfs": {
+    "size": 6711985888
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-BF16.gguf",
+   "size": 14230275808,
+   "lfs": {
+    "size": 14230275808
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Q8_0.gguf",
+   "size": 7591554784,
+   "lfs": {
+    "size": 7591554784
+   }
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 11653
+  },
+  {
+   "type": "file",
+   "path": "quality-vs-size.png",
+   "size": 108564,
+   "lfs": {
+    "size": 108564
+   }
+  },
+  {
+   "type": "file",
+   "path": "samples-grid.png",
+   "size": 3587494,
+   "lfs": {
+    "size": 3587494
+   }
+  }
+ ]
+}

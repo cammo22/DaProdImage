@@ -8,7 +8,7 @@ import { totalmem } from 'node:os'
 import { basename, dirname, join, parse } from 'node:path'
 import { app } from 'electron'
 import type { ControlloSistema, PassoSetup, StatoVoce, VoceCatalogo } from '@shared/tipi'
-import { CATALOGO, voce } from './catalogo'
+import { CATALOGO, motivoDiBlocco, voce } from './catalogo'
 import { conRisolto, presenteRisolto, risolviVoce, risoltoSalvato, type FileRisolto } from './risolvi'
 import { elencoLora, scaricaLora } from '../lora'
 import { scarica } from './scarica'
@@ -477,6 +477,9 @@ export async function installa(opz: OpzioniSetup, notifica: Notifica, provaMotor
 export async function scaricaVoce(id: string, avanz: (r: number, t: number, v: number) => void, segnale?: AbortSignal): Promise<string> {
   const s = voce(id)
   if (!s) throw new Error('voce sconosciuta')
+  // i modelli uncensored si scaricano solo su richiesta esplicita: interruttore acceso e avviso accettato (la guardia sta qui, non solo nell'interfaccia)
+  const blocco = motivoDiBlocco(s, impostazioni())
+  if (blocco) throw new Error(blocco)
   if (s.link) return scaricaLora(s.link, avanz, segnale)
   const imp = impostazioni()
   const intestazioni: Record<string, string> = {}

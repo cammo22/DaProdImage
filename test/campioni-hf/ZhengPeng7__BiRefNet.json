@@ -1,0 +1,54 @@
+{
+ "repo": "ZhengPeng7/BiRefNet",
+ "revisione": "e2bf8e4460fc8fa32bba5ea4d94b3233d367b0e4",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "type": "file",
+   "path": ".gitignore",
+   "size": 1908
+  },
+  {
+   "type": "file",
+   "path": "BiRefNet_config.py",
+   "size": 298
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 9965
+  },
+  {
+   "type": "file",
+   "path": "birefnet.py",
+   "size": 91896
+  },
+  {
+   "type": "file",
+   "path": "config.json",
+   "size": 405
+  },
+  {
+   "type": "file",
+   "path": "handler.py",
+   "size": 4762
+  },
+  {
+   "type": "file",
+   "path": "model.safetensors",
+   "size": 444473596,
+   "lfs": {
+    "size": 444473596
+   }
+  },
+  {
+   "type": "file",
+   "path": "requirements.txt",
+   "size": 149
+  }
+ ]
+}

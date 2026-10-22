@@ -14,10 +14,31 @@ export type Modalita =
   | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
   | 'traduci' // il prompt dall'italiano all'inglese con il traduttore dedicato (sul processore, senza Qwen)
   | 'importa' // (solo in galleria) una foto portata dentro da fuori
+  | 'sfondo' // toglie lo sfondo: PNG con trasparenza (BiRefNet), i pixel del soggetto restano quelli originali
+  | 'segmenta' // estrae da una foto la cosa indicata (riquadro o punti): SAM2 → PNG con trasparenza, pixel originali
 
 export interface LoraAttiva {
   file: string
+  /** −2…2 (0 = ignorato); l'ordine della lista è l'ordine in cui si applicano */
   forza: number
+}
+
+/** Un riquadro dell'Editor box: coordinate 0–1 sulla tela/foto (origine in alto a sinistra), [x0, y0, x1, y1]. */
+export type Box01 = [number, number, number, number]
+
+/** Una regione dell'Editor box, col suo prompt (regional prompting) */
+export interface Regione {
+  id: string
+  box: Box01
+  prompt: string
+}
+
+/** Estrai fedele: cosa ritagliare con SAM2 (tutto in coordinate 0–1 sulla foto) */
+export interface OpzioniSegmenta {
+  box?: Box01
+  punti?: { x: number; y: number; positivo: boolean }[]
+  /** true = il PNG è ritagliato attorno alla cosa (+ un margine); false = ha la misura della foto, con il resto trasparente */
+  ritaglia?: boolean
 }
 
 export interface Bordi {
@@ -94,6 +115,10 @@ export interface Richiesta {
   /** rifinisci/ingrandisci: di quanto ingrandire */
   fattore?: number
   lora: LoraAttiva[]
+  /** Editor box (regional prompting): più riquadri, ognuno col suo prompt; `prompt` resta la descrizione di tutta la scena. Per 'crea' e 'modifica'. */
+  regioni?: Regione[]
+  /** 'segmenta': cosa estrarre */
+  segmenta?: OpzioniSegmenta
   /** Turbo: LoRA di distillazione a 8 passi (CFG 1), circa 5 volte più veloce */
   turbo?: boolean
   trasparente?: boolean
@@ -190,6 +215,8 @@ export interface InfoLora {
   /** 'si' = Qwen-Image 2.1, 'no' = un altro modello, '?' = non si capisce */
   compatibile: 'si' | 'no' | '?'
   base?: string
+  /** per quali modelli è fatto (da `analizza`: dai nomi dei tensori); vuoto = non si capisce */
+  famiglie?: Famiglia[]
   aggiunta: number
 }
 
@@ -255,6 +282,12 @@ export interface Impostazioni {
   testoCon4B: boolean
   /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
   scaricaDopo: number
+  /** interruttore «Modelli uncensored» (Opzioni): spento di serie. Con lui spento le voci `uncensored` del catalogo non si scaricano */
+  uncensored: boolean
+  /** ha letto e accettato l'avviso sui modelli uncensored (serve anche questo per scaricarli) */
+  uncensoredAccettato: boolean
+  /** i lavori di testo con Klein (migliora prompt, descrivi foto, Idee…) scrivono col Qwen3-VL 4B uncensored (voce `llm-huihui-4b`), se è scaricato; serve `uncensored` acceso */
+  testoUncensored: boolean
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
@@ -283,7 +316,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'klein' | 'klein-te' | 'klein-vae'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'klein' | 'klein-te' | 'klein-vae' | 'sfondo' | 'segmentatore' | 'llm'
   nome: string
   descrizione: string
   file: string
@@ -315,6 +348,17 @@ export interface VoceCatalogo {
   famiglia?: string
   /** non so ancora il nome vero del file: lo trovo al primo download */
   daCercare?: boolean
+  /** il componente è «uncensored» (senza il rifiuto addestrato nei pesi): si scarica solo con l'interruttore acceso e l'avviso accettato */
+  uncensored?: boolean
+  /** sigla della licenza dei pesi (es. 'Apache-2.0', 'Qwen Research', 'FLUX Kommunity', 'MIT') e dove si legge */
+  licenza?: string
+  licenzaUrl?: string
+  /** a cosa serve nella pipeline: la UI lo mostra accanto al nome */
+  ruolo?: 'denoiser' | 'encoder' | 'llm' | 'vae' | 'lora' | 'segmentatore' | 'sfondo'
+  /** una riga di avvertenza da mostrare prima del download (limiti d'uso, compatibilità) */
+  avviso?: string
+  /** il repo e la revisione fissata (per riprodurre il download); senza revisione si usa `main` */
+  revisione?: string
 }
 
 export interface StatoVoce extends VoceCatalogo {
