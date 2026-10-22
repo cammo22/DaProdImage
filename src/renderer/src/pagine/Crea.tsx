@@ -199,7 +199,7 @@ export function Crea(): JSX.Element {
           ) : (
             <div className="vuoto">
               <div className="grosso">COSA COSTRUIAMO <b>OGGI?</b></div>
-              <p>Scegli a destra un genere e uno stile, scrivi cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
+              <p>Scegli a sinistra un genere e uno stile, scrivi cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
               <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
               {recenti.length > 0 && (
                 <div className="recenti-crea">

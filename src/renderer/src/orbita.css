@@ -155,6 +155,9 @@
 
 /* ---------- colonna del modo + bottone principale ---------- */
 .colonna.destra { background: linear-gradient(180deg, #0b0819, #080612); border-left: 1px solid var(--bordo-vetro); width: 400px; }
+/* Studio: i comandi (Motore, Cosa, prompt, CREA) stanno a SINISTRA del palco, per tutti i modi (Crea, Modifica, Box, Ricette).
+   La classe resta «destra» perché i test la cercano così. Il pulsante CREA è fuori dallo scorrimento: resta in fondo. */
+.studio-corpo .pagina .colonna.destra { order: -1; border-left: 0; border-right: 1px solid var(--bordo-vetro); }
 .colonna .sezione { border-bottom-color: rgba(190, 160, 255, 0.08); }
 .btn.primario.aurora { background: var(--aurora); color: #fff; border-color: transparent; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); box-shadow: 0 10px 30px -10px rgba(255, 61, 242, 0.7); position: relative; }
 .btn.primario.aurora:hover { filter: brightness(1.1); }

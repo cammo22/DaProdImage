@@ -53,7 +53,7 @@ export function StripModi(): JSX.Element {
         </button>
       ))}
       <span className="spazio" />
-      <span className="pillola-motore" title="Il modello che disegna: si sceglie nel pannello a destra, in «Motore»">
+      <span className="pillola-motore" title="Il modello che disegna: si sceglie nel pannello a sinistra, in «Motore»">
         <I.chip /> Motore <b>{m.nome}</b>
       </span>
       {(imp?.famiglia || 'qwen') === 'qwen' && (

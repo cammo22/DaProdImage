@@ -112,7 +112,7 @@ export function Fusion(p: {
           {p.inAttesa > 0 && <span className="piccolo oro">{p.inCorso ? `si sta creando${percentuale(p.inCorso) !== null ? ` · ${percentuale(p.inCorso)}%` : ''}` : 'in coda'}{p.inAttesa > 1 ? ` · +${p.inAttesa - 1}` : ''}</span>}
         </div>
         {!p.risultati.length && !p.inAttesa ? (
-          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Scrivi cosa vuoi a destra e premi il pulsante: la foto nuova compare qui e finisce anche in Galleria.</div>
+          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Scrivi cosa vuoi a sinistra e premi il pulsante: la foto nuova compare qui e finisce anche in Galleria.</div>
         ) : (
           <div className="fusion-ris-corpo">
             <div className="fusion-grande">

@@ -250,7 +250,7 @@ export function Box(): JSX.Element {
             <AdattaFoto ar={finale.w / finale.h} margine={26}>
               <div ref={cornice} className="box-cornice" style={{ width: '100%', height: '100%' }} onPointerDown={giuTela} onPointerMove={muoviTela} onPointerUp={suTela} onPointerCancel={suTela} data-box-tela>
                 {regioni.length === 0 && !bozza && (
-                  <div className="box-vuoto"><div><b>DISEGNA UN RIQUADRO</b>Trascina sulla tela e di' cosa ci va dentro. Oppure scegli una disposizione a destra.</div></div>
+                  <div className="box-vuoto"><div><b>DISEGNA UN RIQUADRO</b>Trascina sulla tela e di' cosa ci va dentro. Oppure scegli una disposizione a sinistra.</div></div>
                 )}
                 {regioni.map((r, i) => (
                   <div
