@@ -1,7 +1,6 @@
 // Impostazioni: modelli, prestazioni, cartelle, motore.
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, ricaricaImp } from '../stato'
-import { Lora } from './Lora'
 import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
@@ -13,16 +12,11 @@ const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
-/** Opzioni: due schede, le impostazioni di sempre e i LoRA (prima avevano una voce a sinistra, nella rotaia). */
+/** Opzioni: le impostazioni di sempre (i LoRA hanno la pagina loro, nella rotaia). */
 export function Impostazioni(): JSX.Element {
-  const scheda = usaStato((s) => s.schedaOpzioni)
   return (
     <div className="pagina opzioni-schede">
-      <div className="schede-opzioni">
-        <button className={scheda === 'generali' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'generali' })}>Impostazioni</button>
-        <button className={scheda === 'lora' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'lora' })}>LoRA</button>
-      </div>
-      <div className="corpo-opzioni">{scheda === 'lora' ? <Lora /> : <OpzioniGenerali />}</div>
+      <div className="corpo-opzioni"><OpzioniGenerali /></div>
     </div>
   )
 }

@@ -7,13 +7,14 @@ import { MODELLI, ORDINE_MODELLI, modelloDaImpostazioni, type IdModello } from '
 import { api } from '../api'
 import { ricaricaImp, usaStato } from '../stato'
 import { I } from './Icone'
+import { Tessera, Tessere } from './Tessere'
 
 /** le voci del catalogo da avere per usare un modello (il modello INT8 sta nelle schede da 8 GB) */
 const SERVONO: Record<Exclude<IdModello, 'qwen-base'>, string[]> = { klein: ['klein-int8', 'klein-te', 'klein-vae'], 'klein-base': ['klein-base-int8', 'klein-te', 'klein-vae'] }
 const PESO: Record<Exclude<IdModello, 'qwen-base'>, string> = { klein: 'circa 10 GB', 'klein-base': 'circa 10 GB (4,7 se hai già Klein)' }
 const ETICHETTA: Record<IdModello, string> = { 'qwen-base': 'Qwen base', klein: 'Klein veloce', 'klein-base': 'Klein Base' }
 
-export function SelettoreModello(): JSX.Element {
+export function SelettoreModello({ variante = 'pillole' }: { variante?: 'pillole' | 'tessere' }): JSX.Element {
   const imp = usaStato((s) => s.imp)
   const avvisa = usaStato((s) => s.avvisa)
   const inCorso = usaStato((s) => s.lavori.some((l) => l.stato === 'in coda' || l.stato === 'in corso'))
@@ -87,7 +88,26 @@ export function SelettoreModello(): JSX.Element {
   }
 
   return (
-    <div className="sel-modello" ref={radice}>
+    <div className={`sel-modello ${variante === 'tessere' ? 'in-tessere' : ''}`} ref={radice}>
+      {variante === 'tessere' ? (
+        <Tessere colonne={3}>
+          {ORDINE_MODELLI.map((id) => {
+            const m = MODELLI[id]
+            return (
+              <Tessera
+                key={id}
+                id={`modello-${id}`}
+                icona={id === 'qwen-base' ? <I.chip /> : id === 'klein' ? <I.fulmine /> : <I.stella />}
+                nome={ETICHETTA[id]}
+                su={id === scelto}
+                daScaricare={!pronti[id]}
+                onClick={() => void scegli(id)}
+                titolo={`${m.nome}: ${m.sotto}${!pronti[id] ? ' (da scaricare)' : ''}${inCorso ? ' · vale dal prossimo lavoro' : ''}`}
+              />
+            )
+          })}
+        </Tessere>
+      ) : (
       <div className="sel-modello-pillole" role="radiogroup" aria-label="Modello che disegna">
         {ORDINE_MODELLI.map((id) => {
           const m = MODELLI[id]
@@ -106,6 +126,7 @@ export function SelettoreModello(): JSX.Element {
           )
         })}
       </div>
+      )}
       {aperto && aperto !== 'qwen-base' && !pronti[aperto] && (
         <div className="sel-modello-pop">
           <b>{MODELLI[aperto].nome}</b>

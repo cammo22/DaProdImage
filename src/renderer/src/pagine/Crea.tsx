@@ -1,23 +1,30 @@
-// Crea: dal testo all'immagine.
-import { useEffect, useMemo, useState, type JSX } from 'react'
+// Crea: dal testo all'immagine. GUI v2: ogni scelta è una tessera (motore, genere, atmosfera, stile, formato, misura, sfondo, quante),
+// la misura finale è sempre sul palco (HUD) e il prompt di stile/sfondo si aggiunge da sé al momento di mandare.
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { usaStato } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { AdattaFoto } from '../componenti/AdattaFoto'
-import { Interruttore, SezioneChiudibile, Segmenti } from '../componenti/Controlli'
-import { SceltaMisura, ScegliMp, Uscita, MISURA0, dimMp } from '../componenti/Misura'
-import { SceltaLora, conParoleLora } from '../componenti/SceltaLora'
+import { SezioneChiudibile } from '../componenti/Controlli'
+import { conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
-import { MenuStili, SchedaPreset } from '../componenti/Preset'
 import { VistaZoom } from '../componenti/VistaZoom'
-import { FORMATI, RISOLUZIONI, dimensioniRis, durata, normalizza, stimaSecondi } from '../util'
+import { SelettoreModello } from '../componenti/ScegliModello'
+import { AtmosferaGenere, CampiGenere, GrigliaGeneri } from '../componenti/Generi'
+import { IntensitaStile, ScaffaliStili } from '../componenti/ScaffaliStili'
+import { HudCrea, SezFormato, SezMisura, SezQuante, SezSfondo } from '../componenti/SezioniCrea'
+import { Hud } from '../componenti/Hud'
+import { SceltaLora } from '../componenti/SceltaLora'
 import { Riferimenti } from '../componenti/Riferimenti'
-import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInModifica, fotoDaOpera, richiestaBase, rifaiCon, rifacibileIn, rifinisci, riusa, varia, ingrandisci } from '../azioni'
-import { presetDa } from '../preset'
-import { MODELLI, modelloDaImpostazioni, parametriModello } from '@shared/modelli'
 import { Casella } from '../componenti/Casella'
+import { durata, normalizza, stimaSecondi, FORMATI } from '../util'
+import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInEstrai, apriInModifica, fotoDaOpera, richiestaBase, rifaiCon, rifacibileIn, rifinisci, riusa, varia, ingrandisci } from '../azioni'
+import { presetDa } from '../preset'
+import { stileDa } from '../stili'
+import { misuraCrea } from '../misura'
+import { promptCrea, sfondoRichiesto } from '../creaPrompt'
+import { MODELLI, modelloDaImpostazioni, parametriModello } from '@shared/modelli'
 import type { Lavoro, Opera } from '@shared/tipi'
-
 
 const ar = (f: string): string => {
   const x = FORMATI.find((v) => v.id === f) || FORMATI[0]
@@ -31,30 +38,23 @@ export function Crea(): JSX.Element {
   const [scelto, setScelto] = useState<string | null>(null)
   const [opere, setOpere] = useState<Record<string, Opera>>({})
   const [vedoInCorso, setVedoInCorso] = useState(true)
+  const prompt = useRef<HTMLTextAreaElement>(null)
   // le ultime opere della galleria, per ripartire da lì quando la pagina è vuota
   const [recenti, setRecenti] = useState<Opera[]>([])
   useEffect(() => {
     void api.galleria.elenco({ modalita: 'tutte' }).then((l) => setRecenti(l.slice(0, 8)))
   }, [lavori.filter((l) => l.stato === 'fatto').length])
 
-  const dim = dimensioniRis(crea.formato, crea.ris)
-  // la foto che esce (la misura precisa se c'è, se no la risoluzione scelta) e le dimensioni a cui la disegna il modello: con i megapixel
-  // scelti il modello lavora a quelli (anche 4 MP per una foto da 480p) e poi la riduce alla misura finale
-  const mis = crea.misura?.tipo === 'custom' ? crea.misura : null
-  const finale = mis ? { w: mis.w, h: mis.h } : dim
-  const mpLav = crea.mpLavoro ? Math.min(crea.mpLavoro, 4.19) : 0
-  const m16 = (x: number): number => Math.max(256, Math.round(x / 16) * 16)
-  const lav = mpLav
-    ? dimMp(mpLav, finale.w, finale.h)
-    : mis
-      ? { w: m16(Math.sqrt(dim.w * dim.h * (mis.w / mis.h))), h: m16(Math.sqrt((dim.w * dim.h) / (mis.w / mis.h))) }
-      : dim
-  // il modello si sceglie dalla barra in alto e porta con sé i passi (e il CFG): qui non c'è niente da regolare
+  // la misura: la stessa funzione che costruisce la richiesta e che disegna il HUD («la cifra che vedi è quella che esce»)
+  const mis = misuraCrea(crea)
+  const { finale, lav } = mis
+  // il modello si sceglie dalle tessere «Motore» e porta con sé i passi (e il CFG)
   const modello = MODELLI[modelloDaImpostazioni(imp)]
   const passi = modello.passi
-  const quante = crea.quante <= 1 ? 1 : crea.quante <= 2 ? 2 : 4
+  const quante = Math.max(1, Math.min(8, crea.quante))
   const preset = presetDa(crea.preset)
   const stima = stimaSecondi(imp?.tempi, (lav.w * lav.h) / 1048576, passi) * quante
+  const qwen = (imp?.famiglia || 'qwen') === 'qwen'
 
   // i lavori di questa pagina (creati, rifiniti, variati)
   const miei = useMemo(() => lavori.filter((l) => ['crea', 'rifinisci', 'varia'].includes(l.richiesta.modalita)), [lavori])
@@ -88,7 +88,7 @@ export function Crea(): JSX.Element {
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
-      prompt: conParoleLora(crea.prompt.trim()),
+      prompt: conParoleLora(promptCrea(crea, qwen)),
       // Klein: la richiesta breve si espande in una didascalia dettagliata (se non è un preset, che il prompt lo scrive già lungo)
       potenzia: !preset,
       // i valori ufficiali del modello (Klein sceglie CFG, sampler e scheduler da sé nel motore)
@@ -104,9 +104,10 @@ export function Crea(): JSX.Element {
       ...(Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? { uscita: { w: finale.w, h: finale.h } } : {}),
       quante,
       immagini: crea.riferimenti.map((r) => r.percorso),
-      trasparente: crea.trasparente,
+      trasparente: crea.sfondo === 'trasparente',
+      sfondo: sfondoRichiesto(crea),
       ...parametriModello(modello.id),
-      etichetta: preset ? preset.nome : undefined
+      etichetta: preset ? preset.nome : stileDa(crea.stileId)?.nome
     }
     await api.lavori.accoda(q)
     if (quante > 1) avvisa(`${quante} immagini in coda`, 'ok')
@@ -178,133 +179,27 @@ export function Crea(): JSX.Element {
   const op = scelto ? opere[scelto] : undefined
 
   const inserisci = (testo: string): void => {
-    const t = document.querySelector<HTMLTextAreaElement>('.colonna:not(.destra) textarea')
+    const t = prompt.current
     const v = crea.prompt
     const i = t ? t.selectionStart : v.length
     setCrea({ prompt: v.slice(0, i) + testo + v.slice(i) })
   }
 
+  const stileAttivo = stileDa(crea.stileId)
+  const nLora = usaStato((s) => s.loraAttive.length)
+
   return (
     <div className="pagina">
-      <div className="colonna">
-        <div className="scorri">
-          <div className="sezione">
-            <MenuStili prima={setPrecedente} />
-          </div>
-          <SchedaPreset />
-          <div className="sezione">
-            <h3>
-              {preset ? 'Prompt (lo scrive il preset)' : 'Cosa vuoi vedere'}
-              <span className="dx">{crea.prompt.length > 0 && `${crea.prompt.length} car.`}</span>
-            </h3>
-            <Casella
-              valore={crea.prompt}
-              placeholder="Descrivi l'immagine, anche in italiano. Più dettagli dai (luce, stile, inquadratura), meglio è."
-              cambia={(prompt) => setCrea({ prompt })}
-              minimo={preset ? 110 : 150}
-              disabled={scrivendo}
-            />
-            <div className="riga a-capo" style={{ marginTop: 8 }}>
-              <button className="btn piccolo" onClick={migliora} disabled={scrivendo || !crea.prompt.trim()} title="Qwen3-VL riscrive il prompt in un paragrafo ricco, in inglese">
-                <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
-              </button>
-              <button className="btn piccolo" onClick={daFoto} disabled={scrivendo} title="Scegli una foto: il modello la descrive e diventa il prompt">
-                <I.immagine /> Da foto
-              </button>
-              <button className="btn piccolo" onClick={sorprendimi} disabled={scrivendo} title="Il modello inventa un'idea originale e la scrive al posto del prompt">
-                <I.dado /> Sorprendimi
-              </button>
-              {precedente !== null && (
-                <button className="btn piccolo fantasma" onClick={() => { setCrea({ prompt: precedente }); setPrecedente(null) }}>
-                  <I.annulla /> Torna al mio
-                </button>
-              )}
-            </div>
-            {(imp?.famiglia || 'qwen') === 'qwen' && <div style={{ marginTop: 10 }}><SceltaLora /></div>}
-          </div>
-
-          <div className="sezione">
-            <h3>Formato <span className="dx">{finale.w} × {finale.h} px</span></h3>
-            <div className="formati">
-              {FORMATI.map((f) => {
-                const k = 22 / Math.max(f.w, f.h)
-                return (
-                  <button key={f.id} className={`formato ${crea.formato === f.id ? 'su' : ''}`} onClick={() => setCrea({ formato: f.id })} title={f.nome}>
-                    <i style={{ width: f.w * k, height: f.h * k }} />
-                    {f.id}
-                  </button>
-                )
-              })}
-            </div>
-            <h3 style={{ marginTop: 14 }}>Lato corto</h3>
-            <div className="risoluzioni">
-              {RISOLUZIONI.map((r) => (
-                <button key={r.id} className={`formato ${crea.ris === r.id ? 'su' : ''}`} onClick={() => setCrea({ ris: r.id })} title={r.titolo}>
-                  <b>{r.nome}</b>
-                  <small>{r.sotto}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="sezione">
-            <Riferimenti
-              lista={crea.riferimenti}
-              cambia={(riferimenti) => setCrea({ riferimenti })}
-              inizio={1}
-              inserisci={inserisci}
-              esempio={'Una persona, un vestito, un oggetto, uno stile: "una donna come <image1> su una spiaggia", "la giacca di <image1> addosso a un robot". Fino a 9 foto.'}
-            />
-          </div>
-
-          <div className="sezione">
-            <h3>Quante <span className="dx">{quante > 1 ? `${quante} immagini, una dopo l'altra` : ''}</span></h3>
-            <Segmenti valore={quante} voci={[{ id: 1, nome: '1' }, { id: 2, nome: '2' }, { id: 4, nome: '4' }]} cambia={(q) => setCrea({ quante: q })} />
-          </div>
-
-          <SezioneChiudibile id="crea-altro" titolo="Altro" aperta={false} destra="seed, megapixel, misura, sfondo">
-            <div className="col" style={{ gap: 14 }}>
-              <div className="col" style={{ gap: 6 }}>
-                <h3 style={{ margin: 0 }}>Seed</h3>
-                <div className="riga">
-                  <button className={`btn piccolo ${crea.casuale ? 'attivo' : ''}`} onClick={() => setCrea({ casuale: !crea.casuale })} title="Seed casuale a ogni immagine">
-                    <I.dado /> {crea.casuale ? 'Casuale' : 'Fisso'}
-                  </button>
-                  {!crea.casuale && <input type="number" value={crea.seed} onChange={(e) => setCrea({ seed: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 130 }} />}
-                </div>
-              </div>
-              <Interruttore acceso={crea.trasparente} cambia={(trasparente) => setCrea({ trasparente })} sotto="PNG con sfondo trasparente (canale alfa nativo di Qwen-Image 2.1)">
-                Sfondo trasparente
-              </Interruttore>
-              <div>
-            <h3>Megapixel del modello <span className="dx">{crea.mpLavoro ? `${(lav.w * lav.h / 1048576).toFixed(2).replace('.', ',')} MP` : 'come la misura finale'}</span></h3>
-            <span className="piccolo spento" style={{ display: 'block', marginBottom: 6 }}>A quanti megapixel disegna il modello. Con più megapixel della risoluzione finale disegna grande e poi riduce: più dettagli e linee più pulite anche per una foto piccola (es. 480p disegnata a 4 MP).</span>
-            <ScegliMp mp={crea.mpLavoro} cambia={(mpLavoro) => setCrea({ mpLavoro })} ar={{ w: finale.w, h: finale.h }} auto="come la misura" />
-            <Uscita w={finale.w} h={finale.h} nota={Math.abs(finale.w - lav.w) > 1 || Math.abs(finale.h - lav.h) > 1 ? `disegnata a ${lav.w}×${lav.h} e poi portata qui` : undefined} />
-            <h3 style={{ marginTop: 14 }}>Misura precisa <span className="dx">{crea.misura?.tipo === 'custom' ? 'attiva' : 'no'}</span></h3>
-            <SceltaMisura valore={crea.misura ?? MISURA0} cambia={(misura) => setCrea({ misura })} base={null} mp={Math.round((dim.w * dim.h) / 1e5) / 10} ammetti={['auto', 'custom']} auto={{ w: dim.w, h: dim.h }} senzaUscita />
-              </div>
-            </div>
-          </SezioneChiudibile>
-        </div>
-        <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
-          <button className="btn primario grande" style={{ width: '100%' }} onClick={vai}>
-            <I.crea /> {quante > 1 ? `Crea ${quante} immagini` : 'Crea'}
-          </button>
-          <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>Ctrl+Invio · ~{durata(stima)}</div>
-        </div>
-      </div>
-
       <div className="palco">
-        <div className="vista">
+        <div className={`vista sfondo-${crea.anteSfondo}`} style={{ ['--tinta-vista' as string]: crea.tinta }}>
           {mostraInCorso && inCorso ? (
             <InCorso l={inCorso} ar={ar(crea.formato)} />
           ) : op ? (
             <VistaZoom src={urlFile(op.file)} scacchi={op.trasparente} />
           ) : (
             <div className="vuoto">
-              <div className="grosso">CREA CON <b>QWEN-IMAGE 2.1</b></div>
-              <p>Scrivi a sinistra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
+              <div className="grosso">COSA COSTRUIAMO <b>OGGI?</b></div>
+              <p>Scegli a destra un genere e uno stile, scrivi cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
               <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
               {recenti.length > 0 && (
                 <div className="recenti-crea">
@@ -320,10 +215,12 @@ export function Crea(): JSX.Element {
               )}
             </div>
           )}
+          <HudCrea />
         </div>
         {op && !mostraInCorso && (
           <div className="azioni-risultato">
             <button className="btn" onClick={() => apriInModifica(fotoDaOpera(op))}><I.modifica /> Modifica</button>
+            <button className="btn" onClick={() => apriInEstrai(fotoDaOpera(op))} title="Estrai una persona o un oggetto da questa immagine"><I.estrai /> Estrai</button>
             <button className="btn" onClick={() => varia(op)} title="Due variazioni che tengono la composizione"><I.varia /> Varia</button>
             {rifacibileIn(op).includes('klein-base') && <button className="btn primario" onClick={() => void rifaiCon(op, 'klein-base')} title="Rifà questa foto con Klein Base (50 passi, CFG 3,5): stesso prompt e stesso seed, la stessa famiglia di modelli"><I.crea /> Rifai in qualità piena</button>}
             {rifacibileIn(op).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(op, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (40 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
@@ -354,6 +251,123 @@ export function Crea(): JSX.Element {
             )
           })}
           {risultati.length === 0 && miei.length === 0 && <span className="spento piccolo">Qui compaiono le immagini di questa sessione. Tutte finiscono anche in Galleria.</span>}
+        </div>
+      </div>
+
+      <div className="colonna destra">
+        <div className="scorri">
+          <div className="sezione">
+            <h3>Motore <span className="dx">{modello.nome}</span></h3>
+            <SelettoreModello variante="tessere" />
+          </div>
+
+          <div className="sezione">
+            <h3>Cosa <span className="dx">{preset ? preset.nome : 'libero'}</span></h3>
+            <GrigliaGeneri prima={setPrecedente} />
+            {preset && <div style={{ marginTop: 10 }}><CampiGenere /></div>}
+          </div>
+
+          {preset && preset.stili.length > 1 && (
+            <div className="sezione">
+              <h3>Atmosfera</h3>
+              <AtmosferaGenere />
+            </div>
+          )}
+
+          <div className="sezione">
+            <h3>
+              {preset ? 'Prompt (lo scrive il genere)' : 'Cosa vuoi vedere'}
+              <span className="dx">{crea.prompt.length > 0 && `${crea.prompt.length} car.`}</span>
+            </h3>
+            <Casella
+              inputRef={prompt}
+              valore={crea.prompt}
+              placeholder="Descrivi l'immagine, anche in italiano. Più dettagli dai (luce, stile, inquadratura), meglio è."
+              cambia={(p) => setCrea({ prompt: p })}
+              minimo={preset ? 110 : 150}
+              disabled={scrivendo}
+            />
+            <div className="riga a-capo" style={{ marginTop: 8 }}>
+              <button className="btn piccolo" onClick={migliora} disabled={scrivendo || !crea.prompt.trim()} title="Qwen3-VL riscrive il prompt in un paragrafo ricco, in inglese">
+                <I.bacchetta /> {scrivendo ? 'Scrivo…' : 'Migliora'}
+              </button>
+              <button className="btn piccolo" onClick={daFoto} disabled={scrivendo} title="Scegli una foto: il modello la descrive e diventa il prompt">
+                <I.immagine /> Da foto
+              </button>
+              <button className="btn piccolo" onClick={sorprendimi} disabled={scrivendo} title="Il modello inventa un'idea originale e la scrive al posto del prompt">
+                <I.dado /> Sorprendimi
+              </button>
+              {precedente !== null && (
+                <button className="btn piccolo fantasma" onClick={() => { setCrea({ prompt: precedente }); setPrecedente(null) }}>
+                  <I.annulla /> Torna al mio
+                </button>
+              )}
+            </div>
+          </div>
+
+          <SezioneChiudibile id="crea-stile" titolo="Stile" destra={stileAttivo ? stileAttivo.nome : 'nessuno'}>
+            <ScaffaliStili valore={crea.stileId} scegli={(stileId) => setCrea({ stileId })} />
+            {stileAttivo && <IntensitaStile valore={crea.intensita} cambia={(intensita) => setCrea({ intensita })} />}
+          </SezioneChiudibile>
+
+          <div className="sezione">
+            <h3>Formato <span className="dx oro">{finale.w} × {finale.h} px</span></h3>
+            <SezFormato />
+          </div>
+
+          <div className="sezione">
+            <h3>Misura <span className="dx">lato corto {Math.min(finale.w, finale.h)} px</span></h3>
+            <SezMisura />
+          </div>
+
+          <div className="sezione">
+            <h3>Sfondo</h3>
+            <SezSfondo />
+          </div>
+
+          <div className="sezione">
+            <Riferimenti
+              lista={crea.riferimenti}
+              cambia={(riferimenti) => setCrea({ riferimenti })}
+              inizio={1}
+              inserisci={inserisci}
+              esempio={'Una persona, un vestito, un oggetto, uno stile: "una donna come <image1> su una spiaggia", "la giacca di <image1> addosso a un robot". Fino a 9 foto.'}
+            />
+          </div>
+
+          <div className="sezione">
+            <h3>Quante <span className="dx">{quante > 1 ? `${quante} immagini, una dopo l'altra` : ''}</span></h3>
+            <SezQuante />
+            {!crea.casuale && (
+              <div className="riga" style={{ marginTop: 8 }}>
+                <span className="piccolo tenue">Seed</span>
+                <input type="number" value={crea.seed} onChange={(e) => setCrea({ seed: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 130 }} />
+              </div>
+            )}
+          </div>
+
+          {qwen && (
+            <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
+              <SceltaLora />
+            </SezioneChiudibile>
+          )}
+        </div>
+
+        <div className="sezione azione-prima" style={{ borderTop: '1px solid var(--bordo-vetro)' }}>
+          <div className="riga-info">
+            <div className="scelte-attive" aria-label="Scelte attive">
+              {preset && <button type="button" title={`Genere: ${preset.nome} (clic: torna a Libero)`} onClick={() => setCrea({ preset: '' })}><I.libero /></button>}
+              {stileAttivo && <button type="button" title={`Stile: ${stileAttivo.nome} (clic: toglilo)`} onClick={() => setCrea({ stileId: '' })}><span aria-hidden>{stileAttivo.icona}</span></button>}
+              {crea.sfondo !== 'scena' && <button type="button" title={crea.sfondo === 'trasparente' ? 'Senza sfondo (clic: torna alla scena)' : 'Tinta unita (clic: torna alla scena)'} onClick={() => setCrea({ sfondo: 'scena', trasparente: false })}>{crea.sfondo === 'trasparente' ? <I.scacchi /> : <I.tinta />}</button>}
+              {crea.riferimenti.length > 0 && <button type="button" title={`${crea.riferimenti.length} foto di riferimento`} onClick={() => setCrea({ riferimenti: [] })}><I.immagine /></button>}
+              {qwen && nLora > 0 && <button type="button" title={`${nLora} LoRA accesi`} onClick={() => usaStato.getState().vai('lora')}><I.pila /></button>}
+            </div>
+            <Hud corto d={{ w: finale.w, h: finale.h, rapporto: mis.rapporto, mp: mis.mp, stato: mis.stato, nota: mis.nota }} />
+          </div>
+          <button className="btn primario grande aurora" style={{ width: '100%' }} onClick={vai}>
+            <I.crea /> {quante > 1 ? `CREA ${quante} IMMAGINI` : 'CREA'}
+          </button>
+          <div className="piccolo spento" style={{ textAlign: 'center' }}>Ctrl+Invio · ~{durata(stima)}</div>
         </div>
       </div>
     </div>

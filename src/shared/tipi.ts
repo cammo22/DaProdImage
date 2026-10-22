@@ -49,6 +49,32 @@ export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
   'klein-base': famiglia('klein-base', 25, 64)
 }
 
+/** Un riquadro dell'Editor box (GUI v2): dove sta nella tela finale (frazioni 0–1) e cosa ci deve essere.
+ *  La conversione al formato di Klein 3 ([top,left,bottom,right] su 0–1000) o alle maschere di Qwen la fa solo il motore. */
+export interface BoxRegione {
+  id: string
+  /** x0, y0, x1, y1 normalizzati 0–1 sulla tela finale */
+  rect: [number, number, number, number]
+  tipo: 'persona' | 'oggetto' | 'testo' | 'sfondo'
+  prompt: string
+  /** foto di riferimento di questo box (→ <imageN>) */
+  rif?: string
+  /** guida = composizione suggerita · decisa = il modello resta lì dentro · blocca = maschera e compositing: solo lì */
+  rigidita: 'guida' | 'decisa' | 'blocca'
+  ordine: number
+}
+
+/** Lo sfondo di una creazione: la scena, trasparente (PNG con alfa) o una tinta unita. */
+export type SfondoRichiesto = 'scena' | 'trasparente' | { tinta: string }
+
+/** Il laboratorio dei modelli senza filtri di rifiuto (Impostazioni → Uncensored). Spento di serie: si accende con il disclaimer. */
+export interface Uncensored {
+  abilitato: boolean
+  /** quando ha accettato il disclaimer (ms) e quale versione del testo */
+  accettatoIl?: number
+  versioneDisclaimer?: number
+}
+
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
 export interface Richiesta {
   modalita: Modalita
@@ -97,6 +123,11 @@ export interface Richiesta {
   /** Turbo: LoRA di distillazione a 8 passi (CFG 1), circa 5 volte più veloce */
   turbo?: boolean
   trasparente?: boolean
+  /** GUI v2: lo sfondo richiesto (il motore lo legge quando lo supporta; `trasparente` resta per i grafi Qwen di prima) */
+  sfondo?: SfondoRichiesto
+  /** GUI v2, Editor box: i riquadri con il loro testo e la scena generale (il motore li converte; finché non c'è l'adattatore l'interfaccia li mette anche nel prompt) */
+  box?: BoxRegione[]
+  promptScena?: string
   /** quante immagini fare (seed diversi) */
   quante: number
   /** descrivi: istruzione di sistema e lunghezza massima */
@@ -255,6 +286,8 @@ export interface Impostazioni {
   testoCon4B: boolean
   /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
   scaricaDopo: number
+  /** il laboratorio Uncensored (assente = spento) */
+  uncensored?: Uncensored
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */

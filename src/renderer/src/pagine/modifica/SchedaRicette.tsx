@@ -21,7 +21,6 @@ import { specialeOra, POSA_TUA, VISTA_TUA, leggiCamera, WORKFLOW_BASE, avviaLott
 import { usaRicette, type RicettaUtente } from '../../ricette'
 import { EditorRicetta } from '../../componenti/EditorRicetta'
 import { Catalogo, Dettaglio, Risultati, icona } from '../../componenti/LabVista'
-import { SelettoreModo } from './SelettoreModo'
 import type { Opera } from '@shared/tipi'
 
 
@@ -164,7 +163,7 @@ export function SchedaRicette(): JSX.Element {
   return (
     <>
       <div className="editor">
-        <div className="attrezzi"><SelettoreModo /></div>
+        {/* i modi dello Studio stanno nella strip in cima: qui niente selettore */}
         <div className="palco palco-lab" style={{ flex: 1, minHeight: 0 }}>
         <div className="schede-lab">
           <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW_BASE.length - ricette.nascoste.length + ricette.utente.length}</span></button>

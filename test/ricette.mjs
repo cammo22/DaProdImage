@@ -19,13 +19,13 @@ await pausa(1200)
 
 // la rotaia non ha più il Laboratorio
 prova('rotaia senza Laboratorio', (await pg.locator('.rotaia button:has-text("Laboratorio")').count()) === 0)
-await pg.click('.rotaia button:has-text("Modifica")')
+await pg.click('.strip-modi button[data-modo="modifica"]')
 await pausa(300)
-const voci = (await pg.locator('.attrezzi .segmenti button:visible').allInnerTexts()).map((x) => x.trim()).join('|')
-prova(`selettore: ${voci}`, voci === 'Scrivi|Espandi|Ricette|Estrai')
+const voci = (await pg.locator('.modi-modifica button:visible').allInnerTexts()).map((x) => x.trim()).join('|')
+prova(`selettore: ${voci}`, voci === 'Scrivi|Espandi|Estrai')
 
 // il catalogo
-await pg.click('.attrezzi .segmenti button:has-text("Ricette")')
+await pg.click('.strip-modi button[data-modo="ricette"]')
 await pausa(500)
 await pg.screenshot({ path: `${out}/r1-catalogo.png` })
 prova('catalogo con le carte', (await pg.locator('.carta-wf').count()) > 20)
@@ -45,7 +45,7 @@ prova('Unisci: c\'è il ritorno a "tutte le ricette"', (await pg.locator('.attre
 prova('Unisci: pulsante "crea la foto nuova"', (await pg.locator('.colonna.destra button:has-text("crea la foto nuova")').count()) === 1)
 await pg.locator('.fusion button:has-text("Dal PC")').first().click()
 await pausa(500)
-await pg.fill('.colonna.destra textarea', 'la ragazza di <image1> in una strada di Tokyo')
+await pg.fill('.colonna.destra textarea:visible', 'la ragazza di <image1> in una strada di Tokyo')
 await pg.click('.colonna.destra button:has-text("crea la foto nuova")')
 await pausa(500)
 const q = await pg.evaluate(() => window.__ultima)
@@ -60,7 +60,7 @@ await pg.screenshot({ path: `${out}/r4-esempio.png` })
 prova("Esempio: pulsante \"Crea come l'esempio\"", (await pg.locator(".colonna.destra button:has-text(\"Crea come l'esempio\")").count()) === 1)
 
 // tornando a Scrivi la pagina è quella di sempre
-await pg.click('.attrezzi .segmenti button:has-text("Scrivi")')
+await pg.click('.strip-modi button[data-modo="modifica"]')
 await pausa(300)
 prova('Scrivi: pulsante Modifica', (await pg.locator('.colonna.destra button:has-text("Modifica")').count()) >= 1)
 await b.close()

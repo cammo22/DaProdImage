@@ -64,6 +64,14 @@ export function apriInModifica(f: FotoBase): void {
   s.vai('modifica')
 }
 
+/** apre la foto in Modifica direttamente sul modo Estrai (persone e oggetti) */
+export function apriInEstrai(f: FotoBase): void {
+  const s = usaStato.getState()
+  s.setModifica({ base: f, versioni: [f], modo: 'estrai' })
+  s.apriVisore(null)
+  s.vai('modifica')
+}
+
 async function accoda(q: Richiesta, messaggio: string): Promise<void> {
   try {
     await api.lavori.accoda(q)
