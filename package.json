@@ -14,6 +14,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "node test/modelli.mjs && node test/catalogo.mjs && node test/spazio.mjs && node test/lora.mjs && node test/regioni.mjs && node test/grafi_v2.mjs && node test/confronta_grafi.mjs",
     "prendi-uv": "node scripts/prendi-uv.mjs",
     "dist": "npm run prendi-uv && npm run build && electron-builder --win --x64",
     "prova": "node test/prove.mjs",
