@@ -1,0 +1,187 @@
+{
+  "modello": {
+    "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+    "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+    "vae": "flux2-vae.safetensors",
+    "passi": 8,
+    "cfg": 1,
+    "sampler": "euler",
+    "scheduler": "simple"
+  },
+  "asset": {
+    "tessera/persone": {
+      "id": "tessera/persone",
+      "gruppo": "tessera",
+      "file": "tessera/persone.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, an astronaut helmet visor reflecting a smiling face, three-quarter view, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:37:22",
+      "secondi": 11.1,
+      "sha256_16": "e87b0d31cd852523",
+      "byte": 22774
+    },
+    "tessera/estrai": {
+      "id": "tessera/estrai",
+      "gruppo": "tessera",
+      "file": "tessera/estrai.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, scissors cutting a glowing outline around a small planet, sparks, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:37:47",
+      "secondi": 22.1,
+      "sha256_16": "debbca2d5e6cb1c7",
+      "byte": 14916
+    },
+    "sfondi/nebulosa": {
+      "id": "sfondi/nebulosa",
+      "gruppo": "sfondi",
+      "file": "sfondi/nebulosa.webp",
+      "misura": [
+        2560,
+        1440
+      ],
+      "generato": [
+        2560,
+        1440
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, deep space nebula in violet and magenta with faint stars, large empty dark area on the right, cinematic, no planet",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:30:56",
+      "secondi": 32.2,
+      "sha256_16": "2c9fbac619c0c395",
+      "byte": 99208
+    },
+    "stili/anime-film": {
+      "id": "stili/anime-film",
+      "gruppo": "stili",
+      "file": "stili/anime-film.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, high quality anime movie still, painterly backgrounds, soft cinematic lighting, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:35:40",
+      "secondi": 12.0,
+      "sha256_16": "b6fc603334ae2535",
+      "byte": 17362
+    },
+    "stili/vetro": {
+      "id": "stili/vetro",
+      "gruppo": "stili",
+      "file": "stili/vetro.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, liquid glass and crystal, refractive translucent material, caustics, iridescent edges, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:35:52",
+      "secondi": 12.1,
+      "sha256_16": "e62b0be0adae51f8",
+      "byte": 20852
+    },
+    "ricette/foglio": {
+      "id": "ricette/foglio",
+      "gruppo": "ricette",
+      "file": "ricette/foglio.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, a character turnaround sheet floating in space, multiple poses of an astronaut fox, neat grid",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:31:14",
+      "secondi": 6.0,
+      "sha256_16": "4730af2b50ed2d23",
+      "byte": 31778
+    }
+  }
+}

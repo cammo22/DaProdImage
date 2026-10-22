@@ -1,0 +1,142 @@
+[
+  {
+    "id": "cinema-anam",
+    "nome": "Cinema anamorfico",
+    "frammento": "cinematic still, anamorphic lens flares, oval bokeh, rich color grade, 2.39:1 feel"
+  },
+  {
+    "id": "flash-y2k",
+    "nome": "Flash 2000",
+    "frammento": "direct on-camera flash, early-2000s compact digital camera look, harsh highlights, candid party snapshot"
+  },
+  {
+    "id": "pellicola35",
+    "nome": "Pellicola 35mm",
+    "frammento": "shot on 35mm film, visible grain, soft halation, faded blacks"
+  },
+  {
+    "id": "moda-editoriale",
+    "nome": "Moda editoriale",
+    "frammento": "high-fashion editorial photography, studio strobes, bold color blocking, magazine cover composition"
+  },
+  {
+    "id": "polaroid",
+    "nome": "Polaroid",
+    "frammento": "instant film photo, white frame, soft focus, washed warm tones, light leaks"
+  },
+  {
+    "id": "notte-neon",
+    "nome": "Notte al neon",
+    "frammento": "night street photography, wet asphalt reflections, magenta and cyan neon signage"
+  },
+  {
+    "id": "documentario",
+    "nome": "Reportage",
+    "frammento": "gritty documentary photograph, available light, slightly desaturated, imperfect framing"
+  },
+  {
+    "id": "anime-film",
+    "nome": "Anime da film",
+    "frammento": "high quality anime movie still, painterly backgrounds, soft cinematic lighting"
+  },
+  {
+    "id": "acquerello-film",
+    "nome": "Acquerello animato",
+    "frammento": "hand-painted watercolor animation background, soft gradients, gentle clouds"
+  },
+  {
+    "id": "manga-inchiostro",
+    "nome": "Manga a inchiostro",
+    "frammento": "black and white manga, screentones, dynamic inked lines"
+  },
+  {
+    "id": "gouache",
+    "nome": "Gouache moderna",
+    "frammento": "contemporary gouache illustration, flat shapes, rich matte colors, subtle paper texture"
+  },
+  {
+    "id": "risograph",
+    "nome": "Risograph",
+    "frammento": "two-color risograph print, grainy overprint, misregistration, limited palette"
+  },
+  {
+    "id": "collage",
+    "nome": "Collage di carta",
+    "frammento": "cut-paper collage, layered torn paper edges, mixed textures"
+  },
+  {
+    "id": "linea",
+    "nome": "Linea unica",
+    "frammento": "minimal single continuous line drawing on white, a touch of color"
+  },
+  {
+    "id": "soft3d",
+    "nome": "3D morbido",
+    "frammento": "soft 3D render, rounded shapes, pastel studio light, subsurface scattering, friendly character look"
+  },
+  {
+    "id": "plastilina",
+    "nome": "Plastilina",
+    "frammento": "stop-motion claymation, visible fingerprints, handmade imperfections"
+  },
+  {
+    "id": "vinile",
+    "nome": "Vinile da collezione",
+    "frammento": "designer vinyl toy, glossy plastic, seam lines, studio product shot"
+  },
+  {
+    "id": "diorama",
+    "nome": "Diorama isometrico",
+    "frammento": "isometric miniature diorama, tilt-shift, clean cube base, soft shadows"
+  },
+  {
+    "id": "mattoncini",
+    "nome": "Mattoncini",
+    "frammento": "scene built of interlocking plastic bricks and minifigures"
+  },
+  {
+    "id": "vetro",
+    "nome": "Vetro liquido",
+    "frammento": "liquid glass and crystal, refractive translucent material, caustics, iridescent edges"
+  },
+  {
+    "id": "chrome",
+    "nome": "Cromo Y2K",
+    "frammento": "chrome blobject, reflective metal, hyperreal studio HDRI, early-2000s futurism"
+  },
+  {
+    "id": "cyberpunk",
+    "nome": "Cyberpunk",
+    "frammento": "dense neon cityscape, holograms, rain, high contrast magenta/teal"
+  },
+  {
+    "id": "synthwave",
+    "nome": "Synthwave",
+    "frammento": "retro-futuristic 80s sunset grid, chrome lettering, purple-pink gradient sky"
+  },
+  {
+    "id": "aura",
+    "nome": "Aura gradient",
+    "frammento": "soft airbrushed aura gradients, grain, glowing blurred shapes, dreamy abstract"
+  },
+  {
+    "id": "pixel",
+    "nome": "Pixel 32-bit",
+    "frammento": "detailed 32-bit pixel art, limited palette, dithering"
+  },
+  {
+    "id": "spaziale60",
+    "nome": "Space age ’60",
+    "frammento": "1960s space-age illustration, atomic shapes, retro NASA poster palette"
+  },
+  {
+    "id": "solarpunk",
+    "nome": "Solarpunk",
+    "frammento": "solarpunk utopia, lush green architecture, warm sunlight, art nouveau curves"
+  },
+  {
+    "id": "svizzero",
+    "nome": "Poster svizzero",
+    "frammento": "Swiss international typographic poster, strong grid, flat color, bold sans-serif"
+  }
+]
