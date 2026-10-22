@@ -276,6 +276,29 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
   }
 }
 
+/** le modalità che usano un segmentatore (si scarica da solo, una volta, al primo uso): voce del catalogo e nome in italiano */
+const SEGMENTATORI: Record<string, { id: string; nome: string }> = {
+  sfondo: { id: 'sfondo-birefnet', nome: 'BiRefNet' },
+  segmenta: { id: 'seg-sam2', nome: 'SAM 2' }
+}
+
+/** il segmentatore è sul disco? se manca lo scarica (BiRefNet ~450 MB, SAM 2 ~185 MB); se non ci riesce il lavoro fallisce con un messaggio chiaro */
+async function segmentatorePronto(l: Lavoro, s: { id: string; nome: string }): Promise<void> {
+  const stato = (): boolean => !!statoModelli().find((v) => v.id === s.id)?.presente
+  if (stato()) return
+  l.fase = `Scarico ${s.nome}`
+  avvisa(l)
+  try {
+    await scaricaVoce(s.id, (r, t) => {
+      l.fase = `Scarico ${s.nome}${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      avvisa(l, false)
+    })
+  } catch (e) {
+    throw new Error(`Non riesco a scaricare ${s.nome}: ${(e as Error).message}`)
+  }
+  if (!stato()) throw new Error(`${s.nome} non è sul disco: scaricalo da Opzioni → Scarica altri modelli.`)
+}
+
 // le didascalie già scritte (più immagini dallo stesso prompt = un'espansione sola)
 const potenziati = new Map<string, string>()
 
@@ -413,11 +436,12 @@ async function esegui(l: Lavoro): Promise<void> {
       await avviaMotore()
     }
     if (!collegato()) await connetti()
+    if (l.richiesta.modalita in SEGMENTATORI) await segmentatorePronto(l, SEGMENTATORI[l.richiesta.modalita])
     const ing = await prepara(l.richiesta)
     // FLUX 3 Klein: i suoi file (scelti, scaricati dall'app o messi a mano) e, se serve, il prompt espanso
     const fam = l.richiesta.famiglia ?? imp.famiglia
     let impLavoro = imp
-    const usaKlein = fam !== 'qwen' && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci' && l.richiesta.modalita !== 'ingrandisci'
+    const usaKlein = fam !== 'qwen' && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci' && l.richiesta.modalita !== 'ingrandisci' && !(l.richiesta.modalita in SEGMENTATORI)
     if (usaKlein) {
       const f = fileKlein(imp, fam)
       if (typeof f === 'string') throw new Error(f)
@@ -450,7 +474,7 @@ async function esegui(l: Lavoro): Promise<void> {
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
     const testo = l.richiesta.modalita === 'descrivi'
     // la chiave della VRAM: chi scrive (4B o 8B), chi disegna (la famiglia), o l'ingranditore che non sposta niente
-    const occupa = testo ? occupaTesto(lavoroTesto.q.encoderKlein) : l.richiesta.modalita === 'ingrandisci' ? 'leggero' : occupaImmagine(fam)
+    const occupa = testo ? occupaTesto(lavoroTesto.q.encoderKlein) : l.richiesta.modalita === 'ingrandisci' || l.richiesta.modalita in SEGMENTATORI ? 'leggero' : occupaImmagine(fam)
     const uscita = await lancia(grafo, occupa, l, testo)
     if (testo) {
       l.testo = lavoroTesto.q.encoderKlein ? senzaTitolo(uscita?.testo || '') : (uscita?.testo || '').trim()
@@ -471,7 +495,7 @@ async function esegui(l: Lavoro): Promise<void> {
           sampler: q.sampler,
           scheduler: q.scheduler,
           lora: q.lora,
-          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
+          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : fam === 'klein4b' ? 'FLUX.2 Klein 4B · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
           forza: q.forza,
           trasparente: q.trasparente,
           origine: q.origine,
