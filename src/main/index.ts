@@ -218,7 +218,9 @@ function registraIpc(): void {
       upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i),
       klein: tutti.filter(isKlein),
       kleinTe: enc.filter(isKleinTe),
-      kleinVae: vae.filter(isKleinVae)
+      kleinVae: vae.filter(isKleinVae),
+      klein4b: tutti.filter((n) => /klein.*4b|4b.*klein/i.test(n)),
+      klein4bTe: enc.filter((n) => /^qwen_?3_4b/i.test(n))
     }
   })
   gestisci('modelli:inutilizzati', () => fileInutilizzati())

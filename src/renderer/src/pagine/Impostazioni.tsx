@@ -29,7 +29,7 @@ export function Impostazioni(): JSX.Element {
 
 function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
-  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
+  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [], klein4b: [], klein4bTe: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
   const [log, setLog] = useState<string[]>([])

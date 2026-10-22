@@ -36,6 +36,9 @@ export interface FileModelli {
   klein: string[]
   kleinTe: string[]
   kleinVae: string[]
+  /** i file di FLUX.2 Klein 4B (modello, text encoder, VAE condiviso) */
+  klein4b: string[]
+  klein4bTe: string[]
 }
 export interface ModelloTrovato {
   percorso: string

@@ -55,8 +55,8 @@ export interface Riquadro {
   h: number
 }
 
-/** il modello che disegna: Qwen-Image 2.1, o FLUX 3 Klein (veloce, distillato) o FLUX 3 Klein Base (50 passi con CFG) */
-export type Famiglia = 'qwen' | 'klein' | 'klein-base'
+/** il modello che disegna: Qwen-Image 2.1, FLUX 3 Klein (veloce, distillato), FLUX 3 Klein Base (50 passi con CFG) o FLUX.2 Klein 4B (Apache-2.0, 4 passi) */
+export type Famiglia = 'qwen' | 'klein' | 'klein-base' | 'klein4b'
 
 /** quello che distingue i modelli: passi per qualità, CFG e cosa sanno fare. Nomi e passi «alti» vengono da `modelli.ts`
  *  (la mappa unica); «turbo» resta solo per le qualità salvate prima della 1.1 e vale come «alta» (`senzaTurbo`). */
@@ -67,7 +67,8 @@ const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string
 export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
   qwen: famiglia('qwen-base', 20, 50),
   klein: famiglia('klein', 8, 16),
-  'klein-base': famiglia('klein-base', 25, 64)
+  'klein-base': famiglia('klein-base', 25, 64),
+  klein4b: famiglia('klein4b', 4, 8)
 }
 
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
