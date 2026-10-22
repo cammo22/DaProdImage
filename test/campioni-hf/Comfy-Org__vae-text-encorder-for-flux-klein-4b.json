@@ -1,0 +1,56 @@
+{
+ "repo": "Comfy-Org/vae-text-encorder-for-flux-klein-4b",
+ "revisione": "87cfba3d4b98662fb80f23921bb37bf887c97c58",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 1737
+  },
+  {
+   "type": "file",
+   "path": "split_files/diffusion_models/flux-2-klein-4b.safetensors",
+   "size": 7751105712,
+   "lfs": {
+    "size": 7751105712
+   }
+  },
+  {
+   "type": "file",
+   "path": "split_files/diffusion_models/flux-2-klein-base-4b.safetensors",
+   "size": 7751105712,
+   "lfs": {
+    "size": 7751105712
+   }
+  },
+  {
+   "type": "file",
+   "path": "split_files/text_encoders/qwen_3_4b.safetensors",
+   "size": 8044982048,
+   "lfs": {
+    "size": 8044982048
+   }
+  },
+  {
+   "type": "file",
+   "path": "split_files/text_encoders/qwen_3_4b_fp4_flux2.safetensors",
+   "size": 3848213998,
+   "lfs": {
+    "size": 3848213998
+   }
+  },
+  {
+   "type": "file",
+   "path": "split_files/vae/flux2-vae.safetensors",
+   "size": 336211292,
+   "lfs": {
+    "size": 336211292
+   }
+  }
+ ]
+}

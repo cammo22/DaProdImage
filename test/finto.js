@@ -33,7 +33,7 @@
     impostazioni: { leggi: v(imp), salva: async (m) => Object.assign(imp, m) },
     sistema: { controllo: v({}) },
     setup: { cerca: v([]), stato: v({ installato: true, motore: true, modelli: [] }), avvia: v(true), annulla: v() },
-    modelli: { stato: v([]), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler], klein: [], kleinTe: [], kleinVae: [] }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
+    modelli: { stato: v([]), segmentatori: v([]), inutilizzati: v([]), elimina: v(), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler], klein: [], kleinTe: [], kleinVae: [], klein4b: [], klein4bTe: [] }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
     motore: { info: v({ stato: 'pronto', porta: 8818, vramTotale: 6442450944, vramLibera: 1500000000, gpu: 'NVIDIA GeForce RTX 3060 Laptop GPU', versione: '0.39.0' }), avvia: v(), riavvia: v(), ferma: v(), log: v(['motore pronto']), libera: v(), apriComfy: v() },
     lavori: {
       elenco: v([]), annulla: v(), svuota: v(), pulisci: v(),
@@ -50,7 +50,7 @@
     },
     testo: { scrivi: async (q) => { window.__testo = q; return JSON.stringify([{bbox_2d:[300,380,640,880],label:'red-roofed brown wooden hut',kind:'object'},{bbox_2d:[780,180,940,340],label:'bright yellow sun',kind:'object'},{bbox_2d:[40,500,260,990],label:'woman in a green jacket, standing',kind:'person'}]) } },
     galleria: { elenco: v(opere), opera: async (id) => opere.find((o) => o.id === id), importaFoto: v({}), preferita: v(), elimina: v(), mostra: v(), apriCartella: v(), copia: v(), esporta: v(), importa: v({ importate: [], altre: [] }), meta: v(null) },
-    lora: { elenco: v([]), aggiorna: v(), importa: v([]), elimina: v(), scarica: v({}), apriCartella: v() },
+    lora: { elenco: v([]), compatibili: v([]), aggiorna: v(), importa: v([]), elimina: v(), scarica: v({}), apriCartella: v() },
     file: {
       scegliImmagini: v(['/foto.png']), scegli: v(null), scegliCartella: v(null),
       salvaTemp: async (dataUrl) => { const p = '/tmp/t' + ++n + '.png'; mappa[p] = dataUrl; return p },

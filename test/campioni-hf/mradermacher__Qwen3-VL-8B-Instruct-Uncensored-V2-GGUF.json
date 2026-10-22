@@ -1,0 +1,128 @@
+{
+ "repo": "mradermacher/Qwen3-VL-8B-Instruct-Uncensored-V2-GGUF",
+ "revisione": "main",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 2681
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.IQ4_XS.gguf",
+   "size": 4593298272,
+   "lfs": {
+    "size": 4593298272
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q2_K.gguf",
+   "size": 3281734496,
+   "lfs": {
+    "size": 3281734496
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q3_K_L.gguf",
+   "size": 4431395680,
+   "lfs": {
+    "size": 4431395680
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q3_K_M.gguf",
+   "size": 4124162912,
+   "lfs": {
+    "size": 4124162912
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q3_K_S.gguf",
+   "size": 3769613152,
+   "lfs": {
+    "size": 3769613152
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q4_K_M.gguf",
+   "size": 5027785568,
+   "lfs": {
+    "size": 5027785568
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q4_K_S.gguf",
+   "size": 4802014048,
+   "lfs": {
+    "size": 4802014048
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q5_K_M.gguf",
+   "size": 5851114336,
+   "lfs": {
+    "size": 5851114336
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q5_K_S.gguf",
+   "size": 5720763232,
+   "lfs": {
+    "size": 5720763232
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q6_K.gguf",
+   "size": 6725901152,
+   "lfs": {
+    "size": 6725901152
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.Q8_0.gguf",
+   "size": 8709520224,
+   "lfs": {
+    "size": 8709520224
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.f16.gguf",
+   "size": 16388045664,
+   "lfs": {
+    "size": 16388045664
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.mmproj-Q8_0.gguf",
+   "size": 752290016,
+   "lfs": {
+    "size": 752290016
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen3-VL-8B-Instruct-Uncensored-V2.mmproj-f16.gguf",
+   "size": 1159030112,
+   "lfs": {
+    "size": 1159030112
+   }
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 4653
+  }
+ ]
+}

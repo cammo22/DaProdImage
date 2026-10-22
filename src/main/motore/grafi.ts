@@ -2,8 +2,9 @@
 //   modello GGUF → (Turbo) → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
 // e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
 import { modelloTurbo } from '@shared/tipi'
-import type { Famiglia, Impostazioni, Richiesta, Riquadro } from '@shared/tipi'
+import type { Famiglia, Impostazioni, LoraAttiva, Richiesta, Riquadro } from '@shared/tipi'
 import type { ChiaviRtx } from './cliente'
+import { promptConPosizioni, promptKleinConBox, regioniPronte } from './regioni'
 
 /** il profilo di memoria: con poca VRAM il VAE lavora a tessere (niente picchi che finiscono nella RAM condivisa) */
 export type Memoria = 'bassa' | 'normale' | 'alta'
@@ -79,18 +80,29 @@ function caricaClipPerTesto(g: Grafo, imp: Impostazioni, kleinEncoder: boolean |
 /** il modello che disegna questa richiesta */
 export const famigliaDi = (q: Richiesta, imp: Impostazioni): Famiglia => q.famiglia ?? imp.famiglia ?? 'qwen'
 
-/** FLUX 3 Klein: UNETLoader (i pesi INT8/BF16 li riconosce da soli ComfyUI), text encoder Qwen3-VL 4B di tipo flux3, VAE di Klein. Niente LoRA né cache KV. */
-function baseKlein(g: Grafo, imp: Impostazioni, fam: Famiglia): { model: Rif; clip: Rif; vae: Rif } {
+/** i LoRA accesi in fila (l'ordine della lista è l'ordine di applicazione): un LoraLoaderModelOnly per ciascuno, forza ≠ 0.
+ *  Vale per tutte le famiglie: Qwen e le Klein. `salta` = file da non mettere (il Turbo, già messo a parte). */
+function applicaLora(g: Grafo, model: Rif, lora: LoraAttiva[], salta?: string): Rif {
+  let m = model
+  for (const l of lora) {
+    if (!l.file || !l.forza || l.file === salta) continue
+    m = r(g.add('LoraLoaderModelOnly', { model: m, lora_name: l.file, strength_model: Math.max(-2, Math.min(2, l.forza)) }, 'Applico i LoRA'))
+  }
+  return m
+}
+
+/** FLUX 3 Klein e FLUX.2 Klein 4B: UNETLoader (i pesi INT8/FP8/BF16 li riconosce da soli ComfyUI), LoRA, text encoder (Qwen3-VL 4B di tipo flux3; Qwen3 4B di tipo flux2 per la 4B), VAE di FLUX.2. Niente cache KV. */
+function baseKlein(g: Grafo, imp: Impostazioni, fam: Famiglia, lora: LoraAttiva[]): { model: Rif; clip: Rif; vae: Rif } {
   const file = fam === 'klein-base' ? imp.kleinBase : imp.kleinModello
-  const model = r(g.add('UNETLoader', { unet_name: file, weight_dtype: 'default' }, 'Carico il modello'))
-  const clip = r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: 'flux3', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+  const model = applicaLora(g, r(g.add('UNETLoader', { unet_name: file, weight_dtype: 'default' }, 'Carico il modello')), lora)
+  const clip = r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: fam === 'klein4b' ? 'flux2' : 'flux3', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
   const vae = r(g.add('VAELoader', { vae_name: imp.kleinVae }, 'Carico il VAE'))
   return { model, clip, vae }
 }
 
 function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Rif; vae: Rif } {
   const fam = famigliaDi(q, imp)
-  if (fam !== 'qwen') return baseKlein(g, imp, fam)
+  if (fam !== 'qwen') return baseKlein(g, imp, fam, q.lora)
   const carico = 'Carico il modello'
   const unet = imp.modello.toLowerCase().endsWith('.gguf')
     ? g.add('UnetLoaderGGUF', { unet_name: imp.modello }, carico)
@@ -99,10 +111,7 @@ function base(g: Grafo, q: Richiesta, imp: Impostazioni): { model: Rif; clip: Ri
   const turbo = conTurbo(q, imp)
   const nativo = modelloTurbo(imp.modello)
   if (turbo && !nativo) model = r(g.add('LoraLoaderModelOnly', { model, lora_name: imp.loraTurbo, strength_model: 1 }, 'Accendo il Turbo'))
-  for (const l of q.lora) {
-    if (!l.file || !l.forza || (turbo && l.file === imp.loraTurbo)) continue
-    model = r(g.add('LoraLoaderModelOnly', { model, lora_name: l.file, strength_model: l.forza }, 'Applico i LoRA'))
-  }
+  model = applicaLora(g, model, q.lora, turbo ? imp.loraTurbo : undefined)
   model = r(g.add('QwenImage21Cache', { model, device: imp.cacheKV, dtype: imp.cacheTipo }))
   const clip = caricaClip(g, imp)
   const vae = r(g.add('VAELoader', { vae_name: imp.vae }, 'Carico il VAE'))
@@ -166,12 +175,35 @@ function condiziona(
   return { pos, neg }
 }
 
+/** il testo di Crea o Modifica con i riquadri dell'Editor box: Klein 3 li legge (JSON con le coordinate), gli altri modelli li hanno a parole. Senza riquadri valide, il testo com'è. */
+function conRegioni(testo: string, q: Richiesta, fam: Famiglia, modifica: boolean): string {
+  const regs = regioniPronte(q.regioni)
+  if (!regs.length) return testo
+  return fam === 'klein' || fam === 'klein-base' ? promptKleinConBox(testo, regs, modifica) : promptConPosizioni(testo, regs, modifica)
+}
+
 /** la latente vuota per disegnare da zero a quella misura */
 function latenteVuota(g: Grafo, fam: Famiglia, w: number, h: number): Rif {
   return r(g.add(fam === 'qwen' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: w, height: h, batch_size: 1 }))
 }
 
-function campiona(g: Grafo, q: Richiesta, fam: Famiglia, model: Rif, c: Condizioni, latente: Rif, passi: number, denoise = 1): Rif {
+function campiona(g: Grafo, q: Richiesta, fam: Famiglia, model: Rif, c: Condizioni, latente: Rif, passi: number, denoise = 1, dim?: { w: number; h: number }): Rif {
+  if (fam === 'klein4b') {
+    // FLUX.2 Klein 4B (distillato): come il workflow ufficiale di ComfyUI, scaletta Flux2Scheduler (dipende dalla grandezza) + CFGGuider 1 + euler.
+    // Con denoise < 1 la scaletta è più lunga e se ne prende la coda (SplitSigmasDenoise): si fanno `passi` passi veri.
+    const w = dim?.w ?? q.larghezza
+    const h = dim?.h ?? q.altezza
+    const totali = denoise < 0.999 ? Math.max(passi, Math.round(passi / Math.max(0.05, denoise))) : passi
+    const scaletta = g.add('Flux2Scheduler', { steps: totali, width: w, height: h })
+    const sigme: Rif = denoise < 0.999 ? r(g.add('SplitSigmasDenoise', { sigmas: r(scaletta), denoise }), 1) : r(scaletta)
+    const guida = g.add('CFGGuider', { model, positive: c.pos, negative: c.neg, cfg: 1 })
+    const out = g.add(
+      'SamplerCustomAdvanced',
+      { noise: r(g.add('RandomNoise', { noise_seed: q.seed })), guider: r(guida), sampler: r(g.add('KSamplerSelect', { sampler_name: 'euler' })), sigmas: sigme, latent_image: latente },
+      'Disegno'
+    )
+    return r(out, 0)
+  }
   // Klein veloce è distillato (8 passi, senza CFG); Klein Base vuole CFG 3,5; sampler e scheduler sono quelli del riferimento (euler, e la scaletta del modello)
   const cfg = fam === 'qwen' ? q.cfg : fam === 'klein' ? 1 : q.cfg > 1 ? q.cfg : 3.5
   return r(
@@ -201,9 +233,11 @@ function aTessere(g: Grafo, mp: number): boolean {
 const TESSERE = { tile_size: 512, overlap: 64, temporal_size: 64, temporal_overlap: 8 }
 
 /** decodifica e (se non trasparente) toglie il canale alfa: il VAE di Qwen 2.1 esce sempre RGBA */
-function sviluppa(g: Grafo, q: Richiesta, lat: Rif, vae: Rif, mp: number): Rif {
+function sviluppa(g: Grafo, q: Richiesta, lat: Rif, vae: Rif, mp: number, togliSfondo = false): Rif {
   const fase = 'Sviluppo l\'immagine'
   const dec = aTessere(g, mp) ? g.add('VAEDecodeTiled', { samples: lat, vae, ...TESSERE }, fase) : g.add('VAEDecode', { samples: lat, vae }, fase)
+  // i modelli Klein non disegnano la trasparenza (Qwen sì, col suo RGBA): «senza sfondo» = il soggetto si ritaglia con BiRefNet, i pixel restano quelli disegnati
+  if (q.trasparente && togliSfondo) return r(g.add('DaProdSfondo', { image: r(dec), modello: 'birefnet', pulisci_bordi: true, ritaglia: false }, 'Tolgo lo sfondo'), 0)
   if (q.trasparente) return r(dec)
   return r(g.add('SplitImageWithAlpha', { image: r(dec) }), 0)
 }
@@ -343,6 +377,29 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: q.maxToken || 400 }
   }
 
+  // togli sfondo: la foto originale più il canale alfa di BiRefNet (nessun modello che disegna: niente VRAM per il DiT)
+  if (q.modalita === 'sfondo') {
+    const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Carico la foto'))
+    const fuori = r(g.add('DaProdSfondo', { image: img, modello: 'birefnet', pulisci_bordi: true, ritaglia: false }, 'Tolgo lo sfondo'), 0)
+    return { prompt: g.nodi, uscita: salva(g, fuori, prefisso), fasi: g.fasi, megapixel: 0, passi: 1 }
+  }
+
+  // estrai fedele: SAM 2 ritaglia dai pixel originali la cosa indicata (riquadro e/o punti, 0–1 sulla foto)
+  if (q.modalita === 'segmenta') {
+    const s = q.segmenta
+    if (!s || (!s.box && !(s.punti && s.punti.length))) throw new Error('dimmi cosa estrarre: disegna un riquadro o tocca dei punti')
+    const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Carico la foto'))
+    const fuori = r(
+      g.add(
+        'DaProdSegmenta',
+        { image: img, modello: 'sam2.1-hiera-small', box: s.box ? JSON.stringify(s.box) : '', punti: s.punti && s.punti.length ? JSON.stringify(s.punti) : '', ritaglia: s.ritaglia !== false, margine: 12, pulisci_bordi: true },
+        'Ritaglio la cosa scelta'
+      ),
+      0
+    )
+    return { prompt: g.nodi, uscita: salva(g, fuori, prefisso), fasi: g.fasi, megapixel: 0, passi: 1 }
+  }
+
   if (q.modalita === 'ingrandisci') {
     const img = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Carico la foto'))
     const f = q.fattore || 2
@@ -359,7 +416,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const leggo = 'Leggo il prompt e le foto'
 
   if (q.modalita === 'crea') {
-    const testo = q.trasparente && fam === 'qwen' ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
+    let testo = q.trasparente && fam === 'qwen' ? AVVOLGI_TRASPARENTE(q.prompt) : q.prompt
+    testo = conRegioni(testo, q, fam, false)
     // con dei riferimenti (<image1>…) il modello li guarda mentre disegna da zero: persone, vestiti, oggetti, stili
     const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico i riferimenti')))
     const cond = condiziona(g, fam, { clip, vae }, { prompt: testo, neg, resolution: 1024, conVae: caricate.length > 0, immagini: caricate, mpRiferimenti: 1, scalaDa: 0, fase: leggo })
@@ -368,9 +426,9 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const m = fam === 'qwen' && conTurbo(q, imp) && !modelloTurbo(imp.modello)
       ? r(g.add('ModelSamplingFlux', { model, max_shift: 0.6935, base_shift: 0.5, width: q.larghezza, height: q.altezza }))
       : model
-    const ks = campiona(g, q, fam, m, cond, lat, q.passi)
+    const ks = campiona(g, q, fam, m, cond, lat, q.passi, 1, { w: q.larghezza, h: q.altezza })
     const mp = (q.larghezza * q.altezza) / 1048576
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), q.larghezza, q.altezza, rtx), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), q.larghezza, q.altezza, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
   }
 
@@ -379,11 +437,11 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const res = Math.round((Math.sqrt(q.megapixel) * 1024) / 32) * 32
     const d = dimensioniPer(q.megapixel, ing.immagini[0].larghezza, ing.immagini[0].altezza)
     const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico le foto')))
-    const cond = condiziona(g, fam, { clip, vae }, { prompt: q.prompt, neg, resolution: res, conVae: true, immagini: caricate, misuraPrima: d, fase: leggo })
+    const cond = condiziona(g, fam, { clip, vae }, { prompt: conRegioni(q.prompt, q, fam, true), neg, resolution: res, conVae: true, immagini: caricate, misuraPrima: d, fase: leggo })
     const lat = cond.lat ?? latenteVuota(g, fam, d.w, d.h)
-    const ks = campiona(g, q, fam, model, cond, lat, q.passi)
+    const ks = campiona(g, q, fam, model, cond, lat, q.passi, 1, d)
     const mp = (d.w * d.h) / 1048576
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), d.w, d.h, rtx), prefisso)
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), d.w, d.h, rtx), prefisso)
     const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi, area }
   }
@@ -412,8 +470,8 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const lat = codifica(g, img, vae, mp)
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
     const passi = passiPer(q.passi, forza, minimo)
-    const ks = campiona(g, q, fam, model, cond, lat, passi, forza)
-    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp), W, H, rtx), prefisso)
+    const ks = campiona(g, q, fam, model, cond, lat, passi, forza, { w: W, h: H })
+    const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), W, H, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
 
@@ -525,7 +583,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const dd = r(g.add('DifferentialDiffusion', { model, strength: 1 }))
   const forza = q.forza ?? 1
   const passi = passiPer(q.passi, forza, minimo)
-  const ks = campiona(g, q, fam, dd, cond, lat, passi, forza)
+  const ks = campiona(g, q, fam, dd, cond, lat, passi, forza, { w: box.tw, h: box.th })
   // il doppio passaggio nel VAE sposta un filo i colori: si misurano appena fuori dalla zona e si rimettono a posto
   const fatto = r(g.add('DaProdAccordaColori', { image: sviluppa(g, { ...q, trasparente: false }, ks, vae, mp), reference: grande, mask: mDura, strength: 1 }))
   const indietro = r(g.add('ImageScale', { image: fatto, upscale_method: 'lanczos', width: box.w, height: box.h, crop: 'disabled' }, 'Incollo'))

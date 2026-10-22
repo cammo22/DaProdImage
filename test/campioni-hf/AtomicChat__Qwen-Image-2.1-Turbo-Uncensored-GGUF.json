@@ -1,0 +1,88 @@
+{
+ "repo": "AtomicChat/Qwen-Image-2.1-Turbo-Uncensored-GGUF",
+ "revisione": "main",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 3179
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-AD-Q2_K.gguf",
+   "size": 3336289216,
+   "lfs": {
+    "size": 3336289216
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-AD-Q3_K.gguf",
+   "size": 4184140736,
+   "lfs": {
+    "size": 4184140736
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-AD-Q4_K.gguf",
+   "size": 5287517120,
+   "lfs": {
+    "size": 5287517120
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-AD-Q5_K.gguf",
+   "size": 6281292736,
+   "lfs": {
+    "size": 6281292736
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-AD-Q6_K.gguf",
+   "size": 7490550720,
+   "lfs": {
+    "size": 7490550720
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-BF16.gguf",
+   "size": 16388045536,
+   "lfs": {
+    "size": 16388045536
+   }
+  },
+  {
+   "type": "file",
+   "path": "Qwen-Image-2.1-Turbo-Uncensored-Q8_0.gguf",
+   "size": 8709520096,
+   "lfs": {
+    "size": 8709520096
+   }
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 12027
+  },
+  {
+   "type": "file",
+   "path": "mmproj-Qwen-Image-2.1-Turbo-Uncensored-BF16.gguf",
+   "size": 1162568928,
+   "lfs": {
+    "size": 1162568928
+   }
+  },
+  {
+   "type": "file",
+   "path": "mmproj-Qwen-Image-2.1-Turbo-Uncensored-F16.gguf",
+   "size": 1159029984,
+   "lfs": {
+    "size": 1159029984
+   }
+  }
+ ]
+}

@@ -1,0 +1,62 @@
+{
+ "repo": "Helsinki-NLP/opus-mt-it-en",
+ "revisione": "main",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 345
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 901
+  },
+  {
+   "type": "file",
+   "path": "config.json",
+   "size": 1381
+  },
+  {
+   "type": "file",
+   "path": "generation_config.json",
+   "size": 293
+  },
+  {
+   "type": "file",
+   "path": "pytorch_model.bin",
+   "size": 343642677,
+   "lfs": {
+    "size": 343642677
+   }
+  },
+  {
+   "type": "file",
+   "path": "source.spm",
+   "size": 813709
+  },
+  {
+   "type": "file",
+   "path": "target.spm",
+   "size": 789549
+  },
+  {
+   "type": "file",
+   "path": "tf_model.h5",
+   "size": 344197768,
+   "lfs": {
+    "size": 344197768
+   }
+  },
+  {
+   "type": "file",
+   "path": "tokenizer_config.json",
+   "size": 42
+  },
+  {
+   "type": "file",
+   "path": "vocab.json",
+   "size": 2369833
+  }
+ ]
+}

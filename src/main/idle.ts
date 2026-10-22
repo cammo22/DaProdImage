@@ -70,7 +70,7 @@ const TOLTI = ['qwen-image-2.1-UC-Q5_K_M.gguf', 'qwen3vl_8b_bf16.safetensors']
 export function fileInutilizzati(): FileInutile[] {
   const imp = impostazioni()
   // i file di Klein (scelti a mano o scaricati dall'app) sono in uso quanto quelli di Qwen
-  const klein = ['klein-int8', 'klein-bf16', 'klein-base-int8', 'klein-base-bf16', 'klein-te', 'klein-vae'].map((id) => risoltoSalvato(id)?.file || '')
+  const klein = ['klein-int8', 'klein-bf16', 'klein-base-int8', 'klein-base-bf16', 'klein-te', 'klein-vae', 'klein4b-fp8', 'klein4b-te', 'llm-huihui-4b'].map((id) => risoltoSalvato(id)?.file || '')
   const inUso = new Set([imp.modello, imp.encoder, imp.vae, imp.upscaler, imp.loraTurbo, imp.kleinModello, imp.kleinBase, imp.kleinEncoder, imp.kleinVae, ...klein].filter(Boolean).map((x) => x.toLowerCase()))
   const noti = new Set(statoModelli().filter((v) => !v.link).map((v) => (risoltoSalvato(v.id)?.file || v.file).toLowerCase()).filter(Boolean))
   const mmproj = (n: string): boolean => /mmproj|\.mmproj\./i.test(n)

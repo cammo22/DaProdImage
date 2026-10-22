@@ -9,7 +9,7 @@
 // I grafi di Qwen non cambiano: qwen-base manda la stessa richiesta di prima con la qualità «Alta».
 import type { Famiglia } from './tipi'
 
-export type IdModello = 'qwen-base' | 'klein' | 'klein-base'
+export type IdModello = 'qwen-base' | 'klein' | 'klein-base' | 'klein4b'
 
 export interface InfoModello {
   id: IdModello
@@ -30,12 +30,13 @@ export interface InfoModello {
 
 export const MODELLI: Record<IdModello, InfoModello> = {
   'qwen-base': { id: 'qwen-base', famiglia: 'qwen', turbo: false, passi: 40, cfg: null, nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA', lora: true, veloce: false },
-  klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 8, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '8 passi · senza CFG · il più veloce', lora: false, veloce: true },
-  'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: false, veloce: false }
+  klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 8, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '8 passi · senza CFG · il più veloce', lora: true, veloce: true },
+  'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: true, veloce: false },
+  klein4b: { id: 'klein4b', famiglia: 'klein4b', turbo: false, passi: 4, cfg: 1, nome: 'FLUX.2 Klein 4B', corto: 'Klein 4B', sotto: '4 passi · Apache-2.0 · uso commerciale libero', lora: true, veloce: true }
 }
 
 /** l'ordine delle pillole nell'interfaccia */
-export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'klein', 'klein-base']
+export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'klein', 'klein-base', 'klein4b']
 export const MODELLO_PREDEFINITO: IdModello = 'qwen-base'
 
 export const eModello = (x: unknown): x is IdModello => typeof x === 'string' && Object.prototype.hasOwnProperty.call(MODELLI, x)
@@ -44,6 +45,7 @@ export const eModello = (x: unknown): x is IdModello => typeof x === 'string' &&
 export function modelloDa(famiglia?: unknown, _turbo?: boolean): IdModello {
   if (famiglia === 'klein') return 'klein'
   if (famiglia === 'klein-base') return 'klein-base'
+  if (famiglia === 'klein4b') return 'klein4b'
   return 'qwen-base'
 }
 
@@ -69,6 +71,7 @@ export function allineaScelta(modifiche: { modelloScelto?: unknown; famiglia?: u
  *  «FLUX 3 Klein Base · file», «FLUX 3 Klein · file» o il file del denoiser di Qwen (Turbo compreso, che ora vale Qwen base) */
 export function modelloDaOpera(o: { modello?: string | null } | null | undefined): IdModello {
   const m = (o?.modello || '').trim()
+  if (/^FLUX\.2 Klein 4B\b/i.test(m)) return 'klein4b'
   if (/^FLUX 3 Klein Base\b/i.test(m)) return 'klein-base'
   if (/^FLUX 3 Klein\b/i.test(m)) return 'klein'
   return 'qwen-base'

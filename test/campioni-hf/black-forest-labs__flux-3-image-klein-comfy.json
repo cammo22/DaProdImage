@@ -1,0 +1,240 @@
+{
+ "repo": "black-forest-labs/flux-3-image-klein-comfy",
+ "revisione": "feef60b0aaf63a4773ace96636ebbcf43b881312",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 1561
+  },
+  {
+   "type": "file",
+   "path": "LICENSE.md",
+   "size": 19593
+  },
+  {
+   "type": "file",
+   "path": "NOTICE.md",
+   "size": 330
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 12005
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-base-bf16.safetensors",
+   "size": 11076957072,
+   "lfs": {
+    "size": 11076957072
+   }
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-base-int8-convrot.safetensors",
+   "size": 5807427339,
+   "lfs": {
+    "size": 5807427339
+   }
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-base-nvfp4.safetensors",
+   "size": 5257238192,
+   "lfs": {
+    "size": 5257238192
+   }
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-bf16.safetensors",
+   "size": 11097404512,
+   "lfs": {
+    "size": 11097404512
+   }
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-int8-convrot.safetensors",
+   "size": 5827874779,
+   "lfs": {
+    "size": 5827874779
+   }
+  },
+  {
+   "type": "file",
+   "path": "diffusion_models/flux3-image-klein-nvfp4.safetensors",
+   "size": 5277685632,
+   "lfs": {
+    "size": 5277685632
+   }
+  },
+  {
+   "type": "file",
+   "path": "launch-gallery.jpg",
+   "size": 6537996,
+   "lfs": {
+    "size": 6537996
+   }
+  },
+  {
+   "type": "file",
+   "path": "text_encoders/qwen3.5_9b_flux3_prompt_upsampler_bf16.safetensors",
+   "size": 18819722392,
+   "lfs": {
+    "size": 18819722392
+   }
+  },
+  {
+   "type": "file",
+   "path": "text_encoders/qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors",
+   "size": 9748113996,
+   "lfs": {
+    "size": 9748113996
+   }
+  },
+  {
+   "type": "file",
+   "path": "text_encoders/qwen3.5_9b_flux3_prompt_upsampler_w4a8.safetensors",
+   "size": 6724090780,
+   "lfs": {
+    "size": 6724090780
+   }
+  },
+  {
+   "type": "file",
+   "path": "text_encoders/qwen3vl_4b_bf16.safetensors",
+   "size": 8875719408,
+   "lfs": {
+    "size": 8875719408
+   }
+  },
+  {
+   "type": "file",
+   "path": "text_encoders/qwen3vl_4b_int8_convrot.safetensors",
+   "size": 4858559240,
+   "lfs": {
+    "size": 4858559240
+   }
+  },
+  {
+   "type": "file",
+   "path": "vae/flux2-vae.safetensors",
+   "size": 336211292,
+   "lfs": {
+    "size": 336211292
+   }
+  },
+  {
+   "type": "file",
+   "path": "workflows/LICENSE.upstream",
+   "size": 1074
+  },
+  {
+   "type": "file",
+   "path": "workflows/README.md",
+   "size": 1433
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_bf16_i2i.json",
+   "size": 109041
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_bf16_mi2i.json",
+   "size": 116057
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_bf16_t2i.json",
+   "size": 84832
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_int8_i2i.json",
+   "size": 109227
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_int8_mi2i.json",
+   "size": 116243
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_base_int8_t2i.json",
+   "size": 85018
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_bf16_i2i.json",
+   "size": 107949
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_bf16_mi2i.json",
+   "size": 114965
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_bf16_t2i.json",
+   "size": 83740
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_int8_i2i.json",
+   "size": 108135
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_int8_mi2i.json",
+   "size": 115151
+  },
+  {
+   "type": "file",
+   "path": "workflows/flux3_klein_int8_t2i.json",
+   "size": 83926
+  },
+  {
+   "type": "file",
+   "path": "workflows/klein_ref_autumn_forest.jpg",
+   "size": 1213947,
+   "lfs": {
+    "size": 1213947
+   }
+  },
+  {
+   "type": "file",
+   "path": "workflows/klein_ref_great_wave.jpg",
+   "size": 1348397,
+   "lfs": {
+    "size": 1348397
+   }
+  },
+  {
+   "type": "file",
+   "path": "workflows/klein_ref_green_doors.jpg",
+   "size": 1283633,
+   "lfs": {
+    "size": 1283633
+   }
+  },
+  {
+   "type": "file",
+   "path": "workflows/klein_ref_toast.jpg",
+   "size": 1166604,
+   "lfs": {
+    "size": 1166604
+   }
+  },
+  {
+   "type": "file",
+   "path": "workflows/klein_ref_woman_hat.jpg",
+   "size": 589087,
+   "lfs": {
+    "size": 589087
+   }
+  }
+ ]
+}

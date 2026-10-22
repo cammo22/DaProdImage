@@ -5,7 +5,7 @@
 //
 // Esecuzione: node --experimental-strip-types test/confronta_grafi.mjs
 import { join, dirname } from 'node:path'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -23,6 +23,8 @@ function normalizza(sorgente) {
     "constructor(readonly memoria: Memoria = 'normale') {}",
     "memoria: Memoria = 'normale'\n  constructor(memoria: Memoria = 'normale') { this.memoria = memoria }"
   )
+  // il regional prompting (regioni.ts) sta in un file a parte: si copia accanto e si importa con l'estensione
+  s = s.replace("from './regioni'", "from './regioni.ts'")
   return s
 }
 
@@ -36,6 +38,7 @@ function estrai(commit) {
   return percorso
 }
 
+copyFileSync(join(REPO, 'src', 'main', 'motore', 'regioni.ts'), join(TEMP, 'regioni.ts'))
 const moduloVecchio = await import(pathToFileURL(estrai(OLD_COMMIT)).href)
 const moduloNuovo = await import(pathToFileURL(estrai('HEAD')).href)
 
