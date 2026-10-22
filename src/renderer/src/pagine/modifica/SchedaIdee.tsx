@@ -9,6 +9,8 @@ import { AvvisoLora } from '../../componenti/AvvisoLora'
 import { ControlloCamera } from '../../componenti/Camera'
 import { Pianeti, Tessera, Tessere } from '../../componenti/Tessere'
 import { IntensitaStile, ScaffaliStili } from '../../componenti/ScaffaliStili'
+import { ControlliCategoria } from '../../componenti/ControlliCategoria'
+import { controlliDi, prefissoIdea, rapidaVisibile } from '../../controlli'
 import { FANTASIE } from '../../regista'
 import { iconaRapida } from '../../iconeRapide'
 import { frasiStileModifica, stileDa, type Intensita } from '../../stili'
@@ -24,7 +26,7 @@ export function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, 
   /** quante idee attive ci sono in una categoria (la pallina luminosa sulla tessera) */
   const quante = (id: string): number => {
     if (id === 'stili') return idee.filter((r) => r.id.startsWith(ID_STILE)).length
-    return idee.filter((r) => categorie.find((c) => c.id === id)?.voci.some((v) => v.id === r.id)).length
+    return idee.filter((r) => categorie.find((c) => c.id === id)?.voci.some((v) => v.id === r.id) || (r.id.startsWith('ctl-') && controlliDi(id).some((c) => r.id.startsWith(prefissoIdea(c.id))))).length
   }
   const scegliStile = (id: string): void => {
     const senza = idee.filter((r) => !r.id.startsWith(ID_STILE))
@@ -58,6 +60,8 @@ export function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, 
       )}
       {cat && cat.id === 'vestiti' && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-vestiti" perche="Tiene volto, pose e sfondo mentre cambia il vestito. Si accende da solo qui." /></div>}
 
+      {cat && cat.id !== 'stili' && <ControlliCategoria categoria={cat.id} idee={idee} setIdee={setIdee} />}
+
       {cat && cat.id === 'stili' ? (
         <div style={{ marginTop: 12 }}>
           <ScaffaliStili valore={stileAttivo} scegli={scegliStile} />
@@ -66,7 +70,7 @@ export function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, 
       ) : (
         <div style={{ marginTop: 10 }}>
           <Tessere colonne={4}>
-            {cat?.voci.map((r) => {
+            {cat?.voci.filter(rapidaVisibile).map((r) => {
               const x = iconaRapida(r)
               return (
                 <Tessera

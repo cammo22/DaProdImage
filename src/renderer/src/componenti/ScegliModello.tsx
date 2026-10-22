@@ -143,8 +143,7 @@ export function SelettoreModello({ variante = 'pillole' }: { variante?: 'pillole
   )
 }
 
-/** Il vecchio selettore a schede dentro Crea, Estrai e Modifica: ora il modello si sceglie nella barra in alto (`SelettoreModello`).
- *  Resta vuoto (e il `.sezione:empty` in stile.css lo nasconde) finché Modifica.tsx non ne toglie la riga (T6). */
-export function ScegliModello(): null {
-  return null
+/** Lo stesso selettore di Crea, anche nel pannello di Modifica. */
+export function ScegliModello(): JSX.Element {
+  return <><h3>Motore</h3><SelettoreModello variante="tessere" /></>
 }

@@ -292,3 +292,21 @@ body.meno-movimento .palco::before { animation: none; }
 .modi-modifica { display: flex; gap: 6px; }
 .modi-modifica .tessera-o { flex-direction: row; min-height: 36px; padding: 0 14px 0 10px; gap: 8px; font-size: 14px; }
 .modi-modifica .tessera-o .ic { width: 22px; height: 22px; } .modi-modifica .tessera-o .ic svg { width: 20px; height: 20px; }
+
+/* ---------- Modifica: i controlli interattivi per categoria (cursori, campioni colore, quadrante) ---------- */
+.controlli-cat { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.ctl { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--bordo-vetro, rgba(255, 255, 255, 0.08)); }
+.ctl-testa { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--stella); }
+.ctl-cursore { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+.ctl-cursore input[type=range] { width: 100%; accent-color: var(--oro, #ffd54a); }
+.ctl-cursore .estremo { font-size: 16px; line-height: 1; }
+.ctl-cursore .valore { grid-column: 1 / -1; text-align: center; font-size: 12px; }
+.campioni { display: flex; flex-wrap: wrap; gap: 6px; }
+.campione { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); cursor: pointer; padding: 0; }
+.campione:hover { transform: scale(1.12); }
+.campione.su { border-color: #fff; box-shadow: 0 0 0 2px var(--nebulosa, #8b5cf6), 0 0 12px rgba(255, 255, 255, 0.4); }
+.quadrante { display: grid; grid-template-columns: repeat(3, 38px); grid-auto-rows: 38px; gap: 4px; align-self: flex-start; }
+.quadrante .cella { display: grid; place-items: center; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); color: var(--stella); font-size: 15px; cursor: pointer; padding: 0; }
+.quadrante .cella.su { background: var(--nebulosa, #8b5cf6); color: #fff; border-color: transparent; }
+.quadrante .cella.soggetto { cursor: default; opacity: 0.4; border-style: dashed; }
+@media (prefers-reduced-motion: reduce) { .campione:hover { transform: none; } }

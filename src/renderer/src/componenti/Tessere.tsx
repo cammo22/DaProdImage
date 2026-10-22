@@ -28,7 +28,7 @@ export function Tessera(p: PropsTessera): JSX.Element {
   const larga = p.sotto !== undefined
   const classe = ['tessera-o', larga ? 'larga' : '', p.fondo ? 'anteprima' : '', p.su ? 'su' : '', p.daScaricare ? 'da-scaricare' : '', p.uncensored ? 'fiamma' : '', p.disabilitata ? 'spenta' : ''].filter(Boolean).join(' ')
   return (
-    <button type="button" className={classe} onClick={p.disabilitata ? undefined : p.onClick} title={p.titolo || p.nome} aria-pressed={p.su} aria-label={p.nome} data-id={p.id}>
+    <button type="button" className={classe} disabled={p.disabilitata} onClick={p.onClick} title={p.titolo || p.nome} aria-pressed={p.su} aria-label={p.nome} data-id={p.id}>
       {p.fondo && <span className="fondo" style={{ background: p.fondo }} />}
       <span className="ic">{p.icona}</span>
       {larga ? (
@@ -79,7 +79,7 @@ export function Pianeti<T extends string | number>(p: { valore: T; voci: { id: T
     <div>
       <div className="pianeti" role="radiogroup">
         {p.voci.map((v) => (
-          <button key={String(v.id)} type="button" role="radio" aria-checked={v.id === p.valore} className={v.id === p.valore ? 'su' : ''} onClick={() => p.cambia(v.id)} title={v.titolo || v.nome}>
+          <button key={String(v.id)} type="button" role="radio" aria-label={v.nome} aria-checked={v.id === p.valore} className={v.id === p.valore ? 'su' : ''} onClick={() => p.cambia(v.id)} title={v.titolo || v.nome}>
             {v.nome.slice(0, 1)}
           </button>
         ))}

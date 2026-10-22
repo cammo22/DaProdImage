@@ -56,7 +56,7 @@ export function StripModi(): JSX.Element {
       <span className="pillola-motore" title="Il modello che disegna: si sceglie nel pannello a sinistra, in «Motore»">
         <I.chip /> Motore <b>{m.nome}</b>
       </span>
-      {(imp?.famiglia || 'qwen') === 'qwen' && (
+      {(
         <button type="button" className="pillola-motore" onClick={() => vai('lora')} title="La pila dei LoRA accesi: forza, ordine, parole chiave">
           <I.pila /> LoRA <b>{nLora}</b>
         </button>
