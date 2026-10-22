@@ -7,6 +7,7 @@ import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
+import { LaboratorioUncensored, type VoceLaboratorio } from '../componenti/LaboratorioUncensored'
 
 const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
@@ -24,7 +25,7 @@ export function Impostazioni(): JSX.Element {
 function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
   const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
-  const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
+  const [catalogo, setCatalogo] = useState<VoceLaboratorio[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
   const [log, setLog] = useState<string[]>([])
   const [versione, setVersione] = useState('')
@@ -104,6 +105,7 @@ function OpzioniGenerali(): JSX.Element {
   return (
     <div className="pagina">
       <div className="impostazioni">
+        <LaboratorioUncensored imp={imp} catalogo={catalogo} download={download} salva={salva} scarica={scarica} />
         <div className="gruppo">
           <h2 className="chiudibile" onClick={() => alterna('MODELLI IN USO')}>{chiusi['MODELLI IN USO'] ? '▸' : '▾'} MODELLI IN USO</h2>
           <div className="pannello" style={chiusi['MODELLI IN USO'] ? { display: 'none' } : undefined}>
@@ -130,7 +132,7 @@ function OpzioniGenerali(): JSX.Element {
           <h2 className="chiudibile" onClick={() => alterna('SCARICA ALTRI MODELLI')}>{chiusi['SCARICA ALTRI MODELLI'] ? '▸' : '▾'} SCARICA ALTRI MODELLI</h2>
           <div className="pannello" style={chiusi['SCARICA ALTRI MODELLI'] ? { display: 'none' } : undefined}>
             {GRUPPI_MODELLI.map(([tipo, titolo]) => {
-              const voci = catalogo.filter((v) => v.tipo === tipo)
+              const voci = catalogo.filter((v) => v.tipo === tipo && !v.uncensored)
               if (!voci.length) return null
               return (
                 <details key={tipo} className="tipo-modelli" open={tipo === 'traduttore'}>
