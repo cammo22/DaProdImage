@@ -182,6 +182,3051 @@
       "secondi": 6.0,
       "sha256_16": "4730af2b50ed2d23",
       "byte": 31778
+    },
+    "tessera/vestiti": {
+      "id": "tessera/vestiti",
+      "gruppo": "tessera",
+      "file": "tessera/vestiti.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a folded jacket and a hanger floating in space, fabric with soft gloss, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:53:10",
+      "secondi": 10.1,
+      "sha256_16": "11bc552c633b3188",
+      "byte": 18520
+    },
+    "tessera/situazioni": {
+      "id": "tessera/situazioni",
+      "gruppo": "tessera",
+      "file": "tessera/situazioni.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing globe showing mountains and a sunrise on its edge, tiny landscape, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:53:21",
+      "secondi": 8.0,
+      "sha256_16": "70ea369586acdbfc",
+      "byte": 18928
+    },
+    "tessera/prospettiva": {
+      "id": "tessera/prospettiva",
+      "gruppo": "tessera",
+      "file": "tessera/prospettiva.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a camera lens with orbiting rings around it, perspective grid lines, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:53:32",
+      "secondi": 8.1,
+      "sha256_16": "79fc6ef637e81975",
+      "byte": 25346
+    },
+    "tessera/luce-colore": {
+      "id": "tessera/luce-colore",
+      "gruppo": "tessera",
+      "file": "tessera/luce-colore.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glass prism splitting white light into a rainbow of violet, magenta, cyan and gold, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:53:42",
+      "secondi": 8.0,
+      "sha256_16": "664ed5b8393adb06",
+      "byte": 13824
+    },
+    "tessera/stili": {
+      "id": "tessera/stili",
+      "gruppo": "tessera",
+      "file": "tessera/stili.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a paint palette with a brush and a swirl of paint, floating, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:53:53",
+      "secondi": 8.1,
+      "sha256_16": "d6948bbcfdf18a99",
+      "byte": 21006
+    },
+    "tessera/testi": {
+      "id": "tessera/testi",
+      "gruppo": "tessera",
+      "file": "tessera/testi.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, floating letter blocks, a glowing letter T and an O, typographic cubes, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:03",
+      "secondi": 8.1,
+      "sha256_16": "18c192fb1b78a69a",
+      "byte": 16638
+    },
+    "tessera/ritocco": {
+      "id": "tessera/ritocco",
+      "gruppo": "tessera",
+      "file": "tessera/ritocco.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a retouching brush with a soft glowing sparkle, healing light, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:14",
+      "secondi": 8.0,
+      "sha256_16": "36e4d8a2b7287e98",
+      "byte": 21276
+    },
+    "tessera/espandi": {
+      "id": "tessera/espandi",
+      "gruppo": "tessera",
+      "file": "tessera/espandi.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing frame expanding outward with arrows, stars around it, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:24",
+      "secondi": 7.2,
+      "sha256_16": "b966a8feacc0d942",
+      "byte": 22092
+    },
+    "modi/crea": {
+      "id": "modi/crea",
+      "gruppo": "modi",
+      "file": "modi/crea.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing four-point star sparkle, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:33",
+      "secondi": 8.0,
+      "sha256_16": "3ccf1e26f9946ef7",
+      "byte": 8164
+    },
+    "modi/modifica": {
+      "id": "modi/modifica",
+      "gruppo": "modi",
+      "file": "modi/modifica.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing pen nib drawing a light trail, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:41",
+      "secondi": 7.0,
+      "sha256_16": "64acf81a932de8e6",
+      "byte": 6604
+    },
+    "modi/box": {
+      "id": "modi/box",
+      "gruppo": "modi",
+      "file": "modi/box.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a floating glowing rectangle frame with corner handles, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:50",
+      "secondi": 7.3,
+      "sha256_16": "ec2df88b4d3ed2eb",
+      "byte": 6808
+    },
+    "modi/ricette": {
+      "id": "modi/ricette",
+      "gruppo": "modi",
+      "file": "modi/ricette.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing lightning bolt inside a rounded tile, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1111,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:54:59",
+      "secondi": 8.0,
+      "sha256_16": "a63a3cb472715685",
+      "byte": 4822
+    },
+    "generi/foto": {
+      "id": "generi/foto",
+      "gruppo": "generi",
+      "file": "generi/foto.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a vintage film camera, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:55:10",
+      "secondi": 8.0,
+      "sha256_16": "8d4c22b35f8ff514",
+      "byte": 19442
+    },
+    "generi/ritratto": {
+      "id": "generi/ritratto",
+      "gruppo": "generi",
+      "file": "generi/ritratto.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a classic oval portrait frame with a silhouette, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:55:20",
+      "secondi": 8.1,
+      "sha256_16": "dbb9b7b50d14ffd9",
+      "byte": 16104
+    },
+    "generi/prodotto": {
+      "id": "generi/prodotto",
+      "gruppo": "generi",
+      "file": "generi/prodotto.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glossy perfume bottle, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:55:31",
+      "secondi": 8.2,
+      "sha256_16": "3d2ec218f22797e3",
+      "byte": 13466
+    },
+    "generi/poster": {
+      "id": "generi/poster",
+      "gruppo": "generi",
+      "file": "generi/poster.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a rolled poster with a film reel, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:55:42",
+      "secondi": 8.0,
+      "sha256_16": "3ff60af1f0025dab",
+      "byte": 17080
+    },
+    "generi/infografica": {
+      "id": "generi/infografica",
+      "gruppo": "generi",
+      "file": "generi/infografica.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a pie chart and a bar chart floating, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:55:52",
+      "secondi": 8.1,
+      "sha256_16": "1e0ea88b310ed4a5",
+      "byte": 9212
+    },
+    "generi/logo": {
+      "id": "generi/logo",
+      "gruppo": "generi",
+      "file": "generi/logo.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a glowing abstract emblem shield, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:03",
+      "secondi": 8.1,
+      "sha256_16": "791c0621b3b7f5f4",
+      "byte": 16550
+    },
+    "generi/social": {
+      "id": "generi/social",
+      "gruppo": "generi",
+      "file": "generi/social.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a smartphone with a heart and a thumbs up, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:13",
+      "secondi": 8.0,
+      "sha256_16": "d0e755c731d7961e",
+      "byte": 12020
+    },
+    "generi/miniatura": {
+      "id": "generi/miniatura",
+      "gruppo": "generi",
+      "file": "generi/miniatura.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a play button over a video frame, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:23",
+      "secondi": 7.3,
+      "sha256_16": "f7e24213fec5b87d",
+      "byte": 15494
+    },
+    "generi/fumetto": {
+      "id": "generi/fumetto",
+      "gruppo": "generi",
+      "file": "generi/fumetto.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a comic speech bubble with a burst, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:33",
+      "secondi": 8.0,
+      "sha256_16": "cc6499ed6e450b5b",
+      "byte": 10166
+    },
+    "generi/invito": {
+      "id": "generi/invito",
+      "gruppo": "generi",
+      "file": "generi/invito.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, an envelope with a wax seal, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:44",
+      "secondi": 8.0,
+      "sha256_16": "396238896ae9faa1",
+      "byte": 13818
+    },
+    "generi/menu": {
+      "id": "generi/menu",
+      "gruppo": "generi",
+      "file": "generi/menu.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a restaurant menu card with a fork and a spoon, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:56:55",
+      "secondi": 8.0,
+      "sha256_16": "83df4f02c06489d3",
+      "byte": 17262
+    },
+    "generi/libero": {
+      "id": "generi/libero",
+      "gruppo": "generi",
+      "file": "generi/libero.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a blank canvas with a glowing sparkle, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1212,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:57:06",
+      "secondi": 8.0,
+      "sha256_16": "09a464b55e918a58",
+      "byte": 17100
+    },
+    "sfondi/nebulosa-calda": {
+      "id": "sfondi/nebulosa-calda",
+      "gruppo": "sfondi",
+      "file": "sfondi/nebulosa-calda.webp",
+      "misura": [
+        2560,
+        1440
+      ],
+      "generato": [
+        2560,
+        1440
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, warm nebula in gold and magenta with faint stars, open space in the center-left",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:57:39",
+      "secondi": 32.2,
+      "sha256_16": "4a20a35fc8768c3a",
+      "byte": 124162
+    },
+    "sfondi/stelle": {
+      "id": "sfondi/stelle",
+      "gruppo": "sfondi",
+      "file": "sfondi/stelle.webp",
+      "misura": [
+        1024,
+        1024
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "sparse small white and gold stars, tiny bright points, seamless",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": "luce",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:58:01",
+      "secondi": 8.1,
+      "sha256_16": "881fcda4c32a23e4",
+      "byte": 1243602
+    },
+    "sfondi/aurora": {
+      "id": "sfondi/aurora",
+      "gruppo": "sfondi",
+      "file": "sfondi/aurora.webp",
+      "misura": [
+        1600,
+        400
+      ],
+      "generato": [
+        2048,
+        512
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, aurora borealis ribbons in cyan, violet and gold over a dark horizon, wide panoramic banner",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:58:09",
+      "secondi": 8.0,
+      "sha256_16": "0a6a786d7e7bb86f",
+      "byte": 28574
+    },
+    "sfondi/hero-pianeta": {
+      "id": "sfondi/hero-pianeta",
+      "gruppo": "sfondi",
+      "file": "sfondi/hero-pianeta.webp",
+      "misura": [
+        2560,
+        1440
+      ],
+      "generato": [
+        2560,
+        1440
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a large planet with glowing atmosphere in the lower left corner, dark space, cinematic, isolated on plain dark background",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:58:49",
+      "secondi": 32.3,
+      "sha256_16": "d796fd62bdd47abf",
+      "byte": 328254
+    },
+    "sfondi/setup-pianeta": {
+      "id": "sfondi/setup-pianeta",
+      "gruppo": "sfondi",
+      "file": "sfondi/setup-pianeta.webp",
+      "misura": [
+        2560,
+        1440
+      ],
+      "generato": [
+        2560,
+        1440
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a planet with rings in the lower left, glowing atmosphere, dark space, cinematic",
+      "negativo": "",
+      "seme": 2026,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:21",
+      "secondi": 32.2,
+      "sha256_16": "371c8ee82f09187b",
+      "byte": 65696
+    },
+    "ricette/mondi": {
+      "id": "ricette/mondi",
+      "gruppo": "ricette",
+      "file": "ricette/mondi.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, the same city street in several parallel worlds, a grid of four glowing portal windows",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:28",
+      "secondi": 6.0,
+      "sha256_16": "e0e6b563960bd1bf",
+      "byte": 36384
+    },
+    "ricette/mix": {
+      "id": "ricette/mix",
+      "gruppo": "ricette",
+      "file": "ricette/mix.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, several floating photo cards merging into one glowing card, collage of mixed elements",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:34",
+      "secondi": 6.0,
+      "sha256_16": "6cee19ead1ada93d",
+      "byte": 24792
+    },
+    "ricette/set": {
+      "id": "ricette/set",
+      "gruppo": "ricette",
+      "file": "ricette/set.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, a neat row of sticker icons: a rocket, a planet, a star and a heart",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:40",
+      "secondi": 6.0,
+      "sha256_16": "85cc540fde1fd7aa",
+      "byte": 18514
+    },
+    "ricette/formati": {
+      "id": "ricette/formati",
+      "gruppo": "ricette",
+      "file": "ricette/formati.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, a poster frame, a phone frame and a square frame side by side, glowing outlines",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:46",
+      "secondi": 6.1,
+      "sha256_16": "3e64e04bc9b7d676",
+      "byte": 17976
+    },
+    "ricette/rinnova": {
+      "id": "ricette/rinnova",
+      "gruppo": "ricette",
+      "file": "ricette/rinnova.webp",
+      "misura": [
+        512,
+        320
+      ],
+      "generato": [
+        1024,
+        640
+      ],
+      "prompt": "stylized 3D illustration, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, clean composition, no text, an old faded photograph turning into a sharp glowing photo, restoration sparkle",
+      "negativo": "",
+      "seme": 3131,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:52",
+      "secondi": 6.0,
+      "sha256_16": "4771134a64a35c43",
+      "byte": 20462
+    },
+    "stili/cinema-anam": {
+      "id": "stili/cinema-anam",
+      "gruppo": "stili",
+      "file": "stili/cinema-anam.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, cinematic still, anamorphic lens flares, oval bokeh, rich color grade, 2.39:1 feel, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T18:59:58",
+      "secondi": 6.1,
+      "sha256_16": "24a64d58e08d83b3",
+      "byte": 12816
+    },
+    "stili/flash-y2k": {
+      "id": "stili/flash-y2k",
+      "gruppo": "stili",
+      "file": "stili/flash-y2k.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, direct on-camera flash, early-2000s compact digital camera look, harsh highlights, candid party snapshot, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:03",
+      "secondi": 5.1,
+      "sha256_16": "05a154c3067ef7cf",
+      "byte": 14578
+    },
+    "stili/pellicola35": {
+      "id": "stili/pellicola35",
+      "gruppo": "stili",
+      "file": "stili/pellicola35.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, shot on 35mm film, visible grain, soft halation, faded blacks, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:10",
+      "secondi": 6.0,
+      "sha256_16": "c8e4d05b9809bfa0",
+      "byte": 13612
+    },
+    "stili/moda-editoriale": {
+      "id": "stili/moda-editoriale",
+      "gruppo": "stili",
+      "file": "stili/moda-editoriale.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, high-fashion editorial photography, studio strobes, bold color blocking, magazine cover composition, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:16",
+      "secondi": 6.0,
+      "sha256_16": "9344d3d1b6ed806b",
+      "byte": 19232
+    },
+    "stili/polaroid": {
+      "id": "stili/polaroid",
+      "gruppo": "stili",
+      "file": "stili/polaroid.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, instant film photo, white frame, soft focus, washed warm tones, light leaks, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:21",
+      "secondi": 5.5,
+      "sha256_16": "fde6ee533c2b254b",
+      "byte": 7670
+    },
+    "stili/notte-neon": {
+      "id": "stili/notte-neon",
+      "gruppo": "stili",
+      "file": "stili/notte-neon.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, night street photography, wet asphalt reflections, magenta and cyan neon signage, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:27",
+      "secondi": 6.0,
+      "sha256_16": "71baee80ebf3918c",
+      "byte": 24802
+    },
+    "stili/documentario": {
+      "id": "stili/documentario",
+      "gruppo": "stili",
+      "file": "stili/documentario.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, gritty documentary photograph, available light, slightly desaturated, imperfect framing, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:33",
+      "secondi": 5.4,
+      "sha256_16": "892cb3eba233d36b",
+      "byte": 13344
+    },
+    "stili/acquerello-film": {
+      "id": "stili/acquerello-film",
+      "gruppo": "stili",
+      "file": "stili/acquerello-film.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, hand-painted watercolor animation background, soft gradients, gentle clouds, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:39",
+      "secondi": 6.0,
+      "sha256_16": "cd5563ecb147d2a6",
+      "byte": 18160
+    },
+    "stili/manga-inchiostro": {
+      "id": "stili/manga-inchiostro",
+      "gruppo": "stili",
+      "file": "stili/manga-inchiostro.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, black and white manga, screentones, dynamic inked lines, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:44",
+      "secondi": 5.4,
+      "sha256_16": "a004e5a3e448bbac",
+      "byte": 37172
+    },
+    "stili/gouache": {
+      "id": "stili/gouache",
+      "gruppo": "stili",
+      "file": "stili/gouache.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, contemporary gouache illustration, flat shapes, rich matte colors, subtle paper texture, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:49",
+      "secondi": 5.0,
+      "sha256_16": "e6ac3ccde775a052",
+      "byte": 21256
+    },
+    "stili/risograph": {
+      "id": "stili/risograph",
+      "gruppo": "stili",
+      "file": "stili/risograph.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, two-color risograph print, grainy overprint, misregistration, limited palette, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:00:55",
+      "secondi": 5.4,
+      "sha256_16": "de51142242046827",
+      "byte": 20276
+    },
+    "stili/collage": {
+      "id": "stili/collage",
+      "gruppo": "stili",
+      "file": "stili/collage.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, cut-paper collage, layered torn paper edges, mixed textures, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:01",
+      "secondi": 6.0,
+      "sha256_16": "d99e344203e4c90c",
+      "byte": 21290
+    },
+    "stili/linea": {
+      "id": "stili/linea",
+      "gruppo": "stili",
+      "file": "stili/linea.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, minimal single continuous line drawing on white, a touch of color, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:07",
+      "secondi": 6.1,
+      "sha256_16": "baa2102383618f53",
+      "byte": 18994
+    },
+    "stili/soft3d": {
+      "id": "stili/soft3d",
+      "gruppo": "stili",
+      "file": "stili/soft3d.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, soft 3D render, rounded shapes, pastel studio light, subsurface scattering, friendly character look, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:13",
+      "secondi": 6.0,
+      "sha256_16": "b2bfcf5364a9c404",
+      "byte": 15016
+    },
+    "stili/plastilina": {
+      "id": "stili/plastilina",
+      "gruppo": "stili",
+      "file": "stili/plastilina.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, stop-motion claymation, visible fingerprints, handmade imperfections, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:19",
+      "secondi": 6.0,
+      "sha256_16": "08fc493b0588be82",
+      "byte": 14878
+    },
+    "stili/vinile": {
+      "id": "stili/vinile",
+      "gruppo": "stili",
+      "file": "stili/vinile.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, designer vinyl toy, glossy plastic, seam lines, studio product shot, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:26",
+      "secondi": 6.0,
+      "sha256_16": "3b023deaba6e7197",
+      "byte": 20350
+    },
+    "stili/diorama": {
+      "id": "stili/diorama",
+      "gruppo": "stili",
+      "file": "stili/diorama.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, isometric miniature diorama, tilt-shift, clean cube base, soft shadows, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:32",
+      "secondi": 6.0,
+      "sha256_16": "c8bad91a212f9eb1",
+      "byte": 10356
+    },
+    "stili/mattoncini": {
+      "id": "stili/mattoncini",
+      "gruppo": "stili",
+      "file": "stili/mattoncini.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, scene built of interlocking plastic bricks and minifigures, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:38",
+      "secondi": 6.0,
+      "sha256_16": "84bb1d2473a7a588",
+      "byte": 26882
+    },
+    "stili/chrome": {
+      "id": "stili/chrome",
+      "gruppo": "stili",
+      "file": "stili/chrome.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, chrome blobject, reflective metal, hyperreal studio HDRI, early-2000s futurism, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:44",
+      "secondi": 6.0,
+      "sha256_16": "8bdc029c3cfc253c",
+      "byte": 21750
+    },
+    "stili/cyberpunk": {
+      "id": "stili/cyberpunk",
+      "gruppo": "stili",
+      "file": "stili/cyberpunk.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, dense neon cityscape, holograms, rain, high contrast magenta/teal, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:50",
+      "secondi": 6.1,
+      "sha256_16": "30ac282d323b276e",
+      "byte": 29260
+    },
+    "stili/synthwave": {
+      "id": "stili/synthwave",
+      "gruppo": "stili",
+      "file": "stili/synthwave.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, retro-futuristic 80s sunset grid, chrome lettering, purple-pink gradient sky, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:01:56",
+      "secondi": 6.0,
+      "sha256_16": "2307b78bf648c21e",
+      "byte": 21718
+    },
+    "stili/aura": {
+      "id": "stili/aura",
+      "gruppo": "stili",
+      "file": "stili/aura.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, soft airbrushed aura gradients, grain, glowing blurred shapes, dreamy abstract, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:02",
+      "secondi": 6.0,
+      "sha256_16": "6016c192a38fbc83",
+      "byte": 16320
+    },
+    "stili/pixel": {
+      "id": "stili/pixel",
+      "gruppo": "stili",
+      "file": "stili/pixel.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, detailed 32-bit pixel art, limited palette, dithering, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:09",
+      "secondi": 6.0,
+      "sha256_16": "354f30e28c30b95f",
+      "byte": 31740
+    },
+    "stili/spaziale60": {
+      "id": "stili/spaziale60",
+      "gruppo": "stili",
+      "file": "stili/spaziale60.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, 1960s space-age illustration, atomic shapes, retro NASA poster palette, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:15",
+      "secondi": 6.1,
+      "sha256_16": "fdc0cf621f70e31b",
+      "byte": 28570
+    },
+    "stili/solarpunk": {
+      "id": "stili/solarpunk",
+      "gruppo": "stili",
+      "file": "stili/solarpunk.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, solarpunk utopia, lush green architecture, warm sunlight, art nouveau curves, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:21",
+      "secondi": 6.0,
+      "sha256_16": "333456a26cea05cd",
+      "byte": 24116
+    },
+    "stili/svizzero": {
+      "id": "stili/svizzero",
+      "gruppo": "stili",
+      "file": "stili/svizzero.webp",
+      "misura": [
+        320,
+        320
+      ],
+      "generato": [
+        768,
+        768
+      ],
+      "prompt": "a young woman in a red scarf holding a coffee cup on a city street at sunset, Swiss international typographic poster, strong grid, flat color, bold sans-serif, full frame, no black bars",
+      "negativo": "",
+      "seme": 4242,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:26",
+      "secondi": 5.0,
+      "sha256_16": "dc9d9fcbbe30f9e7",
+      "byte": 34156
+    },
+    "luoghi/citta": {
+      "id": "luoghi/citta",
+      "gruppo": "luoghi",
+      "file": "luoghi/citta.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized city at dusk",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:34",
+      "secondi": 8.1,
+      "sha256_16": "9515c0082818310f",
+      "byte": 2950
+    },
+    "luoghi/spiaggia": {
+      "id": "luoghi/spiaggia",
+      "gruppo": "luoghi",
+      "file": "luoghi/spiaggia.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized tropical beach",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:42",
+      "secondi": 8.0,
+      "sha256_16": "ebc18eb853fe5b9b",
+      "byte": 4574
+    },
+    "luoghi/montagna": {
+      "id": "luoghi/montagna",
+      "gruppo": "luoghi",
+      "file": "luoghi/montagna.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized snowy mountain",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:50",
+      "secondi": 7.4,
+      "sha256_16": "a93833bd5fbc5d78",
+      "byte": 3906
+    },
+    "luoghi/bosco": {
+      "id": "luoghi/bosco",
+      "gruppo": "luoghi",
+      "file": "luoghi/bosco.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized forest with glowing fireflies",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:02:58",
+      "secondi": 8.1,
+      "sha256_16": "ad2e5e892efeda8d",
+      "byte": 4742
+    },
+    "luoghi/deserto": {
+      "id": "luoghi/deserto",
+      "gruppo": "luoghi",
+      "file": "luoghi/deserto.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized desert with dunes",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:06",
+      "secondi": 8.0,
+      "sha256_16": "814f5f087544763f",
+      "byte": 2474
+    },
+    "luoghi/interno": {
+      "id": "luoghi/interno",
+      "gruppo": "luoghi",
+      "file": "luoghi/interno.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized cozy room interior",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:14",
+      "secondi": 8.0,
+      "sha256_16": "3f27e1004abc21b8",
+      "byte": 4068
+    },
+    "luoghi/studio-bianco": {
+      "id": "luoghi/studio-bianco",
+      "gruppo": "luoghi",
+      "file": "luoghi/studio-bianco.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, an empty white photo studio with a softbox light",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:22",
+      "secondi": 8.1,
+      "sha256_16": "bbf1bd6aa23dbb9f",
+      "byte": 2138
+    },
+    "luoghi/spazio": {
+      "id": "luoghi/spazio",
+      "gruppo": "luoghi",
+      "file": "luoghi/spazio.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized space station view",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:30",
+      "secondi": 8.0,
+      "sha256_16": "c5e15054ab53aeff",
+      "byte": 3450
+    },
+    "luoghi/sott-acqua": {
+      "id": "luoghi/sott-acqua",
+      "gruppo": "luoghi",
+      "file": "luoghi/sott-acqua.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized underwater coral reef, light rays",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:38",
+      "secondi": 7.3,
+      "sha256_16": "10a75f362398a67c",
+      "byte": 5134
+    },
+    "luoghi/futuro": {
+      "id": "luoghi/futuro",
+      "gruppo": "luoghi",
+      "file": "luoghi/futuro.webp",
+      "misura": [
+        160,
+        160
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a miniature 3D stylized futuristic city of glass towers",
+      "negativo": "",
+      "seme": 5151,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:46",
+      "secondi": 8.1,
+      "sha256_16": "82f1a6abad44c788",
+      "byte": 4382
+    },
+    "meteo/sole": {
+      "id": "meteo/sole",
+      "gruppo": "meteo",
+      "file": "meteo/sole.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a bright sun, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:03:55",
+      "secondi": 8.0,
+      "sha256_16": "c9c839625af4121c",
+      "byte": 6868
+    },
+    "meteo/nuvole": {
+      "id": "meteo/nuvole",
+      "gruppo": "meteo",
+      "file": "meteo/nuvole.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, fluffy clouds, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:03",
+      "secondi": 7.0,
+      "sha256_16": "d5685d0336b95d19",
+      "byte": 7758
+    },
+    "meteo/pioggia": {
+      "id": "meteo/pioggia",
+      "gruppo": "meteo",
+      "file": "meteo/pioggia.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a cloud with rain drops, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:11",
+      "secondi": 7.4,
+      "sha256_16": "04349875f700d14d",
+      "byte": 4816
+    },
+    "meteo/neve": {
+      "id": "meteo/neve",
+      "gruppo": "meteo",
+      "file": "meteo/neve.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a cloud with snowflakes, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:20",
+      "secondi": 8.0,
+      "sha256_16": "0a8a840eab176879",
+      "byte": 5440
+    },
+    "meteo/nebbia": {
+      "id": "meteo/nebbia",
+      "gruppo": "meteo",
+      "file": "meteo/nebbia.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a foggy cloud bank, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:29",
+      "secondi": 7.1,
+      "sha256_16": "42b83dbcd9c056e3",
+      "byte": 10990
+    },
+    "meteo/temporale": {
+      "id": "meteo/temporale",
+      "gruppo": "meteo",
+      "file": "meteo/temporale.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a dark storm cloud with lightning, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:37",
+      "secondi": 7.1,
+      "sha256_16": "63aba8632f8dfd71",
+      "byte": 7472
+    },
+    "meteo/primavera": {
+      "id": "meteo/primavera",
+      "gruppo": "meteo",
+      "file": "meteo/primavera.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a blossom branch, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:45",
+      "secondi": 7.0,
+      "sha256_16": "c4e37c3eb7a6cf53",
+      "byte": 7074
+    },
+    "meteo/estate": {
+      "id": "meteo/estate",
+      "gruppo": "meteo",
+      "file": "meteo/estate.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a sunflower, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:04:55",
+      "secondi": 8.0,
+      "sha256_16": "fddf899a376784be",
+      "byte": 8824
+    },
+    "meteo/autunno": {
+      "id": "meteo/autunno",
+      "gruppo": "meteo",
+      "file": "meteo/autunno.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a falling maple leaf, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:03",
+      "secondi": 7.1,
+      "sha256_16": "ced54192fa8ee05f",
+      "byte": 4902
+    },
+    "meteo/inverno": {
+      "id": "meteo/inverno",
+      "gruppo": "meteo",
+      "file": "meteo/inverno.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a snowflake crystal, isolated on plain dark background",
+      "negativo": "",
+      "seme": 6161,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:11",
+      "secondi": 7.2,
+      "sha256_16": "0ff76abc555b1624",
+      "byte": 8240
+    },
+    "costumi/astronauta": {
+      "id": "costumi/astronauta",
+      "gruppo": "costumi",
+      "file": "costumi/astronauta.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of an astronaut, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:19",
+      "secondi": 7.1,
+      "sha256_16": "a2f0ccd9c89841ee",
+      "byte": 7842
+    },
+    "costumi/cavaliere": {
+      "id": "costumi/cavaliere",
+      "gruppo": "costumi",
+      "file": "costumi/cavaliere.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a medieval knight in helmet, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:27",
+      "secondi": 7.0,
+      "sha256_16": "17d996093a58413b",
+      "byte": 6838
+    },
+    "costumi/pirata": {
+      "id": "costumi/pirata",
+      "gruppo": "costumi",
+      "file": "costumi/pirata.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a pirate with hat and eyepatch, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:35",
+      "secondi": 7.2,
+      "sha256_16": "48024c7cfb895c1d",
+      "byte": 7968
+    },
+    "costumi/supereroe": {
+      "id": "costumi/supereroe",
+      "gruppo": "costumi",
+      "file": "costumi/supereroe.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a superhero with mask and cape, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:43",
+      "secondi": 7.1,
+      "sha256_16": "9b24d77d05e76b05",
+      "byte": 8414
+    },
+    "costumi/samurai": {
+      "id": "costumi/samurai",
+      "gruppo": "costumi",
+      "file": "costumi/samurai.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a samurai warrior, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:05:52",
+      "secondi": 7.2,
+      "sha256_16": "04fd35eb2f97d560",
+      "byte": 11220
+    },
+    "costumi/mago": {
+      "id": "costumi/mago",
+      "gruppo": "costumi",
+      "file": "costumi/mago.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a wizard with pointed hat and beard, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:00",
+      "secondi": 7.0,
+      "sha256_16": "3466ce1a83bc4fc6",
+      "byte": 8568
+    },
+    "costumi/chef": {
+      "id": "costumi/chef",
+      "gruppo": "costumi",
+      "file": "costumi/chef.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a chef with toque, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:08",
+      "secondi": 7.3,
+      "sha256_16": "4a6e528ae87cb107",
+      "byte": 5512
+    },
+    "costumi/medico": {
+      "id": "costumi/medico",
+      "gruppo": "costumi",
+      "file": "costumi/medico.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a doctor with stethoscope, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:16",
+      "secondi": 7.1,
+      "sha256_16": "a889b744cc1e3537",
+      "byte": 6908
+    },
+    "costumi/sposa": {
+      "id": "costumi/sposa",
+      "gruppo": "costumi",
+      "file": "costumi/sposa.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, stylized 3D bust portrait of a bride with a veil, isolated on plain dark background",
+      "negativo": "",
+      "seme": 7171,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:24",
+      "secondi": 7.2,
+      "sha256_16": "79c8c1d05fca84e4",
+      "byte": 7216
+    },
+    "animali/cane": {
+      "id": "animali/cane",
+      "gruppo": "animali",
+      "file": "animali/cane.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a friendly 3D stylized dog head, isolated on plain dark background",
+      "negativo": "",
+      "seme": 8181,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:32",
+      "secondi": 7.0,
+      "sha256_16": "99b56db5dd5f9484",
+      "byte": 6828
+    },
+    "animali/gatto": {
+      "id": "animali/gatto",
+      "gruppo": "animali",
+      "file": "animali/gatto.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a friendly 3D stylized cat head, isolated on plain dark background",
+      "negativo": "",
+      "seme": 8181,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:41",
+      "secondi": 7.2,
+      "sha256_16": "342ff1665a89ce49",
+      "byte": 7792
+    },
+    "animali/cavallo": {
+      "id": "animali/cavallo",
+      "gruppo": "animali",
+      "file": "animali/cavallo.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a 3D stylized horse head, isolated on plain dark background",
+      "negativo": "",
+      "seme": 8181,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:49",
+      "secondi": 7.0,
+      "sha256_16": "1ec1f81b31785874",
+      "byte": 9528
+    },
+    "animali/uccello": {
+      "id": "animali/uccello",
+      "gruppo": "animali",
+      "file": "animali/uccello.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a 3D stylized bird head with colorful feathers, isolated on plain dark background",
+      "negativo": "",
+      "seme": 8181,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:06:57",
+      "secondi": 7.2,
+      "sha256_16": "278e2dfe9b9b5e2f",
+      "byte": 7436
+    },
+    "animali/drago": {
+      "id": "animali/drago",
+      "gruppo": "animali",
+      "file": "animali/drago.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a 3D stylized dragon head, isolated on plain dark background",
+      "negativo": "",
+      "seme": 8181,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:05",
+      "secondi": 7.0,
+      "sha256_16": "0bba676d16fe7fb3",
+      "byte": 9626
+    },
+    "facce/sorriso": {
+      "id": "facce/sorriso",
+      "gruppo": "facce",
+      "file": "facce/sorriso.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face smiling, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:14",
+      "secondi": 7.3,
+      "sha256_16": "77169126779a7f8a",
+      "byte": 7058
+    },
+    "facce/ridere": {
+      "id": "facce/ridere",
+      "gruppo": "facce",
+      "file": "facce/ridere.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face laughing with eyes closed, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:22",
+      "secondi": 7.1,
+      "sha256_16": "e0e4d762901497fb",
+      "byte": 6244
+    },
+    "facce/serio": {
+      "id": "facce/serio",
+      "gruppo": "facce",
+      "file": "facce/serio.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face with a serious look, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:30",
+      "secondi": 7.2,
+      "sha256_16": "4437e01c9ffe5631",
+      "byte": 8304
+    },
+    "facce/sorpreso": {
+      "id": "facce/sorpreso",
+      "gruppo": "facce",
+      "file": "facce/sorpreso.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face surprised with open mouth, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:39",
+      "secondi": 8.1,
+      "sha256_16": "aec4db2af23d41d2",
+      "byte": 6354
+    },
+    "facce/triste": {
+      "id": "facce/triste",
+      "gruppo": "facce",
+      "file": "facce/triste.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face looking sad with a tear, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:48",
+      "secondi": 8.0,
+      "sha256_16": "bd27f865b0c37630",
+      "byte": 7866
+    },
+    "facce/occhiolino": {
+      "id": "facce/occhiolino",
+      "gruppo": "facce",
+      "file": "facce/occhiolino.webp",
+      "misura": [
+        128,
+        128
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a round 3D face winking, isolated on plain dark background",
+      "negativo": "",
+      "seme": 9191,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:07:57",
+      "secondi": 7.4,
+      "sha256_16": "47bab7353807e386",
+      "byte": 7248
+    },
+    "mascotte/fluttua": {
+      "id": "mascotte/fluttua",
+      "gruppo": "mascotte",
+      "file": "mascotte/fluttua.webp",
+      "misura": [
+        512,
+        512
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a cute astronaut floating in zero gravity, relaxed pose, arms out, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1313,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:08:10",
+      "secondi": 8.0,
+      "sha256_16": "465c5e895a936ace",
+      "byte": 48044
+    },
+    "mascotte/cartello": {
+      "id": "mascotte/cartello",
+      "gruppo": "mascotte",
+      "file": "mascotte/cartello.webp",
+      "misura": [
+        512,
+        512
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a cute astronaut holding a sign with an error warning symbol, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1313,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:08:22",
+      "secondi": 8.0,
+      "sha256_16": "f27305559eebe6ff",
+      "byte": 63378
+    },
+    "mascotte/saluta": {
+      "id": "mascotte/saluta",
+      "gruppo": "mascotte",
+      "file": "mascotte/saluta.webp",
+      "misura": [
+        512,
+        512
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "polished 3D stylized icon, soft glossy materials, deep-space color palette of violet, magenta, cyan and gold, subtle rim light, dark navy background, clean composition, no text, a cute astronaut waving hello, isolated on plain dark background",
+      "negativo": "",
+      "seme": 1313,
+      "alpha": "chiave",
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:08:35",
+      "secondi": 7.3,
+      "sha256_16": "85066267ed08a150",
+      "byte": 59640
+    },
+    "lora/qwen": {
+      "id": "lora/qwen",
+      "gruppo": "lora",
+      "file": "lora/qwen.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a glowing spiral of layered light, violet and magenta",
+      "negativo": "",
+      "seme": 1414,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:08:43",
+      "secondi": 8.0,
+      "sha256_16": "bb15fb9a44296e0c",
+      "byte": 8178
+    },
+    "lora/klein": {
+      "id": "lora/klein",
+      "gruppo": "lora",
+      "file": "lora/klein.webp",
+      "misura": [
+        256,
+        256
+      ],
+      "generato": [
+        1024,
+        1024
+      ],
+      "prompt": "cinematic digital art, deep-space color palette of violet, magenta, cyan and gold, soft glow, clean composition, no text, a glowing crystal spark, cyan and gold",
+      "negativo": "",
+      "seme": 1414,
+      "alpha": null,
+      "unet": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "encoder": "qwen3vl_4b_int8_convrot.safetensors",
+      "vae": "flux2-vae.safetensors",
+      "passi": 8,
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
+      "data": "2026-10-22T19:08:50",
+      "secondi": 7.1,
+      "sha256_16": "711f068334b38a52",
+      "byte": 7304
     }
   }
 }
