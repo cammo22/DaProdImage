@@ -36,7 +36,8 @@
       "data": "2026-10-22T18:37:22",
       "secondi": 11.1,
       "sha256_16": "e87b0d31cd852523",
-      "byte": 22774
+      "byte": 22774,
+      "da_rifare_con_birefnet": true
     },
     "tessera/estrai": {
       "id": "tessera/estrai",
@@ -65,7 +66,8 @@
       "data": "2026-10-22T18:37:47",
       "secondi": 22.1,
       "sha256_16": "debbca2d5e6cb1c7",
-      "byte": 14916
+      "byte": 14916,
+      "da_rifare_con_birefnet": true
     },
     "sfondi/nebulosa": {
       "id": "sfondi/nebulosa",
@@ -94,7 +96,8 @@
       "data": "2026-10-22T18:30:56",
       "secondi": 32.2,
       "sha256_16": "2c9fbac619c0c395",
-      "byte": 99208
+      "byte": 99208,
+      "da_rifare_con_birefnet": false
     },
     "stili/anime-film": {
       "id": "stili/anime-film",
@@ -123,7 +126,8 @@
       "data": "2026-10-22T18:35:40",
       "secondi": 12.0,
       "sha256_16": "b6fc603334ae2535",
-      "byte": 17362
+      "byte": 17362,
+      "da_rifare_con_birefnet": false
     },
     "stili/vetro": {
       "id": "stili/vetro",
@@ -152,7 +156,8 @@
       "data": "2026-10-22T18:35:52",
       "secondi": 12.1,
       "sha256_16": "e62b0be0adae51f8",
-      "byte": 20852
+      "byte": 20852,
+      "da_rifare_con_birefnet": false
     },
     "ricette/foglio": {
       "id": "ricette/foglio",
@@ -181,7 +186,8 @@
       "data": "2026-10-22T18:31:14",
       "secondi": 6.0,
       "sha256_16": "4730af2b50ed2d23",
-      "byte": 31778
+      "byte": 31778,
+      "da_rifare_con_birefnet": false
     },
     "tessera/vestiti": {
       "id": "tessera/vestiti",
@@ -210,7 +216,8 @@
       "data": "2026-10-22T18:53:10",
       "secondi": 10.1,
       "sha256_16": "11bc552c633b3188",
-      "byte": 18520
+      "byte": 18520,
+      "da_rifare_con_birefnet": true
     },
     "tessera/situazioni": {
       "id": "tessera/situazioni",
@@ -239,7 +246,8 @@
       "data": "2026-10-22T18:53:21",
       "secondi": 8.0,
       "sha256_16": "70ea369586acdbfc",
-      "byte": 18928
+      "byte": 18928,
+      "da_rifare_con_birefnet": true
     },
     "tessera/prospettiva": {
       "id": "tessera/prospettiva",
@@ -268,7 +276,8 @@
       "data": "2026-10-22T18:53:32",
       "secondi": 8.1,
       "sha256_16": "79fc6ef637e81975",
-      "byte": 25346
+      "byte": 25346,
+      "da_rifare_con_birefnet": true
     },
     "tessera/luce-colore": {
       "id": "tessera/luce-colore",
@@ -297,7 +306,8 @@
       "data": "2026-10-22T18:53:42",
       "secondi": 8.0,
       "sha256_16": "664ed5b8393adb06",
-      "byte": 13824
+      "byte": 13824,
+      "da_rifare_con_birefnet": true
     },
     "tessera/stili": {
       "id": "tessera/stili",
@@ -326,7 +336,8 @@
       "data": "2026-10-22T18:53:53",
       "secondi": 8.1,
       "sha256_16": "d6948bbcfdf18a99",
-      "byte": 21006
+      "byte": 21006,
+      "da_rifare_con_birefnet": true
     },
     "tessera/testi": {
       "id": "tessera/testi",
@@ -355,7 +366,8 @@
       "data": "2026-10-22T18:54:03",
       "secondi": 8.1,
       "sha256_16": "18c192fb1b78a69a",
-      "byte": 16638
+      "byte": 16638,
+      "da_rifare_con_birefnet": true
     },
     "tessera/ritocco": {
       "id": "tessera/ritocco",
@@ -384,7 +396,8 @@
       "data": "2026-10-22T18:54:14",
       "secondi": 8.0,
       "sha256_16": "36e4d8a2b7287e98",
-      "byte": 21276
+      "byte": 21276,
+      "da_rifare_con_birefnet": true
     },
     "tessera/espandi": {
       "id": "tessera/espandi",
@@ -413,7 +426,8 @@
       "data": "2026-10-22T18:54:24",
       "secondi": 7.2,
       "sha256_16": "b966a8feacc0d942",
-      "byte": 22092
+      "byte": 22092,
+      "da_rifare_con_birefnet": true
     },
     "modi/crea": {
       "id": "modi/crea",
@@ -442,7 +456,8 @@
       "data": "2026-10-22T18:54:33",
       "secondi": 8.0,
       "sha256_16": "3ccf1e26f9946ef7",
-      "byte": 8164
+      "byte": 8164,
+      "da_rifare_con_birefnet": true
     },
     "modi/modifica": {
       "id": "modi/modifica",
@@ -471,7 +486,8 @@
       "data": "2026-10-22T18:54:41",
       "secondi": 7.0,
       "sha256_16": "64acf81a932de8e6",
-      "byte": 6604
+      "byte": 6604,
+      "da_rifare_con_birefnet": true
     },
     "modi/box": {
       "id": "modi/box",
@@ -500,7 +516,8 @@
       "data": "2026-10-22T18:54:50",
       "secondi": 7.3,
       "sha256_16": "ec2df88b4d3ed2eb",
-      "byte": 6808
+      "byte": 6808,
+      "da_rifare_con_birefnet": true
     },
     "modi/ricette": {
       "id": "modi/ricette",
@@ -529,7 +546,8 @@
       "data": "2026-10-22T18:54:59",
       "secondi": 8.0,
       "sha256_16": "a63a3cb472715685",
-      "byte": 4822
+      "byte": 4822,
+      "da_rifare_con_birefnet": true
     },
     "generi/foto": {
       "id": "generi/foto",
@@ -558,7 +576,8 @@
       "data": "2026-10-22T18:55:10",
       "secondi": 8.0,
       "sha256_16": "8d4c22b35f8ff514",
-      "byte": 19442
+      "byte": 19442,
+      "da_rifare_con_birefnet": true
     },
     "generi/ritratto": {
       "id": "generi/ritratto",
@@ -587,7 +606,8 @@
       "data": "2026-10-22T18:55:20",
       "secondi": 8.1,
       "sha256_16": "dbb9b7b50d14ffd9",
-      "byte": 16104
+      "byte": 16104,
+      "da_rifare_con_birefnet": true
     },
     "generi/prodotto": {
       "id": "generi/prodotto",
@@ -616,7 +636,8 @@
       "data": "2026-10-22T18:55:31",
       "secondi": 8.2,
       "sha256_16": "3d2ec218f22797e3",
-      "byte": 13466
+      "byte": 13466,
+      "da_rifare_con_birefnet": true
     },
     "generi/poster": {
       "id": "generi/poster",
@@ -645,7 +666,8 @@
       "data": "2026-10-22T18:55:42",
       "secondi": 8.0,
       "sha256_16": "3ff60af1f0025dab",
-      "byte": 17080
+      "byte": 17080,
+      "da_rifare_con_birefnet": true
     },
     "generi/infografica": {
       "id": "generi/infografica",
@@ -674,7 +696,8 @@
       "data": "2026-10-22T18:55:52",
       "secondi": 8.1,
       "sha256_16": "1e0ea88b310ed4a5",
-      "byte": 9212
+      "byte": 9212,
+      "da_rifare_con_birefnet": true
     },
     "generi/logo": {
       "id": "generi/logo",
@@ -703,7 +726,8 @@
       "data": "2026-10-22T18:56:03",
       "secondi": 8.1,
       "sha256_16": "791c0621b3b7f5f4",
-      "byte": 16550
+      "byte": 16550,
+      "da_rifare_con_birefnet": true
     },
     "generi/social": {
       "id": "generi/social",
@@ -732,7 +756,8 @@
       "data": "2026-10-22T18:56:13",
       "secondi": 8.0,
       "sha256_16": "d0e755c731d7961e",
-      "byte": 12020
+      "byte": 12020,
+      "da_rifare_con_birefnet": true
     },
     "generi/miniatura": {
       "id": "generi/miniatura",
@@ -761,7 +786,8 @@
       "data": "2026-10-22T18:56:23",
       "secondi": 7.3,
       "sha256_16": "f7e24213fec5b87d",
-      "byte": 15494
+      "byte": 15494,
+      "da_rifare_con_birefnet": true
     },
     "generi/fumetto": {
       "id": "generi/fumetto",
@@ -790,7 +816,8 @@
       "data": "2026-10-22T18:56:33",
       "secondi": 8.0,
       "sha256_16": "cc6499ed6e450b5b",
-      "byte": 10166
+      "byte": 10166,
+      "da_rifare_con_birefnet": true
     },
     "generi/invito": {
       "id": "generi/invito",
@@ -819,7 +846,8 @@
       "data": "2026-10-22T18:56:44",
       "secondi": 8.0,
       "sha256_16": "396238896ae9faa1",
-      "byte": 13818
+      "byte": 13818,
+      "da_rifare_con_birefnet": true
     },
     "generi/menu": {
       "id": "generi/menu",
@@ -848,7 +876,8 @@
       "data": "2026-10-22T18:56:55",
       "secondi": 8.0,
       "sha256_16": "83df4f02c06489d3",
-      "byte": 17262
+      "byte": 17262,
+      "da_rifare_con_birefnet": true
     },
     "generi/libero": {
       "id": "generi/libero",
@@ -877,7 +906,8 @@
       "data": "2026-10-22T18:57:06",
       "secondi": 8.0,
       "sha256_16": "09a464b55e918a58",
-      "byte": 17100
+      "byte": 17100,
+      "da_rifare_con_birefnet": true
     },
     "sfondi/nebulosa-calda": {
       "id": "sfondi/nebulosa-calda",
@@ -906,7 +936,8 @@
       "data": "2026-10-22T18:57:39",
       "secondi": 32.2,
       "sha256_16": "4a20a35fc8768c3a",
-      "byte": 124162
+      "byte": 124162,
+      "da_rifare_con_birefnet": false
     },
     "sfondi/stelle": {
       "id": "sfondi/stelle",
@@ -934,8 +965,10 @@
       "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
       "data": "2026-10-22T18:58:01",
       "secondi": 8.1,
-      "sha256_16": "881fcda4c32a23e4",
-      "byte": 1243602
+      "sha256_16": "a494ce62ef204e72",
+      "byte": 147362,
+      "da_rifare_con_birefnet": false,
+      "postproduzione": "Alpha quantizzato a 4 livelli e tinta bianco caldo uniforme per eliminare il rumore e rispettare il budget di 350 kB"
     },
     "sfondi/aurora": {
       "id": "sfondi/aurora",
@@ -964,7 +997,8 @@
       "data": "2026-10-22T18:58:09",
       "secondi": 8.0,
       "sha256_16": "0a6a786d7e7bb86f",
-      "byte": 28574
+      "byte": 28574,
+      "da_rifare_con_birefnet": false
     },
     "sfondi/hero-pianeta": {
       "id": "sfondi/hero-pianeta",
@@ -993,7 +1027,8 @@
       "data": "2026-10-22T18:58:49",
       "secondi": 32.3,
       "sha256_16": "d796fd62bdd47abf",
-      "byte": 328254
+      "byte": 328254,
+      "da_rifare_con_birefnet": true
     },
     "sfondi/setup-pianeta": {
       "id": "sfondi/setup-pianeta",
@@ -1022,7 +1057,8 @@
       "data": "2026-10-22T18:59:21",
       "secondi": 32.2,
       "sha256_16": "371c8ee82f09187b",
-      "byte": 65696
+      "byte": 65696,
+      "da_rifare_con_birefnet": false
     },
     "ricette/mondi": {
       "id": "ricette/mondi",
@@ -1051,7 +1087,8 @@
       "data": "2026-10-22T18:59:28",
       "secondi": 6.0,
       "sha256_16": "e0e6b563960bd1bf",
-      "byte": 36384
+      "byte": 36384,
+      "da_rifare_con_birefnet": false
     },
     "ricette/mix": {
       "id": "ricette/mix",
@@ -1080,7 +1117,8 @@
       "data": "2026-10-22T18:59:34",
       "secondi": 6.0,
       "sha256_16": "6cee19ead1ada93d",
-      "byte": 24792
+      "byte": 24792,
+      "da_rifare_con_birefnet": false
     },
     "ricette/set": {
       "id": "ricette/set",
@@ -1109,7 +1147,8 @@
       "data": "2026-10-22T18:59:40",
       "secondi": 6.0,
       "sha256_16": "85cc540fde1fd7aa",
-      "byte": 18514
+      "byte": 18514,
+      "da_rifare_con_birefnet": false
     },
     "ricette/formati": {
       "id": "ricette/formati",
@@ -1138,7 +1177,8 @@
       "data": "2026-10-22T18:59:46",
       "secondi": 6.1,
       "sha256_16": "3e64e04bc9b7d676",
-      "byte": 17976
+      "byte": 17976,
+      "da_rifare_con_birefnet": false
     },
     "ricette/rinnova": {
       "id": "ricette/rinnova",
@@ -1167,7 +1207,8 @@
       "data": "2026-10-22T18:59:52",
       "secondi": 6.0,
       "sha256_16": "4771134a64a35c43",
-      "byte": 20462
+      "byte": 20462,
+      "da_rifare_con_birefnet": false
     },
     "stili/cinema-anam": {
       "id": "stili/cinema-anam",
@@ -1196,7 +1237,8 @@
       "data": "2026-10-22T18:59:58",
       "secondi": 6.1,
       "sha256_16": "24a64d58e08d83b3",
-      "byte": 12816
+      "byte": 12816,
+      "da_rifare_con_birefnet": false
     },
     "stili/flash-y2k": {
       "id": "stili/flash-y2k",
@@ -1225,7 +1267,8 @@
       "data": "2026-10-22T19:00:03",
       "secondi": 5.1,
       "sha256_16": "05a154c3067ef7cf",
-      "byte": 14578
+      "byte": 14578,
+      "da_rifare_con_birefnet": false
     },
     "stili/pellicola35": {
       "id": "stili/pellicola35",
@@ -1254,7 +1297,8 @@
       "data": "2026-10-22T19:00:10",
       "secondi": 6.0,
       "sha256_16": "c8e4d05b9809bfa0",
-      "byte": 13612
+      "byte": 13612,
+      "da_rifare_con_birefnet": false
     },
     "stili/moda-editoriale": {
       "id": "stili/moda-editoriale",
@@ -1282,8 +1326,21 @@
       "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
       "data": "2026-10-22T19:00:16",
       "secondi": 6.0,
-      "sha256_16": "9344d3d1b6ed806b",
-      "byte": 19232
+      "sha256_16": "78541344ee2c5a78",
+      "byte": 11844,
+      "da_rifare_con_birefnet": false,
+      "postproduzione": {
+        "ritaglio_senza_scritte": [
+          65,
+          0,
+          250,
+          255
+        ],
+        "uscita": [
+          320,
+          320
+        ]
+      }
     },
     "stili/polaroid": {
       "id": "stili/polaroid",
@@ -1312,7 +1369,8 @@
       "data": "2026-10-22T19:00:21",
       "secondi": 5.5,
       "sha256_16": "fde6ee533c2b254b",
-      "byte": 7670
+      "byte": 7670,
+      "da_rifare_con_birefnet": false
     },
     "stili/notte-neon": {
       "id": "stili/notte-neon",
@@ -1341,7 +1399,8 @@
       "data": "2026-10-22T19:00:27",
       "secondi": 6.0,
       "sha256_16": "71baee80ebf3918c",
-      "byte": 24802
+      "byte": 24802,
+      "da_rifare_con_birefnet": false
     },
     "stili/documentario": {
       "id": "stili/documentario",
@@ -1370,7 +1429,8 @@
       "data": "2026-10-22T19:00:33",
       "secondi": 5.4,
       "sha256_16": "892cb3eba233d36b",
-      "byte": 13344
+      "byte": 13344,
+      "da_rifare_con_birefnet": false
     },
     "stili/acquerello-film": {
       "id": "stili/acquerello-film",
@@ -1399,7 +1459,8 @@
       "data": "2026-10-22T19:00:39",
       "secondi": 6.0,
       "sha256_16": "cd5563ecb147d2a6",
-      "byte": 18160
+      "byte": 18160,
+      "da_rifare_con_birefnet": false
     },
     "stili/manga-inchiostro": {
       "id": "stili/manga-inchiostro",
@@ -1428,7 +1489,8 @@
       "data": "2026-10-22T19:00:44",
       "secondi": 5.4,
       "sha256_16": "a004e5a3e448bbac",
-      "byte": 37172
+      "byte": 37172,
+      "da_rifare_con_birefnet": false
     },
     "stili/gouache": {
       "id": "stili/gouache",
@@ -1457,7 +1519,8 @@
       "data": "2026-10-22T19:00:49",
       "secondi": 5.0,
       "sha256_16": "e6ac3ccde775a052",
-      "byte": 21256
+      "byte": 21256,
+      "da_rifare_con_birefnet": false
     },
     "stili/risograph": {
       "id": "stili/risograph",
@@ -1486,7 +1549,8 @@
       "data": "2026-10-22T19:00:55",
       "secondi": 5.4,
       "sha256_16": "de51142242046827",
-      "byte": 20276
+      "byte": 20276,
+      "da_rifare_con_birefnet": false
     },
     "stili/collage": {
       "id": "stili/collage",
@@ -1515,7 +1579,8 @@
       "data": "2026-10-22T19:01:01",
       "secondi": 6.0,
       "sha256_16": "d99e344203e4c90c",
-      "byte": 21290
+      "byte": 21290,
+      "da_rifare_con_birefnet": false
     },
     "stili/linea": {
       "id": "stili/linea",
@@ -1544,7 +1609,8 @@
       "data": "2026-10-22T19:01:07",
       "secondi": 6.1,
       "sha256_16": "baa2102383618f53",
-      "byte": 18994
+      "byte": 18994,
+      "da_rifare_con_birefnet": false
     },
     "stili/soft3d": {
       "id": "stili/soft3d",
@@ -1573,7 +1639,8 @@
       "data": "2026-10-22T19:01:13",
       "secondi": 6.0,
       "sha256_16": "b2bfcf5364a9c404",
-      "byte": 15016
+      "byte": 15016,
+      "da_rifare_con_birefnet": false
     },
     "stili/plastilina": {
       "id": "stili/plastilina",
@@ -1602,7 +1669,8 @@
       "data": "2026-10-22T19:01:19",
       "secondi": 6.0,
       "sha256_16": "08fc493b0588be82",
-      "byte": 14878
+      "byte": 14878,
+      "da_rifare_con_birefnet": false
     },
     "stili/vinile": {
       "id": "stili/vinile",
@@ -1631,7 +1699,8 @@
       "data": "2026-10-22T19:01:26",
       "secondi": 6.0,
       "sha256_16": "3b023deaba6e7197",
-      "byte": 20350
+      "byte": 20350,
+      "da_rifare_con_birefnet": false
     },
     "stili/diorama": {
       "id": "stili/diorama",
@@ -1660,7 +1729,8 @@
       "data": "2026-10-22T19:01:32",
       "secondi": 6.0,
       "sha256_16": "c8bad91a212f9eb1",
-      "byte": 10356
+      "byte": 10356,
+      "da_rifare_con_birefnet": false
     },
     "stili/mattoncini": {
       "id": "stili/mattoncini",
@@ -1689,7 +1759,8 @@
       "data": "2026-10-22T19:01:38",
       "secondi": 6.0,
       "sha256_16": "84bb1d2473a7a588",
-      "byte": 26882
+      "byte": 26882,
+      "da_rifare_con_birefnet": false
     },
     "stili/chrome": {
       "id": "stili/chrome",
@@ -1718,7 +1789,8 @@
       "data": "2026-10-22T19:01:44",
       "secondi": 6.0,
       "sha256_16": "8bdc029c3cfc253c",
-      "byte": 21750
+      "byte": 21750,
+      "da_rifare_con_birefnet": false
     },
     "stili/cyberpunk": {
       "id": "stili/cyberpunk",
@@ -1747,7 +1819,8 @@
       "data": "2026-10-22T19:01:50",
       "secondi": 6.1,
       "sha256_16": "30ac282d323b276e",
-      "byte": 29260
+      "byte": 29260,
+      "da_rifare_con_birefnet": false
     },
     "stili/synthwave": {
       "id": "stili/synthwave",
@@ -1775,8 +1848,21 @@
       "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
       "data": "2026-10-22T19:01:56",
       "secondi": 6.0,
-      "sha256_16": "2307b78bf648c21e",
-      "byte": 21718
+      "sha256_16": "901074435d531758",
+      "byte": 17060,
+      "da_rifare_con_birefnet": false,
+      "postproduzione": {
+        "ritaglio_senza_scritte": [
+          0,
+          82,
+          320,
+          320
+        ],
+        "uscita": [
+          320,
+          320
+        ]
+      }
     },
     "stili/aura": {
       "id": "stili/aura",
@@ -1805,7 +1891,8 @@
       "data": "2026-10-22T19:02:02",
       "secondi": 6.0,
       "sha256_16": "6016c192a38fbc83",
-      "byte": 16320
+      "byte": 16320,
+      "da_rifare_con_birefnet": false
     },
     "stili/pixel": {
       "id": "stili/pixel",
@@ -1834,7 +1921,8 @@
       "data": "2026-10-22T19:02:09",
       "secondi": 6.0,
       "sha256_16": "354f30e28c30b95f",
-      "byte": 31740
+      "byte": 31740,
+      "da_rifare_con_birefnet": false
     },
     "stili/spaziale60": {
       "id": "stili/spaziale60",
@@ -1862,8 +1950,21 @@
       "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
       "data": "2026-10-22T19:02:15",
       "secondi": 6.1,
-      "sha256_16": "fdc0cf621f70e31b",
-      "byte": 28570
+      "sha256_16": "08a0190c2edc556a",
+      "byte": 20466,
+      "da_rifare_con_birefnet": false,
+      "postproduzione": {
+        "ritaglio_senza_scritte": [
+          65,
+          52,
+          270,
+          320
+        ],
+        "uscita": [
+          320,
+          320
+        ]
+      }
     },
     "stili/solarpunk": {
       "id": "stili/solarpunk",
@@ -1892,7 +1993,8 @@
       "data": "2026-10-22T19:02:21",
       "secondi": 6.0,
       "sha256_16": "333456a26cea05cd",
-      "byte": 24116
+      "byte": 24116,
+      "da_rifare_con_birefnet": false
     },
     "stili/svizzero": {
       "id": "stili/svizzero",
@@ -1920,8 +2022,21 @@
       "modello_file": "flux3_image_klein_sd_int8_convrot.safetensors",
       "data": "2026-10-22T19:02:26",
       "secondi": 5.0,
-      "sha256_16": "dc9d9fcbbe30f9e7",
-      "byte": 34156
+      "sha256_16": "eb17aaa088dded0b",
+      "byte": 14762,
+      "da_rifare_con_birefnet": false,
+      "postproduzione": {
+        "ritaglio_senza_scritte": [
+          105,
+          55,
+          235,
+          245
+        ],
+        "uscita": [
+          320,
+          320
+        ]
+      }
     },
     "luoghi/citta": {
       "id": "luoghi/citta",
@@ -1950,7 +2065,8 @@
       "data": "2026-10-22T19:02:34",
       "secondi": 8.1,
       "sha256_16": "9515c0082818310f",
-      "byte": 2950
+      "byte": 2950,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/spiaggia": {
       "id": "luoghi/spiaggia",
@@ -1979,7 +2095,8 @@
       "data": "2026-10-22T19:02:42",
       "secondi": 8.0,
       "sha256_16": "ebc18eb853fe5b9b",
-      "byte": 4574
+      "byte": 4574,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/montagna": {
       "id": "luoghi/montagna",
@@ -2008,7 +2125,8 @@
       "data": "2026-10-22T19:02:50",
       "secondi": 7.4,
       "sha256_16": "a93833bd5fbc5d78",
-      "byte": 3906
+      "byte": 3906,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/bosco": {
       "id": "luoghi/bosco",
@@ -2037,7 +2155,8 @@
       "data": "2026-10-22T19:02:58",
       "secondi": 8.1,
       "sha256_16": "ad2e5e892efeda8d",
-      "byte": 4742
+      "byte": 4742,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/deserto": {
       "id": "luoghi/deserto",
@@ -2066,7 +2185,8 @@
       "data": "2026-10-22T19:03:06",
       "secondi": 8.0,
       "sha256_16": "814f5f087544763f",
-      "byte": 2474
+      "byte": 2474,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/interno": {
       "id": "luoghi/interno",
@@ -2095,7 +2215,8 @@
       "data": "2026-10-22T19:03:14",
       "secondi": 8.0,
       "sha256_16": "3f27e1004abc21b8",
-      "byte": 4068
+      "byte": 4068,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/studio-bianco": {
       "id": "luoghi/studio-bianco",
@@ -2124,7 +2245,8 @@
       "data": "2026-10-22T19:03:22",
       "secondi": 8.1,
       "sha256_16": "bbf1bd6aa23dbb9f",
-      "byte": 2138
+      "byte": 2138,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/spazio": {
       "id": "luoghi/spazio",
@@ -2153,7 +2275,8 @@
       "data": "2026-10-22T19:03:30",
       "secondi": 8.0,
       "sha256_16": "c5e15054ab53aeff",
-      "byte": 3450
+      "byte": 3450,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/sott-acqua": {
       "id": "luoghi/sott-acqua",
@@ -2182,7 +2305,8 @@
       "data": "2026-10-22T19:03:38",
       "secondi": 7.3,
       "sha256_16": "10a75f362398a67c",
-      "byte": 5134
+      "byte": 5134,
+      "da_rifare_con_birefnet": false
     },
     "luoghi/futuro": {
       "id": "luoghi/futuro",
@@ -2211,7 +2335,8 @@
       "data": "2026-10-22T19:03:46",
       "secondi": 8.1,
       "sha256_16": "82f1a6abad44c788",
-      "byte": 4382
+      "byte": 4382,
+      "da_rifare_con_birefnet": false
     },
     "meteo/sole": {
       "id": "meteo/sole",
@@ -2240,7 +2365,8 @@
       "data": "2026-10-22T19:03:55",
       "secondi": 8.0,
       "sha256_16": "c9c839625af4121c",
-      "byte": 6868
+      "byte": 6868,
+      "da_rifare_con_birefnet": true
     },
     "meteo/nuvole": {
       "id": "meteo/nuvole",
@@ -2269,7 +2395,8 @@
       "data": "2026-10-22T19:04:03",
       "secondi": 7.0,
       "sha256_16": "d5685d0336b95d19",
-      "byte": 7758
+      "byte": 7758,
+      "da_rifare_con_birefnet": true
     },
     "meteo/pioggia": {
       "id": "meteo/pioggia",
@@ -2298,7 +2425,8 @@
       "data": "2026-10-22T19:04:11",
       "secondi": 7.4,
       "sha256_16": "04349875f700d14d",
-      "byte": 4816
+      "byte": 4816,
+      "da_rifare_con_birefnet": true
     },
     "meteo/neve": {
       "id": "meteo/neve",
@@ -2327,7 +2455,8 @@
       "data": "2026-10-22T19:04:20",
       "secondi": 8.0,
       "sha256_16": "0a8a840eab176879",
-      "byte": 5440
+      "byte": 5440,
+      "da_rifare_con_birefnet": true
     },
     "meteo/nebbia": {
       "id": "meteo/nebbia",
@@ -2356,7 +2485,8 @@
       "data": "2026-10-22T19:04:29",
       "secondi": 7.1,
       "sha256_16": "42b83dbcd9c056e3",
-      "byte": 10990
+      "byte": 10990,
+      "da_rifare_con_birefnet": true
     },
     "meteo/temporale": {
       "id": "meteo/temporale",
@@ -2385,7 +2515,8 @@
       "data": "2026-10-22T19:04:37",
       "secondi": 7.1,
       "sha256_16": "63aba8632f8dfd71",
-      "byte": 7472
+      "byte": 7472,
+      "da_rifare_con_birefnet": true
     },
     "meteo/primavera": {
       "id": "meteo/primavera",
@@ -2414,7 +2545,8 @@
       "data": "2026-10-22T19:04:45",
       "secondi": 7.0,
       "sha256_16": "c4e37c3eb7a6cf53",
-      "byte": 7074
+      "byte": 7074,
+      "da_rifare_con_birefnet": true
     },
     "meteo/estate": {
       "id": "meteo/estate",
@@ -2443,7 +2575,8 @@
       "data": "2026-10-22T19:04:55",
       "secondi": 8.0,
       "sha256_16": "fddf899a376784be",
-      "byte": 8824
+      "byte": 8824,
+      "da_rifare_con_birefnet": true
     },
     "meteo/autunno": {
       "id": "meteo/autunno",
@@ -2472,7 +2605,8 @@
       "data": "2026-10-22T19:05:03",
       "secondi": 7.1,
       "sha256_16": "ced54192fa8ee05f",
-      "byte": 4902
+      "byte": 4902,
+      "da_rifare_con_birefnet": true
     },
     "meteo/inverno": {
       "id": "meteo/inverno",
@@ -2501,7 +2635,8 @@
       "data": "2026-10-22T19:05:11",
       "secondi": 7.2,
       "sha256_16": "0ff76abc555b1624",
-      "byte": 8240
+      "byte": 8240,
+      "da_rifare_con_birefnet": true
     },
     "costumi/astronauta": {
       "id": "costumi/astronauta",
@@ -2530,7 +2665,8 @@
       "data": "2026-10-22T19:05:19",
       "secondi": 7.1,
       "sha256_16": "a2f0ccd9c89841ee",
-      "byte": 7842
+      "byte": 7842,
+      "da_rifare_con_birefnet": true
     },
     "costumi/cavaliere": {
       "id": "costumi/cavaliere",
@@ -2559,7 +2695,8 @@
       "data": "2026-10-22T19:05:27",
       "secondi": 7.0,
       "sha256_16": "17d996093a58413b",
-      "byte": 6838
+      "byte": 6838,
+      "da_rifare_con_birefnet": true
     },
     "costumi/pirata": {
       "id": "costumi/pirata",
@@ -2588,7 +2725,8 @@
       "data": "2026-10-22T19:05:35",
       "secondi": 7.2,
       "sha256_16": "48024c7cfb895c1d",
-      "byte": 7968
+      "byte": 7968,
+      "da_rifare_con_birefnet": true
     },
     "costumi/supereroe": {
       "id": "costumi/supereroe",
@@ -2617,7 +2755,8 @@
       "data": "2026-10-22T19:05:43",
       "secondi": 7.1,
       "sha256_16": "9b24d77d05e76b05",
-      "byte": 8414
+      "byte": 8414,
+      "da_rifare_con_birefnet": true
     },
     "costumi/samurai": {
       "id": "costumi/samurai",
@@ -2646,7 +2785,8 @@
       "data": "2026-10-22T19:05:52",
       "secondi": 7.2,
       "sha256_16": "04fd35eb2f97d560",
-      "byte": 11220
+      "byte": 11220,
+      "da_rifare_con_birefnet": true
     },
     "costumi/mago": {
       "id": "costumi/mago",
@@ -2675,7 +2815,8 @@
       "data": "2026-10-22T19:06:00",
       "secondi": 7.0,
       "sha256_16": "3466ce1a83bc4fc6",
-      "byte": 8568
+      "byte": 8568,
+      "da_rifare_con_birefnet": true
     },
     "costumi/chef": {
       "id": "costumi/chef",
@@ -2704,7 +2845,8 @@
       "data": "2026-10-22T19:06:08",
       "secondi": 7.3,
       "sha256_16": "4a6e528ae87cb107",
-      "byte": 5512
+      "byte": 5512,
+      "da_rifare_con_birefnet": true
     },
     "costumi/medico": {
       "id": "costumi/medico",
@@ -2733,7 +2875,8 @@
       "data": "2026-10-22T19:06:16",
       "secondi": 7.1,
       "sha256_16": "a889b744cc1e3537",
-      "byte": 6908
+      "byte": 6908,
+      "da_rifare_con_birefnet": true
     },
     "costumi/sposa": {
       "id": "costumi/sposa",
@@ -2762,7 +2905,8 @@
       "data": "2026-10-22T19:06:24",
       "secondi": 7.2,
       "sha256_16": "79c8c1d05fca84e4",
-      "byte": 7216
+      "byte": 7216,
+      "da_rifare_con_birefnet": true
     },
     "animali/cane": {
       "id": "animali/cane",
@@ -2791,7 +2935,8 @@
       "data": "2026-10-22T19:06:32",
       "secondi": 7.0,
       "sha256_16": "99b56db5dd5f9484",
-      "byte": 6828
+      "byte": 6828,
+      "da_rifare_con_birefnet": true
     },
     "animali/gatto": {
       "id": "animali/gatto",
@@ -2820,7 +2965,8 @@
       "data": "2026-10-22T19:06:41",
       "secondi": 7.2,
       "sha256_16": "342ff1665a89ce49",
-      "byte": 7792
+      "byte": 7792,
+      "da_rifare_con_birefnet": true
     },
     "animali/cavallo": {
       "id": "animali/cavallo",
@@ -2849,7 +2995,8 @@
       "data": "2026-10-22T19:06:49",
       "secondi": 7.0,
       "sha256_16": "1ec1f81b31785874",
-      "byte": 9528
+      "byte": 9528,
+      "da_rifare_con_birefnet": true
     },
     "animali/uccello": {
       "id": "animali/uccello",
@@ -2878,7 +3025,8 @@
       "data": "2026-10-22T19:06:57",
       "secondi": 7.2,
       "sha256_16": "278e2dfe9b9b5e2f",
-      "byte": 7436
+      "byte": 7436,
+      "da_rifare_con_birefnet": true
     },
     "animali/drago": {
       "id": "animali/drago",
@@ -2907,7 +3055,8 @@
       "data": "2026-10-22T19:07:05",
       "secondi": 7.0,
       "sha256_16": "0bba676d16fe7fb3",
-      "byte": 9626
+      "byte": 9626,
+      "da_rifare_con_birefnet": true
     },
     "facce/sorriso": {
       "id": "facce/sorriso",
@@ -2936,7 +3085,8 @@
       "data": "2026-10-22T19:07:14",
       "secondi": 7.3,
       "sha256_16": "77169126779a7f8a",
-      "byte": 7058
+      "byte": 7058,
+      "da_rifare_con_birefnet": true
     },
     "facce/ridere": {
       "id": "facce/ridere",
@@ -2965,7 +3115,8 @@
       "data": "2026-10-22T19:07:22",
       "secondi": 7.1,
       "sha256_16": "e0e4d762901497fb",
-      "byte": 6244
+      "byte": 6244,
+      "da_rifare_con_birefnet": true
     },
     "facce/serio": {
       "id": "facce/serio",
@@ -2994,7 +3145,8 @@
       "data": "2026-10-22T19:07:30",
       "secondi": 7.2,
       "sha256_16": "4437e01c9ffe5631",
-      "byte": 8304
+      "byte": 8304,
+      "da_rifare_con_birefnet": true
     },
     "facce/sorpreso": {
       "id": "facce/sorpreso",
@@ -3023,7 +3175,8 @@
       "data": "2026-10-22T19:07:39",
       "secondi": 8.1,
       "sha256_16": "aec4db2af23d41d2",
-      "byte": 6354
+      "byte": 6354,
+      "da_rifare_con_birefnet": true
     },
     "facce/triste": {
       "id": "facce/triste",
@@ -3052,7 +3205,8 @@
       "data": "2026-10-22T19:07:48",
       "secondi": 8.0,
       "sha256_16": "bd27f865b0c37630",
-      "byte": 7866
+      "byte": 7866,
+      "da_rifare_con_birefnet": true
     },
     "facce/occhiolino": {
       "id": "facce/occhiolino",
@@ -3081,7 +3235,8 @@
       "data": "2026-10-22T19:07:57",
       "secondi": 7.4,
       "sha256_16": "47bab7353807e386",
-      "byte": 7248
+      "byte": 7248,
+      "da_rifare_con_birefnet": true
     },
     "mascotte/fluttua": {
       "id": "mascotte/fluttua",
@@ -3110,7 +3265,8 @@
       "data": "2026-10-22T19:08:10",
       "secondi": 8.0,
       "sha256_16": "465c5e895a936ace",
-      "byte": 48044
+      "byte": 48044,
+      "da_rifare_con_birefnet": true
     },
     "mascotte/cartello": {
       "id": "mascotte/cartello",
@@ -3139,7 +3295,8 @@
       "data": "2026-10-22T19:08:22",
       "secondi": 8.0,
       "sha256_16": "f27305559eebe6ff",
-      "byte": 63378
+      "byte": 63378,
+      "da_rifare_con_birefnet": true
     },
     "mascotte/saluta": {
       "id": "mascotte/saluta",
@@ -3168,7 +3325,8 @@
       "data": "2026-10-22T19:08:35",
       "secondi": 7.3,
       "sha256_16": "85066267ed08a150",
-      "byte": 59640
+      "byte": 59640,
+      "da_rifare_con_birefnet": true
     },
     "lora/qwen": {
       "id": "lora/qwen",
@@ -3197,7 +3355,8 @@
       "data": "2026-10-22T19:08:43",
       "secondi": 8.0,
       "sha256_16": "bb15fb9a44296e0c",
-      "byte": 8178
+      "byte": 8178,
+      "da_rifare_con_birefnet": false
     },
     "lora/klein": {
       "id": "lora/klein",
@@ -3226,7 +3385,8 @@
       "data": "2026-10-22T19:08:50",
       "secondi": 7.1,
       "sha256_16": "711f068334b38a52",
-      "byte": 7304
+      "byte": 7304,
+      "da_rifare_con_birefnet": false
     }
   }
 }

@@ -40,7 +40,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # radice del worktree
 RISORSE = REPO / "resources" / "gui"
 MANIFEST = RISORSE / "manifest.json"
-GREZZI = Path(os.environ.get("GUI_GREZZI", "C:/Users/cammo/AppData/Local/hermes/profiles/claude-haiku/cache/scratch/gui-v2/grezzi"))
+GREZZI = Path(os.environ.get("GUI_GREZZI", str(Path(os.environ.get("TMPDIR", str(REPO / "scratch"))) / "gui-v2" / "grezzi")))
 
 # --- modelli: gli stessi file del catalogo di DaProdImage (src/main/installa/catalogo.ts) ---
 MODELLO = {
@@ -388,6 +388,7 @@ def fai(server: str, lista: list[dict], forza: bool) -> None:
             "prompt": a["prompt"], "negativo": "", "seme": a["seme"], "alpha": a["alpha"], **MODELLO,
             "modello_file": MODELLO["unet"], "data": dt.datetime.now().isoformat(timespec="seconds"),
             "secondi": round(secondi, 1), "sha256_16": sha(finale), "byte": finale.stat().st_size,
+            "da_rifare_con_birefnet": a["alpha"] == "chiave",
         }
         scrivi_manifest(m)
         print(f"  ok {finale.name} {finale.stat().st_size // 1024} KB in {secondi:.0f}s", flush=True)
@@ -408,15 +409,26 @@ def scrivi_readme() -> None:
         "senza prefisso. Seed fisso per gruppo (campo `seed`).",
         "",
         "Trasparenza: sfondo scuro uniforme → alpha dalla distanza di colore dal fondo (rampa 70→140, sotto 0,12 zero), buchi chiusi",
-        "del soggetto riempiti; stelle → alpha dalla luminosità su nero. **Limiti noti:** il visore/parti interne aperte verso il bordo",
-        "restano trasparenti (si vedono chiare su fondo bianco); l'alpha è una stima, non una segmentazione. **Non** è BiRefNet",
-        "(non ancora nell'engine). Gli stili con bande nere (cinema 2,39:1) sono ritagliati al centro quadrato.",
+        "del soggetto riempiti; stelle → alpha dalla luminosità su nero. **BiRefNet non è stato usato**: la scontornatura è una stima,",
+        "non una segmentazione. Le righe con `BiRefNet: sì` vanno rifatte con BiRefNet quando sarà disponibile nell'engine usato.",
+        "Gli stili con bande nere (cinema 2,39:1) sono ritagliati al centro quadrato.",
         "",
-        "| File | Gruppo | Misura | Seed | Alpha | Prompt (completo) | Data | Secondi |",
-        "|---|---|---|---|---|---|---|---|",
+        "Il visore e le parti interne aperte verso il bordo possono restare trasparenti: limite approvato nel set di prova.",
+        "Negativo vuoto per tutti gli asset (CFG 1). `Originale` indica la misura generata prima del ritaglio/ridimensionamento.",
+        "Rifiniture CPU: quattro anteprime (moda-editoriale, synthwave, spaziale60, svizzero) ritagliate per togliere scritte/loghi spuri;",
+        "coordinate nel manifest (`postproduzione`). Tile stelle: alpha a 4 livelli e tinta bianco caldo per stare sotto 350 kB.",
+        "",
+        "| ID | File | Gruppo | Originale | Misura | Passi | Seed | Modello (UNET) | Alpha | BiRefNet | Prompt (completo) | Negativo | Data | Secondi |",
+        "|---|---|---|---|---|---:|---:|---|---|---|---|---|---|---:|",
     ]
+    # Completa i manifest preesistenti e le generazioni future con la lista esplicita dei ritagli da rifare.
+    for e in m["asset"].values():
+        e["da_rifare_con_birefnet"] = e.get("alpha") == "chiave"
+    scrivi_manifest(m)
     for id_, e in sorted(m["asset"].items(), key=lambda kv: (kv[1]["gruppo"], kv[0])):
-        righe.append(f"| `{e['file']}` | {e['gruppo']} | {e['misura'][0]}×{e['misura'][1]} | {e['seme']} | {e['alpha'] or '—'} | {e['prompt']} | {e['data'][:10]} | {e['secondi']} |")
+        modello = e.get("modello_file", m["modello"]["unet"])
+        birefnet = "sì" if e["da_rifare_con_birefnet"] else "no"
+        righe.append(f"| `{id_}` | `{e['file']}` | {e['gruppo']} | {e['generato'][0]}×{e['generato'][1]} | {e['misura'][0]}×{e['misura'][1]} | {e['passi']} | {e['seme']} | `{modello}` | {e['alpha'] or '—'} | {birefnet} | {e['prompt']} | {e['negativo'] or '—'} | {e['data']} | {e['secondi']} |")
     righe.append("")
     righe.append(f"Totale: {len(m['asset'])} asset. Modello: `{m['modello']['unet']}`, encoder `{m['modello']['encoder']}`, VAE `{m['modello']['vae']}`.")
     (RISORSE / "README.md").write_text("\n".join(righe) + "\n", encoding="utf-8")
