@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const QUI = dirname(fileURLToPath(import.meta.url))
-const { CATALOGO, motivoDiBlocco, AVVISO_UNCENSORED } = await import(pathToFileURL(join(QUI, '..', 'src', 'main', 'installa', 'catalogo.ts')).href)
+const { CATALOGO, motivoDiBlocco, motivoLicenza, AVVISO_UNCENSORED } = await import(pathToFileURL(join(QUI, '..', 'src', 'main', 'installa', 'catalogo.ts')).href)
 const { scegli, tronco, TIPI_SAFETENSORS } = await import(pathToFileURL(join(QUI, '..', 'src', 'main', 'installa', 'scegli.ts')).href)
 
 let falliti = 0
@@ -83,7 +83,7 @@ for (const id of ['klein-int8', 'klein-te', 'klein4b-fp8', 'klein4b-te', 'sfondo
 const unc = CATALOGO.filter((v) => v.uncensored).map((v) => v.id).sort()
 uguale('le voci uncensored', unc, ['llm-huihui-4b', 'lora-uc', 'te-ac-q4', 'te-ac-q6', 'te-ac-q8', 'te-mr-q4', 'te-mr-q6', 'te-mr-q8'])
 for (const v of CATALOGO.filter((x) => x.uncensored)) {
-  uguale(`${v.id}: avviso`, v.avviso, AVVISO_UNCENSORED)
+  uguale(`${v.id}: avviso`, (v.avviso || "").endsWith(AVVISO_UNCENSORED), true)
   uguale(`${v.id}: non consigliato (mai scaricato da solo)`, !!v.consigliato, false)
   uguale(`${v.id}: guardia con interruttore spento`, /Modelli uncensored/.test(motivoDiBlocco(v, { uncensored: false, uncensoredAccettato: true }) || ''), true)
   uguale(`${v.id}: guardia senza accettazione`, /accetta/.test(motivoDiBlocco(v, { uncensored: true, uncensoredAccettato: false }) || ''), true)
@@ -105,6 +105,19 @@ for (const v of CATALOGO.filter((x) => x.licenza === 'Qwen Research' && x.ruolo 
 for (const v of CATALOGO.filter((x) => x.licenza === 'FLUX Kommunity')) uguale(`${v.id}: avviso Kommunity`, /Kommunity/.test(v.avviso || ''), true)
 // id unici
 uguale('id unici', new Set(CATALOGO.map((v) => v.id)).size, CATALOGO.length)
+
+// licenza valida: tutte le voci uncensored del catalogo la hanno; una senza licenza, con Kommunity o con «non-commercial» è rifiutata anche a interruttori accesi
+const TUTTO = { uncensored: true, uncensoredAccettato: true }
+for (const v of CATALOGO.filter((x) => x.uncensored)) uguale(`${v.id}: licenza valida`, motivoLicenza(v), null)
+const finta = { id: 'x', nome: 'Finto', uncensored: true, licenza: 'Apache-2.0', licenzaUrl: 'https://x' }
+uguale('licenza Apache ok', motivoDiBlocco(finta, TUTTO), null)
+uguale('senza licenza → no', /licenza dichiarata/.test(motivoDiBlocco({ ...finta, licenza: undefined }, TUTTO) || ''), true)
+uguale('senza link alla licenza → no', /licenza dichiarata/.test(motivoDiBlocco({ ...finta, licenzaUrl: undefined }, TUTTO) || ''), true)
+uguale('FLUX Kommunity → no', /Kommunity/.test(motivoDiBlocco({ ...finta, licenza: 'FLUX Kommunity' }, TUTTO) || ''), true)
+uguale('non-commercial → no', /non permette/.test(motivoDiBlocco({ ...finta, licenza: 'CC-BY-NC-4.0' }, TUTTO) || ''), true)
+uguale('Qwen Research senza avviso → no', /avviso/.test(motivoDiBlocco({ ...finta, licenza: 'Qwen Research' }, TUTTO) || ''), true)
+uguale('Qwen Research con avviso → ok', motivoDiBlocco({ ...finta, licenza: 'Qwen Research', avviso: 'licenza «Qwen Research»: solo ricerca' }, TUTTO), null)
+uguale('voce non uncensored: la licenza non blocca', motivoDiBlocco({ ...finta, uncensored: false, licenza: 'FLUX Kommunity' }, {}), null)
 
 console.log(falliti ? `\n${falliti} su ${fatti} controlli falliti` : `ok: ${fatti} controlli`)
 process.exit(falliti ? 1 : 0)

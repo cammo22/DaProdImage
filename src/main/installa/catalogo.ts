@@ -248,7 +248,7 @@ const META: Record<string, Partial<VoceCatalogo>> = {
   'sfondo-birefnet': { licenza: 'MIT', licenzaUrl: 'https://huggingface.co/ZhengPeng7/BiRefNet', ruolo: 'sfondo' },
   'seg-sam2': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'segmentatore' },
   'llm-huihui-4b': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'llm', avviso: AVVISO_UNC },
-  'lora-uc': { uncensored: true, licenza: 'Qwen Research', licenzaUrl: LIC_QWEN, ruolo: 'lora', avviso: AVVISO_UNC }
+  'lora-uc': { uncensored: true, licenza: 'Qwen Research', licenzaUrl: LIC_QWEN, ruolo: 'lora', avviso: AVVISO_QWEN + ' ' + AVVISO_UNC }
 }
 
 export const CATALOGO: VoceCatalogo[] = GREZZO.map((v) => ({ ...v, ...(META[v.id] || {}) }))
@@ -258,10 +258,25 @@ export const voce = (id: string): VoceCatalogo | undefined => CATALOGO.find((v) 
 /** il testo di un avviso sui modelli uncensored, uguale per tutti (la UI lo mostra prima di chiedere l'accettazione) */
 export const AVVISO_UNCENSORED = AVVISO_UNC
 
-/** una voce uncensored si scarica solo con l'interruttore «Modelli uncensored» acceso e l'avviso accettato; null = si può, se no il motivo in italiano.
+/** le licenze con cui un componente uncensored può stare nel catalogo: permissive, o «Qwen Research» (solo con l'avviso sul limite d'uso).
+ *  Fuori: FLUX Kommunity (§4(d): niente scorciatoie per togliere le protezioni), qualunque «non-commercial» non letto, licenze mancanti o senza link. */
+export const LICENZE_UNCENSORED = ['Apache-2.0', 'MIT', 'BSD-3-Clause', 'CC-BY-4.0', 'Qwen Research']
+
+/** una voce uncensored ha una licenza valida? null = sì, se no il motivo in italiano */
+export function motivoLicenza(v: VoceCatalogo): string | null {
+  if (!v.uncensored) return null
+  if (!v.licenza || !v.licenzaUrl) return `«${v.nome}» non ha una licenza dichiarata e verificabile: non si scarica.`
+  if (!LICENZE_UNCENSORED.includes(v.licenza)) return `«${v.nome}» ha la licenza «${v.licenza}», che non permette di distribuire una versione senza protezioni: non si scarica.`
+  if (v.licenza === 'Qwen Research' && !/Qwen Research/.test(v.avviso || '')) return `«${v.nome}» è sotto «Qwen Research» ma manca l'avviso sul limite d'uso: non si scarica.`
+  return null
+}
+
+/** una voce uncensored si scarica solo con licenza valida (`motivoLicenza`), con l'interruttore «Modelli uncensored» acceso e l'avviso accettato; null = si può, se no il motivo in italiano.
  *  È la guardia del processo principale: la UI nasconde le voci, ma anche una chiamata diretta non le scarica. */
 export function motivoDiBlocco(v: VoceCatalogo, imp: { uncensored?: boolean; uncensoredAccettato?: boolean }): string | null {
   if (!v.uncensored) return null
+  const licenza = motivoLicenza(v)
+  if (licenza) return licenza
   if (!imp.uncensored) return `«${v.nome}» è un modello uncensored: accendi «Modelli uncensored» in Opzioni per poterlo scaricare.`
   if (!imp.uncensoredAccettato) return `«${v.nome}» è un modello uncensored: prima leggi e accetta l'avviso in Opzioni → Modelli uncensored.`
   return null
