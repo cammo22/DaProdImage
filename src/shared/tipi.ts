@@ -62,6 +62,8 @@ export interface BoxRegione {
   /** guida = composizione suggerita · decisa = il modello resta lì dentro · blocca = maschera e compositing: solo lì */
   rigidita: 'guida' | 'decisa' | 'blocca'
   ordine: number
+  /** l'occhio spento nell'editor: il riquadro resta ma non parte */
+  nascosta?: boolean
 }
 
 /** Lo sfondo di una creazione: la scena, trasparente (PNG con alfa) o una tinta unita. */
