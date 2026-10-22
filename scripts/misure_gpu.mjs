@@ -34,17 +34,17 @@ const SEME = Number(opt('seed', 424242))
 const ETICHETTA = String(opt('etichetta', ''))
 mkdirSync(OUT, { recursive: true })
 
-// ---- grafi.ts com'è ----
-function caricaGrafi() {
-  let s = readFileSync(join(REPO, 'src', 'main', 'motore', 'grafi.ts'), 'utf8')
-  s = s.replace(/^import type .*? from '@shared\/tipi'\r?\n/gm, '')
-  s = s.replace(/^import \{ modelloTurbo \} from '@shared\/tipi'\r?\n/m, 'const modelloTurbo = (file) => /turbo/i.test(file)\n')
-  s = s.replace("constructor(readonly memoria: Memoria = 'normale') {}", "memoria: Memoria = 'normale'\n  constructor(memoria: Memoria = 'normale') { this.memoria = memoria }")
-  const p = join(tmpdir(), 'misure-gpu-grafi.ts')
-  writeFileSync(p, s)
-  return import(pathToFileURL(p).href)
+// ---- grafi.ts impacchettato con esbuild (importa regioni.ts e @shared: lo strip dei tipi di Node non basta) ----
+async function caricaGrafi() {
+  const { buildSync } = await import('esbuild')
+  const fuori = join(tmpdir(), 'misure-gpu-grafi.mjs')
+  buildSync({ entryPoints: [join(REPO, 'src', 'main', 'motore', 'grafi.ts')], bundle: true, format: 'esm', platform: 'node', outfile: fuori, alias: { '@shared': join(REPO, 'src', 'shared') }, logLevel: 'error' })
+  return import(pathToFileURL(fuori).href + '?v=' + Date.now())
 }
-const { costruisci } = await caricaGrafi()
+const { costruisci: costruisciGrezzo } = await caricaGrafi()
+// FLUX.2 Klein 4B ha i suoi file: modello FP8 e Qwen3 4B di solo testo (il VAE è quello di FLUX.2, lo stesso di Klein 3)
+const FILE_4B = { kleinModello: 'flux-2-klein-4b-fp8.safetensors', kleinEncoder: 'qwen_3_4b.safetensors' }
+const costruisci = (q, i, ...resto) => costruisciGrezzo(q, q.famiglia === 'klein4b' ? { ...i, ...FILE_4B } : i, ...resto)
 const { SISTEMA_MIGLIORA } = await (async () => {
   // la stringa di SISTEMA_MIGLIORA sta nel renderer (azioni.ts, ha import di React): la si legge dal sorgente
   const t = readFileSync(join(REPO, 'src', 'renderer', 'src', 'azioni.ts'), 'utf8')
@@ -261,6 +261,12 @@ prova('klein-mod-16', async () => esegui(grafoModifica('klein', 16, false), 'Kle
 // riferimenti: catena vs multi
 prova('klein-rif-catena-8', async () => esegui(grafoModifica('klein', 8, true), 'Klein 8 passi · Modifica con riferimento · ReferenceLatent in catena'))
 prova('klein-rif-multi-8', async () => esegui(conMultiLatent(grafoModifica('klein', 8, true)), 'Klein 8 passi · Modifica con riferimento · ReferenceMultiLatent'))
+// FLUX.2 Klein 4B (distillato, 4 passi, Flux2Scheduler + CFGGuider)
+prova('klein4b-crea-4-freddo', async () => { await libera(); return esegui(grafoCrea('klein4b', 4), 'Klein 4B 4 passi · Crea · a freddo') })
+prova('klein4b-crea-4', async () => esegui(grafoCrea('klein4b', 4), 'Klein 4B 4 passi · Crea · caldo'))
+prova('klein4b-crea-8', async () => esegui(grafoCrea('klein4b', 8), 'Klein 4B 8 passi · Crea · caldo'))
+prova('klein4b-zona-4', async () => esegui(grafoZona('klein4b', 4), 'Klein 4B 4 passi · zona · caldo'))
+prova('klein4b-mod-4', async () => esegui(grafoModifica('klein4b', 4, false), 'Klein 4B 4 passi · Modifica tutta la foto'))
 // Klein Base
 prova('base-crea-50-freddo', async () => { await libera(); return esegui(grafoCrea('klein-base', 50), 'Klein Base 50 passi · Crea · a freddo') })
 prova('base-crea-50', async () => esegui(grafoCrea('klein-base', 50), 'Klein Base 50 passi · Crea · caldo'))
