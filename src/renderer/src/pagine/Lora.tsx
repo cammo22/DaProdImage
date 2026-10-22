@@ -6,9 +6,11 @@ import { I } from '../componenti/Icone'
 import { Copertina } from '../componenti/SceltaLora'
 import { byte } from '../util'
 import type { Download, InfoLora, StatoVoce } from '@shared/tipi'
+import { compatibilitaLora, forzaLora, spostaLora } from '../pilaLora'
 
 export function Lora(): JSX.Element {
-  const { lore, loraAttive, toggleLora, setLoraAttive, avvisa } = usaStato()
+  const { lore, loraAttive, toggleLora, setLoraAttive, avvisa, imp } = usaStato()
+  const famiglia = imp?.famiglia || 'qwen'
   const [link, setLink] = useState('')
   const [sopra, setSopra] = useState(false)
   const [download, setDownload] = useState<Record<string, Download>>({})
@@ -73,7 +75,7 @@ export function Lora(): JSX.Element {
               <button className="btn" onClick={async () => { const p = await api.file.scegli('LoRA', ['safetensors']); if (p) void importa([p]) }}><I.piu /> Da file</button>
               <button className="btn icona" onClick={() => api.lora.apriCartella()} title="Apri la cartella dei LoRA"><I.cartella /></button>
             </div>
-            <span className="piccolo spento">Servono LoRA fatti per Qwen-Image 2.1: quelli per SDXL, Flux o Qwen-Image 1.x vengono segnati e non funzionano. Per Civitai a volte serve il token (Impostazioni).</span>
+            <span className="piccolo spento">La compatibilità dipende dal modello: Qwen, Klein e gli altri Flux non sono intercambiabili. Per Civitai a volte serve il token (Impostazioni). La pila non converte un LoRA incompatibile.</span>
           </div>
         </div>
 
@@ -83,6 +85,29 @@ export function Lora(): JSX.Element {
             <div className={`barra-progresso ${d.totali ? '' : 'indeterminata'}`} style={{ marginTop: 8 }}><i style={{ width: d.totali ? `${(d.ricevuti / d.totali) * 100}%` : '30%' }} /></div>
           </div>
         ))}
+
+        <section className="pannello col" aria-label="Pila LoRA" style={{ padding: 16 }}>
+          <div className="riga spazia"><h2 style={{ margin: 0 }}>Pila LoRA</h2><span className="piccolo tenue">{famiglia} · {loraAttive.length} slot</span></div>
+          <p className="piccolo spento">Dall'alto verso il basso: questo è l'ordine di applicazione. Forza 0 lascia lo slot spento senza cancellarlo.</p>
+          {!loraAttive.length && <span className="tenue">Accendi un LoRA dalla libreria per aggiungerlo alla pila.</span>}
+          {loraAttive.map((a, i) => {
+            const l = lore.find((x) => x.file === a.file)
+            const compatibile = l ? compatibilitaLora(l, famiglia) : '?'
+            const nome = l?.nome || a.file
+            return <div key={a.file} className="pannello col" style={{ padding: 10 }}>
+              <div className="riga spazia"><b>{i + 1}. {nome}</b><span className={`distintivo ${compatibile === 'si' ? 'si' : 'no'}`}>{compatibile === 'si' ? 'Compatibile' : compatibile === 'no' ? 'Non compatibile' : 'Da verificare'}</span></div>
+              <div className="riga">
+                <button className="btn piccolo" title="Sposta prima" aria-label={`Sposta prima ${nome}`} disabled={i === 0} onClick={() => setLoraAttive(spostaLora(loraAttive, a.file, -1))}>↑</button>
+                <button className="btn piccolo" title="Sposta dopo" aria-label={`Sposta dopo ${nome}`} disabled={i === loraAttive.length - 1} onClick={() => setLoraAttive(spostaLora(loraAttive, a.file, 1))}>↓</button>
+                <input type="range" aria-label={`Forza di ${nome}`} min={-2} max={2} step={0.05} value={a.forza} onChange={(e) => setLoraAttive(loraAttive.map((x) => x.file === a.file ? { ...x, forza: forzaLora(Number(e.target.value)) } : x))} />
+                <output style={{ minWidth: 40 }}>{a.forza.toFixed(2)}</output>
+                <button className="btn piccolo" title={`Togli ${nome} dalla pila`} onClick={() => setLoraAttive(loraAttive.filter((x) => x.file !== a.file))}><I.x /></button>
+              </div>
+              {l?.parole && <span className="piccolo tenue">Parole chiave: {l.parole}</span>}
+              {compatibile !== 'si' && <span className="piccolo oro">{compatibile === 'no' ? 'Spegni questo slot prima di generare con il modello selezionato.' : 'Architettura non riconosciuta: controlla la scheda del LoRA prima di usarlo.'}</span>}
+            </div>
+          })}
+        </section>
 
         {consigliati.some((c) => !c.presente) && (
           <div className="col">
@@ -111,7 +136,13 @@ export function Lora(): JSX.Element {
         {lore.length === 0 && <div className="spento">Ancora nessun LoRA. Un LoRA aggiunge uno stile, un personaggio o un dettaglio al modello: trascinane uno qui sopra.</div>}
         <div className="carte">
           {visibili.map((l) => (
-            <CartaLora key={l.file} l={l} attiva={loraAttive.some((a) => a.file === l.file)} toggle={() => toggleLora(l.file, l.forza)} />
+            <CartaLora key={l.file} l={l} attiva={loraAttive.some((a) => a.file === l.file)} toggle={() => {
+              if (!loraAttive.some((a) => a.file === l.file) && compatibilitaLora(l, famiglia) === 'no') {
+                avvisa('Questo LoRA non è compatibile con il modello selezionato.', 'errore')
+                return
+              }
+              toggleLora(l.file, forzaLora(l.forza))
+            }} />
           ))}
         </div>
       </div>
@@ -120,7 +151,8 @@ export function Lora(): JSX.Element {
 }
 
 function CartaLora({ l, attiva, toggle }: { l: InfoLora; attiva: boolean; toggle: () => void }): JSX.Element {
-  const { avvisa, loraAttive, setLoraAttive } = usaStato()
+  const { avvisa, loraAttive, setLoraAttive, imp } = usaStato()
+  const compatibile = compatibilitaLora(l, imp?.famiglia || 'qwen')
   const [parole, setParole] = useState(l.parole)
   const [forza, setForza] = useState(l.forza)
   useEffect(() => {
@@ -152,7 +184,7 @@ function CartaLora({ l, attiva, toggle }: { l: InfoLora; attiva: boolean; toggle
         <div className="riga spazia">
           <div className="nome" title={l.file}>{l.nome}</div>
           <span className={`distintivo ${l.compatibile === 'si' ? 'si' : l.compatibile === 'no' ? 'no' : 'forse'}`} title={l.base || ''}>
-            {l.compatibile === 'si' ? '✓ Qwen 2.1' : l.compatibile === 'no' ? '⚠ ' + (l.base?.split(' (')[0] || 'altro') : '?'}
+            {compatibile === 'si' ? '✓ Compatibile' : compatibile === 'no' ? '⚠ ' + (l.base?.split(' (')[0] || 'altro modello') : '? Da verificare'}
           </span>
         </div>
         <input
@@ -167,17 +199,18 @@ function CartaLora({ l, attiva, toggle }: { l: InfoLora; attiva: boolean; toggle
           <span className="piccolo tenue">Forza</span>
           <input
             type="range"
-            min={-1}
+            min={-2}
             max={2}
             step={0.05}
             value={forza}
-            style={{ ['--p' as string]: `${((forza + 1) / 3) * 100}%` }}
+            style={{ ['--p' as string]: `${((forza + 2) / 4) * 100}%` }}
             onChange={(e) => {
-              const v = Number(e.target.value)
+              const v = forzaLora(Number(e.target.value))
               setForza(v)
               if (attiva) setLoraAttive(loraAttive.map((a) => (a.file === l.file ? { ...a, forza: v } : a)))
             }}
             onPointerUp={() => salva({ forza })}
+            onBlur={() => salva({ forza })}
           />
           <b className="oro piccolo" style={{ width: 36, textAlign: 'right' }}>{forza.toFixed(2)}</b>
         </div>
