@@ -56,9 +56,11 @@ export function TelaModifica(p: Props): JSX.Element {
       <div className="attrezzi">
         <SelettoreModo />
         {speciale && (
-          <button className="btn piccolo" onClick={() => usaLab.setState({ scelto: null })} title="Torna al catalogo delle ricette">
-            ‹ {speciale === 'unisci' ? 'Unisci foto' : "Come l'esempio"} · tutte le ricette
-          </button>
+          <>
+            <button className="btn piccolo" onClick={() => usaLab.setState({ scelto: null })} title="Torna alle ricette">‹ Mix · tutte le ricette</button>
+            <button className={`btn piccolo ${speciale === 'unisci' ? 'attivo' : ''}`} onClick={() => usaLab.setState({ scelto: 'unisci' })} title="Più foto, ognuna con il suo ruolo, in una immagine nuova">Unisci foto</button>
+            <button className={`btn piccolo ${speciale === 'esempio' ? 'attivo' : ''}`} onClick={() => usaLab.setState({ scelto: 'esempio' })} title="Rifà un esempio con i dettagli delle tue foto: lo «stile da copiare»">Come l'esempio</button>
+          </>
         )}
         {disegna && base && !confrontoAttivo && (
           <>

@@ -62,6 +62,8 @@ export function SchedaRicette(): JSX.Element {
   const run = runs.find((r) => r.id === attiva)
 
   const scegli = (id: string): void => {
+    // Mix si apre sulla tela di Modifica: parte da «Unisci foto» e da lì si passa a «Come l'esempio»
+    if (id === 'r-mix') id = 'unisci'
     const nuovo = workflowDa(id)!
     usaLab.setState({ scelto: id, vista: 'catalogo' })
     setValori(valoriIniziali(nuovo))
@@ -166,7 +168,7 @@ export function SchedaRicette(): JSX.Element {
         {/* i modi dello Studio stanno nella strip in cima: qui niente selettore */}
         <div className="palco palco-lab" style={{ flex: 1, minHeight: 0 }}>
         <div className="schede-lab">
-          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{WORKFLOW_BASE.length - ricette.nascoste.length + ricette.utente.length}</span></button>
+          <button className={vista === 'catalogo' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'catalogo' })}><I.laboratorio /> Ricette <span className="n">{elencoWorkflow().length}</span></button>
           <button className={vista === 'risultati' ? 'su' : ''} onClick={() => usaLab.setState({ vista: 'risultati' })} disabled={!runs.length}>
             <I.serie /> Risultati {runs.length > 0 && <span className="n">{runs.length}</span>}
           </button>
@@ -215,8 +217,8 @@ export function SchedaRicette(): JSX.Element {
           {!w ? (
             <div className="sezione">
               <h3>Ricette</h3>
-              <p className="tenue" style={{ margin: '0 0 10px' }}>Ricette già pronte: scegline una a sinistra, dai la foto (o il testo) e premi Avvia. Il motore fa tutti i passi da solo, uno dopo l'altro, e i risultati restano in Galleria.</p>
-              <p className="piccolo spento" style={{ margin: 0 }}>Due tipi: le <b>serie</b> (la stessa foto in tante versioni: pose, stili, luci…) e le <b>catene</b> (ogni passo parte dal risultato del precedente: restauro, il tempo che passa…).</p>
+              <p className="tenue" style={{ margin: '0 0 10px' }}>Sei ricette già pronte: scegline una a destra, dai la foto (o il testo) e premi Avvia. Il motore fa tutti i passi da solo, uno dopo l'altro, e i risultati restano in Galleria.</p>
+              <p className="piccolo spento" style={{ margin: 0 }}>Due tipi: le <b>serie</b> (la stessa foto in tante versioni: viste, pose, mondi…) e le <b>catene</b> (ogni passo parte dal risultato del precedente: Rinnova).</p>
             </div>
           ) : (
             <>
