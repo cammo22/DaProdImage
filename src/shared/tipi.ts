@@ -14,10 +14,51 @@ export type Modalita =
   | 'descrivi' // il modello di testo scrive (migliora prompt, descrive una foto, traduce)
   | 'traduci' // il prompt dall'italiano all'inglese con il traduttore dedicato (sul processore, senza Qwen)
   | 'importa' // (solo in galleria) una foto portata dentro da fuori
+  | 'sfondo' // toglie lo sfondo: PNG con trasparenza (BiRefNet), i pixel del soggetto restano quelli originali
+  | 'segmenta' // estrae da una foto la cosa indicata (riquadro o punti): SAM2 → PNG con trasparenza, pixel originali
 
 export interface LoraAttiva {
   file: string
+  /** −2…2 (0 = ignorato); l'ordine della lista è l'ordine in cui si applicano */
   forza: number
+}
+
+/** Un riquadro dell'Editor box: coordinate 0–1 sulla tela/foto (origine in alto a sinistra), [x0, y0, x1, y1]. */
+export type Box01 = [number, number, number, number]
+
+/** Una regione dell'Editor box, col suo prompt (regional prompting) */
+export interface Regione {
+  id: string
+  box: Box01
+  prompt: string
+}
+
+/** Un riquadro dell'Editor box della GUI v2: dove sta nella tela finale (frazioni 0–1) e cosa ci deve essere.
+ *  Il motore lo trasforma in `Regione` (`adattaRichiesta`): la conversione al formato di Klein 3 o alle parole di Qwen la fa solo lui. */
+export interface BoxRegione {
+  id: string
+  /** x0, y0, x1, y1 normalizzati 0–1 sulla tela finale */
+  rect: [number, number, number, number]
+  tipo: 'persona' | 'oggetto' | 'testo' | 'sfondo'
+  prompt: string
+  /** foto di riferimento di questo box (→ <imageN>): il motore non la usa ancora */
+  rif?: string
+  /** guida = composizione suggerita · decisa = il modello resta lì dentro · blocca = maschera e compositing (per ora vale come decisa) */
+  rigidita: 'guida' | 'decisa' | 'blocca'
+  ordine: number
+  /** l'occhio spento nell'editor: il riquadro resta ma non parte */
+  nascosta?: boolean
+}
+
+/** Lo sfondo di una creazione: la scena, trasparente (PNG con alfa) o una tinta unita (#rrggbb). */
+export type SfondoRichiesto = 'scena' | 'trasparente' | { tinta: string }
+
+/** Estrai fedele: cosa ritagliare con SAM2 (tutto in coordinate 0–1 sulla foto) */
+export interface OpzioniSegmenta {
+  box?: Box01
+  punti?: { x: number; y: number; positivo: boolean }[]
+  /** true = il PNG è ritagliato attorno alla cosa (+ un margine); false = ha la misura della foto, con il resto trasparente */
+  ritaglia?: boolean
 }
 
 export interface Bordi {
@@ -34,8 +75,8 @@ export interface Riquadro {
   h: number
 }
 
-/** il modello che disegna: Qwen-Image 2.1, o FLUX 3 Klein (veloce, distillato) o FLUX 3 Klein Base (50 passi con CFG) */
-export type Famiglia = 'qwen' | 'klein' | 'klein-base'
+/** il modello che disegna: Qwen-Image 2.1, FLUX 3 Klein (veloce, distillato), FLUX 3 Klein Base (50 passi con CFG) o FLUX.2 Klein 4B (Apache-2.0, 4 passi) */
+export type Famiglia = 'qwen' | 'klein' | 'klein-base' | 'klein4b'
 
 /** quello che distingue i modelli: passi per qualità, CFG e cosa sanno fare. Nomi e passi «alti» vengono da `modelli.ts`
  *  (la mappa unica); «turbo» resta solo per le qualità salvate prima della 1.1 e vale come «alta» (`senzaTurbo`). */
@@ -46,35 +87,8 @@ const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string
 export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
   qwen: famiglia('qwen-base', 20, 50),
   klein: famiglia('klein', 8, 16),
-  'klein-base': famiglia('klein-base', 25, 64)
-}
-
-/** Un riquadro dell'Editor box (GUI v2): dove sta nella tela finale (frazioni 0–1) e cosa ci deve essere.
- *  La conversione al formato di Klein 3 ([top,left,bottom,right] su 0–1000) o alle maschere di Qwen la fa solo il motore. */
-export interface BoxRegione {
-  id: string
-  /** x0, y0, x1, y1 normalizzati 0–1 sulla tela finale */
-  rect: [number, number, number, number]
-  tipo: 'persona' | 'oggetto' | 'testo' | 'sfondo'
-  prompt: string
-  /** foto di riferimento di questo box (→ <imageN>) */
-  rif?: string
-  /** guida = composizione suggerita · decisa = il modello resta lì dentro · blocca = maschera e compositing: solo lì */
-  rigidita: 'guida' | 'decisa' | 'blocca'
-  ordine: number
-  /** l'occhio spento nell'editor: il riquadro resta ma non parte */
-  nascosta?: boolean
-}
-
-/** Lo sfondo di una creazione: la scena, trasparente (PNG con alfa) o una tinta unita. */
-export type SfondoRichiesto = 'scena' | 'trasparente' | { tinta: string }
-
-/** Il laboratorio dei modelli senza filtri di rifiuto (Impostazioni → Uncensored). Spento di serie: si accende con il disclaimer. */
-export interface Uncensored {
-  abilitato: boolean
-  /** quando ha accettato il disclaimer (ms) e quale versione del testo */
-  accettatoIl?: number
-  versioneDisclaimer?: number
+  'klein-base': famiglia('klein-base', 25, 64),
+  klein4b: famiglia('klein4b', 4, 8)
 }
 
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
@@ -122,14 +136,18 @@ export interface Richiesta {
   /** rifinisci/ingrandisci: di quanto ingrandire */
   fattore?: number
   lora: LoraAttiva[]
+  /** Editor box (regional prompting): più riquadri, ognuno col suo prompt; `prompt` resta la descrizione di tutta la scena. Per 'crea' e 'modifica'. */
+  regioni?: Regione[]
+  /** GUI v2, Editor box: i riquadri con il loro testo (→ `regioni`) e la scena generale (→ `prompt`, se ci sono riquadri validi) */
+  box?: BoxRegione[]
+  promptScena?: string
+  /** GUI v2: lo sfondo richiesto ('trasparente' = come `trasparente`; { tinta } = una riga in più nel prompt) */
+  sfondo?: SfondoRichiesto
+  /** 'segmenta': cosa estrarre */
+  segmenta?: OpzioniSegmenta
   /** Turbo: LoRA di distillazione a 8 passi (CFG 1), circa 5 volte più veloce */
   turbo?: boolean
   trasparente?: boolean
-  /** GUI v2: lo sfondo richiesto (il motore lo legge quando lo supporta; `trasparente` resta per i grafi Qwen di prima) */
-  sfondo?: SfondoRichiesto
-  /** GUI v2, Editor box: i riquadri con il loro testo e la scena generale (il motore li converte; finché non c'è l'adattatore l'interfaccia li mette anche nel prompt) */
-  box?: BoxRegione[]
-  promptScena?: string
   /** quante immagini fare (seed diversi) */
   quante: number
   /** descrivi: istruzione di sistema e lunghezza massima */
@@ -223,6 +241,8 @@ export interface InfoLora {
   /** 'si' = Qwen-Image 2.1, 'no' = un altro modello, '?' = non si capisce */
   compatibile: 'si' | 'no' | '?'
   base?: string
+  /** per quali modelli è fatto (da `analizza`: dai nomi dei tensori); vuoto = non si capisce */
+  famiglie?: Famiglia[]
   aggiunta: number
 }
 
@@ -288,8 +308,12 @@ export interface Impostazioni {
   testoCon4B: boolean
   /** secondi senza lavori dopo i quali i modelli escono dalla VRAM (0 = mai) */
   scaricaDopo: number
-  /** il laboratorio Uncensored (assente = spento) */
-  uncensored?: Uncensored
+  /** interruttore «Modelli uncensored» (Opzioni): spento di serie. Con lui spento le voci `uncensored` del catalogo non si scaricano */
+  uncensored: boolean
+  /** ha letto e accettato l'avviso sui modelli uncensored (serve anche questo per scaricarli) */
+  uncensoredAccettato: boolean
+  /** i lavori di testo con Klein (migliora prompt, descrivi foto, Idee…) scrivono col Qwen3-VL 4B uncensored (voce `llm-huihui-4b`), se è scaricato; serve `uncensored` acceso */
+  testoUncensored: boolean
 }
 
 /** RAM, VRAM e GPU per la barra in alto (byte; uso e temperatura in % e °C) */
@@ -318,7 +342,7 @@ export interface InfoMotore {
 /** Un file di modello che si può scaricare. */
 export interface VoceCatalogo {
   id: string
-  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'klein' | 'klein-te' | 'klein-vae'
+  tipo: 'diffusione' | 'encoder' | 'vae' | 'lora' | 'upscaler' | 'anteprima' | 'traduttore' | 'klein' | 'klein-te' | 'klein-vae' | 'sfondo' | 'segmentatore' | 'llm'
   nome: string
   descrizione: string
   file: string
@@ -350,6 +374,17 @@ export interface VoceCatalogo {
   famiglia?: string
   /** non so ancora il nome vero del file: lo trovo al primo download */
   daCercare?: boolean
+  /** il componente è «uncensored» (senza il rifiuto addestrato nei pesi): si scarica solo con l'interruttore acceso e l'avviso accettato */
+  uncensored?: boolean
+  /** sigla della licenza dei pesi (es. 'Apache-2.0', 'Qwen Research', 'FLUX Kommunity', 'MIT') e dove si legge */
+  licenza?: string
+  licenzaUrl?: string
+  /** a cosa serve nella pipeline: la UI lo mostra accanto al nome */
+  ruolo?: 'denoiser' | 'encoder' | 'llm' | 'vae' | 'lora' | 'segmentatore' | 'sfondo'
+  /** una riga di avvertenza da mostrare prima del download (limiti d'uso, compatibilità) */
+  avviso?: string
+  /** il repo e la revisione fissata (per riprodurre il download); senza revisione si usa `main` */
+  revisione?: string
 }
 
 export interface StatoVoce extends VoceCatalogo {

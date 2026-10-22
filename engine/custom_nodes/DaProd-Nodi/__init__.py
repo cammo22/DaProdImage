@@ -10,6 +10,7 @@ import torch
 import torch.nn.functional as F
 
 from .traduzione import DaProdTraduci
+from .segmentazione import DaProdSegmenta, DaProdSfondo
 
 
 def _maschera_come(maschera, h, w):
@@ -115,9 +116,13 @@ NODE_CLASS_MAPPINGS = {
     "DaProdRiempiZona": DaProdRiempiZona,
     "DaProdAccordaColori": DaProdAccordaColori,
     "DaProdTraduci": DaProdTraduci,
+    "DaProdSfondo": DaProdSfondo,
+    "DaProdSegmenta": DaProdSegmenta,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DaProdRiempiZona": "DaProd · Riempi la zona",
     "DaProdAccordaColori": "DaProd · Accorda i colori",
     "DaProdTraduci": "DaProd · Traduci il prompt",
+    "DaProdSfondo": "DaProd · Togli lo sfondo (BiRefNet)",
+    "DaProdSegmenta": "DaProd · Estrai fedele (SAM 2)",
 }

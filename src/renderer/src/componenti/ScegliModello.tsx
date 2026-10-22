@@ -10,16 +10,16 @@ import { I } from './Icone'
 import { Tessera, Tessere } from './Tessere'
 
 /** le voci del catalogo da avere per usare un modello (il modello INT8 sta nelle schede da 8 GB) */
-const SERVONO: Record<Exclude<IdModello, 'qwen-base'>, string[]> = { klein: ['klein-int8', 'klein-te', 'klein-vae'], 'klein-base': ['klein-base-int8', 'klein-te', 'klein-vae'] }
-const PESO: Record<Exclude<IdModello, 'qwen-base'>, string> = { klein: 'circa 10 GB', 'klein-base': 'circa 10 GB (4,7 se hai già Klein)' }
-const ETICHETTA: Record<IdModello, string> = { 'qwen-base': 'Qwen base', klein: 'Klein veloce', 'klein-base': 'Klein Base' }
+const SERVONO: Record<Exclude<IdModello, 'qwen-base'>, string[]> = { klein: ['klein-int8', 'klein-te', 'klein-vae'], 'klein-base': ['klein-base-int8', 'klein-te', 'klein-vae'], klein4b: ['klein4b-fp8', 'klein4b-te', 'klein-vae'] }
+const PESO: Record<Exclude<IdModello, 'qwen-base'>, string> = { klein: 'circa 10 GB', 'klein-base': 'circa 10 GB (4,7 se hai già Klein)', klein4b: 'circa 12,5 GB' }
+const ETICHETTA: Record<IdModello, string> = { 'qwen-base': 'Qwen base', klein: 'Klein veloce', 'klein-base': 'Klein Base', klein4b: 'Klein 4B' }
 
 export function SelettoreModello({ variante = 'pillole' }: { variante?: 'pillole' | 'tessere' }): JSX.Element {
   const imp = usaStato((s) => s.imp)
   const avvisa = usaStato((s) => s.avvisa)
   const inCorso = usaStato((s) => s.lavori.some((l) => l.stato === 'in coda' || l.stato === 'in corso'))
   const scelto = modelloDaImpostazioni(imp)
-  const [pronti, setPronti] = useState<Record<IdModello, boolean>>({ 'qwen-base': true, klein: false, 'klein-base': false })
+  const [pronti, setPronti] = useState<Record<IdModello, boolean>>({ 'qwen-base': true, klein: false, 'klein-base': false, klein4b: false })
   const [aperto, setAperto] = useState<IdModello | null>(null)
   const [scarico, setScarico] = useState<{ id: IdModello; passo: string; perc: number } | null>(null)
   const radice = useRef<HTMLDivElement>(null)
@@ -31,7 +31,8 @@ export function SelettoreModello({ variante = 'pillole' }: { variante?: 'pillole
     setPronti({
       'qwen-base': true,
       klein: comuni && !!f.klein?.some((n) => !/base/i.test(n)),
-      'klein-base': comuni && !!f.klein?.some((n) => /base/i.test(n))
+      'klein-base': comuni && !!f.klein?.some((n) => /base/i.test(n)),
+      klein4b: (f.klein4b?.length ?? 0) > 0 && (f.klein4bTe?.length ?? 0) > 0 && (f.kleinVae?.length ?? 0) > 0
     })
   }
   useEffect(() => {
@@ -69,7 +70,7 @@ export function SelettoreModello({ variante = 'pillole' }: { variante?: 'pillole
   const scarica = async (id: Exclude<IdModello, 'qwen-base'>): Promise<void> => {
     try {
       const stato = await api.modelli.stato()
-      const nomi: Record<string, string> = { 'klein-int8': 'il modello Klein', 'klein-base-int8': 'il modello Klein Base', 'klein-te': 'il text encoder', 'klein-vae': 'il VAE' }
+      const nomi: Record<string, string> = { 'klein-int8': 'il modello Klein', 'klein-base-int8': 'il modello Klein Base', 'klein4b-fp8': 'il modello Klein 4B', 'klein4b-te': 'il text encoder (Qwen3 4B)', 'klein-te': 'il text encoder', 'klein-vae': 'il VAE' }
       for (const voce of SERVONO[id]) {
         if (stato.find((v) => v.id === voce)?.presente) continue
         setScarico({ id, passo: nomi[voce], perc: 0 })

@@ -5,21 +5,19 @@ import { Interruttore } from './Controlli'
 import { byte } from '../util'
 import { api } from '../api'
 
-export type VoceLaboratorio = StatoVoce & { uncensored?: boolean; licenza?: string; licenzaUrl?: string; ruolo?: string; avviso?: string }
-export const VERSIONE_DISCLAIMER = 1
 export const DISCLAIMER = 'Questi componenti possono produrre contenuti sensibili o inesatti. Usali solo per scopi leciti, con i diritti e il consenso necessari. Non sono ammessi contenuti sessuali che coinvolgono minori, immagini intime non consensuali, deepfake ingannevoli o altri usi illegali. Uncensored non significa senza regole: valgono le leggi e le licenze di ogni modello, anche i divieti di uso commerciale. Sei responsabile di ciò che crei e pubblichi.'
 
-export function LaboratorioUncensored(p: { imp: Impostazioni; catalogo: VoceLaboratorio[]; download: Record<string, Download>; salva: (m: Partial<Impostazioni>) => Promise<void>; scarica: (v: StatoVoce) => Promise<void> }): JSX.Element {
+export function LaboratorioUncensored(p: { imp: Impostazioni; catalogo: StatoVoce[]; download: Record<string, Download>; salva: (m: Partial<Impostazioni>) => Promise<void>; scarica: (v: StatoVoce) => Promise<void> }): JSX.Element {
   const [disclaimer, setDisclaimer] = useState(false)
   const [consensi, setConsensi] = useState([false, false, false])
   const [occupato, setOccupato] = useState(false)
   const [errore, setErrore] = useState('')
-  const acceso = p.imp.uncensored?.abilitato === true && p.imp.uncensored.versioneDisclaimer === VERSIONE_DISCLAIMER && !!p.imp.uncensored.accettatoIl
+  const acceso = p.imp.uncensored === true && p.imp.uncensoredAccettato === true
   const salva = async (abilitato: boolean): Promise<void> => {
     setOccupato(true)
     setErrore('')
     try {
-      await p.salva({ uncensored: abilitato ? { abilitato: true, accettatoIl: Date.now(), versioneDisclaimer: VERSIONE_DISCLAIMER } : { ...p.imp.uncensored, abilitato: false } })
+      await p.salva(abilitato ? { uncensored: true, uncensoredAccettato: true } : { uncensored: false, uncensoredAccettato: false, testoUncensored: false })
       setDisclaimer(false)
     } catch (e) { setErrore((e as Error).message) }
     finally { setOccupato(false) }
@@ -50,6 +48,7 @@ export function LaboratorioUncensored(p: { imp: Impostazioni; catalogo: VoceLabo
             <small>{v.avviso || v.descrizione}</small>
           </div>
         })}
+        {p.catalogo.some((v) => v.id === 'llm-huihui-4b' && v.presente) && <Interruttore acceso={p.imp.testoUncensored === true} cambia={(v) => void p.salva({ testoUncensored: v })}>Con Klein, scrivi i testi con l’LLM Uncensored (Qwen3-VL 4B)</Interruttore>}
         <p className="piccolo tenue">FLUX / Klein 3 Uncensored: non disponibile. Non distribuiamo varianti che aggirano protezioni vietate dalla licenza Kommunity.</p>
       </>}
     </div>

@@ -44,7 +44,10 @@ const PREDEFINITE: Impostazioni = {
   unaCosaAllaVolta: true,
   potenziaKlein: true,
   testoCon4B: true, // misurato in T12 (docs/misure-1.1.0.md): Migliora prompt + Crea con Qwen passa da 186 s a 134 s (encoder 8B int8) o da 446 s a 150 s (8B GGUF)
-  scaricaDopo: 120
+  scaricaDopo: 120,
+  uncensored: false,
+  uncensoredAccettato: false,
+  testoUncensored: false
 }
 
 let attuali: Impostazioni | null = null
@@ -95,6 +98,8 @@ export function impostazioni(): Impostazioni {
 
 export function salvaImpostazioni(modifiche: Partial<Impostazioni>): Impostazioni {
   const nuove = { ...impostazioni(), ...modifiche, ...allineaScelta(modifiche) }
+  // spento l'interruttore, l'LLM uncensored non scrive più i testi (resta sul disco, se l'hai scaricato)
+  if (modifiche.uncensored === false) nuove.testoUncensored = false
   if (modifiche.predefiniti) nuove.predefiniti = { ...impostazioni().predefiniti, ...modifiche.predefiniti }
   attuali = nuove
   scrivi(nuove)

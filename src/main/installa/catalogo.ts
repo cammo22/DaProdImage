@@ -6,8 +6,24 @@ const TURBO = 'AtomicChat/Qwen-Image-2.1-Turbo-GGUF'
 const ENC_AC = 'AtomicChat/Qwen-Image-2.1-Turbo-Uncensored-GGUF'
 const ENC_MR = 'mradermacher/Qwen3-VL-8B-Instruct-Uncensored-V2-GGUF'
 const KLEIN = 'black-forest-labs/flux-3-image-klein-comfy'
+// revisioni fissate (controllate il 22/10/2026): il download è riproducibile anche se il repo cambia dopo
+const KLEIN_REV = 'feef60b0aaf63a4773ace96636ebbcf43b881312'
+const KLEIN4B_FP8 = 'black-forest-labs/FLUX.2-klein-4b-fp8'
+const KLEIN4B_FP8_REV = '5b4408e59397a4a37ccb46afe426d8ed86379441'
+const KLEIN4B_COMFY = 'Comfy-Org/vae-text-encorder-for-flux-klein-4b'
+const KLEIN4B_COMFY_REV = '87cfba3d4b98662fb80f23921bb37bf887c97c58'
+const BIREFNET = 'ZhengPeng7/BiRefNet'
+const BIREFNET_REV = 'e2bf8e4460fc8fa32bba5ea4d94b3233d367b0e4'
+const SAM2 = 'facebook/sam2.1-hiera-small'
+const SAM2_REV = 'ee5bba1d82bb8749febdf90f45e84b687142ba03'
+const HUIHUI4B = 'ahmed22xa/Huihui-Qwen3-VL-4B-Instruct-abliterated-comfy'
+const HUIHUI4B_REV = '6d6fc98f9bfa783dfa4f143804525742cb5dad62'
 
-export const CATALOGO: VoceCatalogo[] = [
+const LIC_QWEN = 'https://huggingface.co/Qwen/Qwen-Image-2.1/raw/main/LICENSE'
+const LIC_KOMMUNITY = 'https://huggingface.co/black-forest-labs/flux-3-image-klein/blob/main/LICENSE.md'
+const LIC_APACHE = 'https://www.apache.org/licenses/LICENSE-2.0'
+
+const GREZZO: VoceCatalogo[] = [
   // --- modello di diffusione (uno solo serve; solo Q4, Q6 e Q8) ---
   {
     id: 'q4km', tipo: 'diffusione', quant: 'Q4', nome: 'Qwen-Image-2.1 Uncensored · Q4',
@@ -78,27 +94,62 @@ export const CATALOGO: VoceCatalogo[] = [
     accanto: ['^config\\.json$', '^generation_config\\.json$', '^tokenizer_config\\.json$', '^source\\.spm$', '^target\\.spm$', '^vocab\\.json$']
   },
   // --- FLUX 3 Image Klein (Black Forest Labs): il repo «comfy» ha bf16, int8 («convrot») e NVFP4 per Klein (veloce, 8 passi) e Klein Base (50 passi, CFG).
-  //     I nomi dei file vengono dai workflow ufficiali di ComfyUI; il nome esatto lo chiede installa/risolvi.ts a Hugging Face. Per una scheda da 6-8 GB va bene l'INT8.
-  //     L'encoder è un Qwen3-VL 4B (diverso dal nostro 8B); il VAE è quello di FLUX.2. ---
+  //     I percorsi esatti vengono dall'albero del repo (controllato il 22/10/2026, revisione KLEIN_REV): la prima espressione di ogni lista è il nome esatto,
+  //     le altre sono ripieghi per i nomi vecchi (flux3_image_klein_sd_…) e per eventuali rinomine; l'ultima è larga ma esclude VAE, encoder, upsampler e altri formati.
+  //     Per una scheda da 6-8 GB va bene l'INT8. L'encoder è un Qwen3-VL 4B (diverso dal nostro 8B); il VAE è quello di FLUX.2. ---
   ...([
-    ['klein-int8', 'FLUX 3 Klein · veloce · INT8', 'Il più veloce: 8 passi senza CFG. L\'INT8 sta nelle schede da 8 GB.', 5_700_000_000, ['^flux3_image_klein_sd_int8', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
-    ['klein-bf16', 'FLUX 3 Klein · veloce · BF16', 'Stessa qualità dell\'originale, ma pesa il doppio: serve molta RAM.', 11_300_000_000, ['^flux3_image_klein_sd(_bf16)?\\.safetensors$', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']],
-    ['klein-base-int8', 'FLUX 3 Klein Base · INT8', 'La versione «normale»: 50 passi con CFG 3,5, la qualità piena (3 volte più lenta di Klein).', 5_700_000_000, ['^flux3_image_klein_base_int8', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|bf16|nvfp4|fp8))(?=.*int8)']],
-    ['klein-base-bf16', 'FLUX 3 Klein Base · BF16', 'Klein Base non quantizzato.', 11_300_000_000, ['^flux3_image_klein_base(_bf16)?\\.safetensors$', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|int8|nvfp4|fp8))(?=.*bf16)']]
+    ['klein-int8', 'FLUX 3 Klein · veloce · INT8', 'Il più veloce: 8 passi senza CFG. L\'INT8 sta nelle schede da 8 GB.', 5_800_000_000, ['^flux3-image-klein-int8-convrot\\.safetensors$', '^flux3_image_klein_sd_int8', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|upsampl|bf16|nvfp4|fp8))(?=.*int8)']],
+    ['klein-bf16', 'FLUX 3 Klein · veloce · BF16', 'Stessa qualità dell\'originale, ma pesa il doppio: serve molta RAM.', 11_100_000_000, ['^flux3-image-klein-bf16\\.safetensors$', '^flux3_image_klein_sd(_bf16)?\\.safetensors$', '^(?=.*klein)(?!.*base)(?!.*(vae|qwen|text_enc|upsampl|int8|nvfp4|fp8))(?=.*bf16)']],
+    ['klein-base-int8', 'FLUX 3 Klein Base · INT8', 'La versione «normale»: 50 passi con CFG 3,5, la qualità piena (3 volte più lenta di Klein).', 5_800_000_000, ['^flux3-image-klein-base-int8-convrot\\.safetensors$', '^flux3_image_klein_base_int8', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|upsampl|bf16|nvfp4|fp8))(?=.*int8)']],
+    ['klein-base-bf16', 'FLUX 3 Klein Base · BF16', 'Klein Base non quantizzato.', 11_100_000_000, ['^flux3-image-klein-base-bf16\\.safetensors$', '^flux3_image_klein_base(_bf16)?\\.safetensors$', '^(?=.*klein)(?=.*base)(?!.*(vae|qwen|text_enc|upsampl|int8|nvfp4|fp8))(?=.*bf16)']]
   ] as const).map(([id, nome, descrizione, byte, cerca]): VoceCatalogo => ({
-    id, tipo: 'klein', nome, descrizione, file: '', cartella: 'diffusion_models', url: '', byte, circa: true, repo: KLEIN, cerca: [...cerca]
+    id, tipo: 'klein', nome, descrizione, file: '', cartella: 'diffusion_models', url: '', byte, circa: true, repo: KLEIN, cerca: [...cerca], revisione: KLEIN_REV
   })),
   {
     id: 'klein-te', tipo: 'klein-te', nome: 'Text encoder di FLUX 3 Klein (Qwen3-VL 4B)',
     descrizione: 'Legge il prompt per Klein. È un Qwen3-VL da 4 miliardi di parametri, diverso dal nostro encoder 8B (che resta per migliora prompt, Idee, Estrai…).',
-    file: '', cartella: 'text_encoders', url: '', byte: 4_500_000_000, circa: true,
-    repo: KLEIN, cerca: ['^qwen3vl_4b_int8', '^(?=.*(qwen3|qwen_3))(?=.*vl)(?=.*4b)(?!.*(prompt|upsampl|9b))', '^(?=.*(qwen3|qwen_3))(?=.*4b)(?!.*(prompt|upsampl|9b))']
+    file: '', cartella: 'text_encoders', url: '', byte: 4_900_000_000, circa: true,
+    repo: KLEIN, revisione: KLEIN_REV, cerca: ['^qwen3vl_4b_int8_convrot\\.safetensors$', '^qwen3vl_4b_int8', '^(?=.*(qwen3|qwen_3))(?=.*vl)(?=.*4b)(?!.*(prompt|upsampl|9b))', '^(?=.*(qwen3|qwen_3))(?=.*4b)(?!.*(prompt|upsampl|9b))']
   },
   {
     id: 'klein-vae', tipo: 'klein-vae', nome: 'VAE di FLUX 3 Klein (FLUX.2)',
     descrizione: 'Il decoder delle immagini di Klein (piccolo).',
-    file: '', cartella: 'vae', url: '', byte: 170_000_000, circa: true,
-    repo: KLEIN, cerca: ['^flux2-vae\\.safetensors$', '^(?=.*flux)(?=.*vae)', '^(?=.*vae)(?!.*qwen)']
+    file: '', cartella: 'vae', url: '', byte: 336_211_292, circa: true,
+    repo: KLEIN, revisione: KLEIN_REV, cerca: ['^flux2-vae\\.safetensors$', '^(?=.*flux)(?=.*vae)', '^(?=.*vae)(?!.*qwen)']
+  },
+  // --- FLUX.2 Klein 4B (Black Forest Labs, gennaio 2026): licenza Apache-2.0, 4 passi senza CFG. Il denoiser è l'FP8 ufficiale (4 GB);
+  //     l'encoder è un Qwen3 4B di solo testo (quello dei workflow di ComfyUI); il VAE è lo stesso di Klein 3 (flux2-vae, voce `klein-vae`). ---
+  {
+    id: 'klein4b-fp8', tipo: 'klein', nome: 'FLUX.2 Klein 4B · FP8',
+    descrizione: 'Klein da 4 miliardi di parametri: 4 passi senza CFG, licenza Apache-2.0 (uso commerciale libero). Non fa le modifiche con tante foto bene come Klein 3.',
+    file: '', cartella: 'diffusion_models', url: '', byte: 4_070_624_520, circa: true,
+    repo: KLEIN4B_FP8, revisione: KLEIN4B_FP8_REV, cerca: ['^flux-2-klein-4b-fp8\\.safetensors$', '^(?=.*klein)(?=.*4b)(?!.*base)(?=.*fp8)']
+  },
+  {
+    id: 'klein4b-te', tipo: 'klein-te', nome: 'Text encoder di FLUX.2 Klein 4B (Qwen3 4B)',
+    descrizione: 'Il Qwen3 4B di solo testo che legge il prompt per FLUX.2 Klein 4B. Pesa 8 GB e lavora dalla RAM.',
+    file: '', cartella: 'text_encoders', url: '', byte: 8_044_982_048, circa: true,
+    repo: KLEIN4B_COMFY, revisione: KLEIN4B_COMFY_REV, cerca: ['^qwen_3_4b\\.safetensors$']
+  },
+  // --- togli sfondo e estrai fedele: si scaricano al primo uso, girano in una fase a parte (pochi centinaia di MB di VRAM) e poi escono dalla scheda ---
+  {
+    id: 'sfondo-birefnet', tipo: 'sfondo', nome: 'BiRefNet (togli sfondo)',
+    descrizione: 'Separa il soggetto dallo sfondo senza ridisegnarlo: i pixel restano quelli della tua foto, con capelli e bordi fini. Licenza MIT.',
+    file: '', cartella: 'segment/birefnet', url: '', byte: 444_473_596, circa: true, consigliato: false,
+    repo: BIREFNET, revisione: BIREFNET_REV, cerca: ['^model\\.safetensors$'], accanto: ['^config\\.json$']
+  },
+  {
+    id: 'seg-sam2', tipo: 'segmentatore', nome: 'SAM 2.1 small (estrai fedele)',
+    descrizione: 'Dal riquadro o dai punti che indichi ritaglia esattamente quella cosa dalla foto originale (persona, oggetto), senza ricrearla. Licenza Apache-2.0.',
+    file: '', cartella: 'segment/sam2.1-hiera-small', url: '', byte: 184_305_280, circa: true, consigliato: false,
+    repo: SAM2, revisione: SAM2_REV, cerca: ['^model\\.safetensors$'], accanto: ['^config\\.json$', '^preprocessor_config\\.json$', '^processor_config\\.json$']
+  },
+  // --- LLM uncensored per i testi (migliora prompt, descrivi foto, Idee, Estrai…) con Klein: stesso formato del Qwen3-VL 4B di Klein, quindi si sostituisce uno a uno ---
+  {
+    id: 'llm-huihui-4b', tipo: 'llm', uncensored: true, nome: 'Qwen3-VL 4B uncensored (Huihui, INT8)',
+    descrizione: 'Il Qwen3-VL 4B «abliterated» di huihui-ai, nel formato di ComfyUI. Scrive e descrive senza rifiuti: serve solo ai testi, non al disegno.',
+    file: '', cartella: 'text_encoders', url: '', byte: 5_064_440_625, circa: true,
+    repo: HUIHUI4B, revisione: HUIHUI4B_REV, cerca: ['^Huihui-Qwen3-VL-4B-Instruct-abliterated-int8_convrot\\.safetensors$', 'int8_convrot\\.safetensors$']
   },
   // --- VAE ---
   {
@@ -178,4 +229,55 @@ export const CATALOGO: VoceCatalogo[] = [
   }
 ]
 
+// licenza, ruolo, «uncensored» e avvisi di ogni voce, in un posto solo (la UI li mostra accanto al nome; le licenze sono quelle dei repo, controllate il 22/10/2026:
+// è una lettura tecnica dei testi, non un parere legale). Un componente «uncensored» ha il rifiuto tolto dai pesi: non cambia la licenza del modello che lo usa.
+const AVVISO_QWEN = 'Qwen-Image 2.1 ha la licenza «Qwen Research»: solo ricerca e valutazione, niente uso commerciale senza un accordo con Qwen.'
+const AVVISO_KOMMUNITY = 'Licenza FLUX Kommunity: l\'uso commerciale dei risultati ha condizioni (fatturato sotto 5 milioni di dollari, filtri o revisione dei risultati); leggila prima di pubblicare.'
+const AVVISO_UNC = 'Questo componente non rifiuta nessuna richiesta e può produrre contenuti sensibili. Usalo solo per scopi leciti, con i diritti e il consenso necessari: sono vietati i contenuti sessuali con minori, le immagini intime non consensuali e ogni altro uso illegale. La licenza del modello resta valida e può limitare l\'uso commerciale.'
+
+const META: Record<string, Partial<VoceCatalogo>> = {
+  ...Object.fromEntries(['q4km', 'q6k', 'q8', 'turbo-q4', 'turbo-q6', 'turbo-q8'].map((id) => [id, { licenza: 'Qwen Research', licenzaUrl: LIC_QWEN, ruolo: 'denoiser', avviso: AVVISO_QWEN } as Partial<VoceCatalogo>])),
+  'te-int8': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder' },
+  ...Object.fromEntries(['te-ac-q4', 'te-ac-q6', 'te-ac-q8', 'te-mr-q4', 'te-mr-q6', 'te-mr-q8'].map((id) => [id, { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder', uncensored: true, avviso: AVVISO_UNC } as Partial<VoceCatalogo>])),
+  'trad-it-en': { licenza: 'CC-BY-4.0', licenzaUrl: 'https://creativecommons.org/licenses/by/4.0/' },
+  ...Object.fromEntries(['klein-int8', 'klein-bf16', 'klein-base-int8', 'klein-base-bf16'].map((id) => [id, { licenza: 'FLUX Kommunity', licenzaUrl: LIC_KOMMUNITY, ruolo: 'denoiser', avviso: AVVISO_KOMMUNITY } as Partial<VoceCatalogo>])),
+  'klein-te': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder' },
+  'klein-vae': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'vae' },
+  'klein4b-fp8': { licenza: 'Apache-2.0', licenzaUrl: 'https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/raw/main/LICENSE.md', ruolo: 'denoiser' },
+  'klein4b-te': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder' },
+  'sfondo-birefnet': { licenza: 'MIT', licenzaUrl: 'https://huggingface.co/ZhengPeng7/BiRefNet', ruolo: 'sfondo' },
+  'seg-sam2': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'segmentatore' },
+  'llm-huihui-4b': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'llm', avviso: AVVISO_UNC },
+  'lora-uc': { uncensored: true, licenza: 'Qwen Research', licenzaUrl: LIC_QWEN, ruolo: 'lora', avviso: AVVISO_QWEN + ' ' + AVVISO_UNC }
+}
+
+export const CATALOGO: VoceCatalogo[] = GREZZO.map((v) => ({ ...v, ...(META[v.id] || {}) }))
+
 export const voce = (id: string): VoceCatalogo | undefined => CATALOGO.find((v) => v.id === id)
+
+/** il testo di un avviso sui modelli uncensored, uguale per tutti (la UI lo mostra prima di chiedere l'accettazione) */
+export const AVVISO_UNCENSORED = AVVISO_UNC
+
+/** le licenze con cui un componente uncensored può stare nel catalogo: permissive, o «Qwen Research» (solo con l'avviso sul limite d'uso).
+ *  Fuori: FLUX Kommunity (§4(d): niente scorciatoie per togliere le protezioni), qualunque «non-commercial» non letto, licenze mancanti o senza link. */
+export const LICENZE_UNCENSORED = ['Apache-2.0', 'MIT', 'BSD-3-Clause', 'CC-BY-4.0', 'Qwen Research']
+
+/** una voce uncensored ha una licenza valida? null = sì, se no il motivo in italiano */
+export function motivoLicenza(v: VoceCatalogo): string | null {
+  if (!v.uncensored) return null
+  if (!v.licenza || !v.licenzaUrl) return `«${v.nome}» non ha una licenza dichiarata e verificabile: non si scarica.`
+  if (!LICENZE_UNCENSORED.includes(v.licenza)) return `«${v.nome}» ha la licenza «${v.licenza}», che non permette di distribuire una versione senza protezioni: non si scarica.`
+  if (v.licenza === 'Qwen Research' && !/Qwen Research/.test(v.avviso || '')) return `«${v.nome}» è sotto «Qwen Research» ma manca l'avviso sul limite d'uso: non si scarica.`
+  return null
+}
+
+/** una voce uncensored si scarica solo con licenza valida (`motivoLicenza`), con l'interruttore «Modelli uncensored» acceso e l'avviso accettato; null = si può, se no il motivo in italiano.
+ *  È la guardia del processo principale: la UI nasconde le voci, ma anche una chiamata diretta non le scarica. */
+export function motivoDiBlocco(v: VoceCatalogo, imp: { uncensored?: boolean; uncensoredAccettato?: boolean }): string | null {
+  if (!v.uncensored) return null
+  const licenza = motivoLicenza(v)
+  if (licenza) return licenza
+  if (!imp.uncensored) return `«${v.nome}» è un modello uncensored: accendi «Modelli uncensored» in Opzioni per poterlo scaricare.`
+  if (!imp.uncensoredAccettato) return `«${v.nome}» è un modello uncensored: prima leggi e accetta l'avviso in Opzioni → Modelli uncensored.`
+  return null
+}

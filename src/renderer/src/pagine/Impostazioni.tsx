@@ -7,7 +7,7 @@ import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
-import { LaboratorioUncensored, type VoceLaboratorio } from '../componenti/LaboratorioUncensored'
+import { LaboratorioUncensored } from '../componenti/LaboratorioUncensored'
 
 const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
@@ -24,8 +24,8 @@ export function Impostazioni(): JSX.Element {
 
 function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
-  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
-  const [catalogo, setCatalogo] = useState<VoceLaboratorio[]>([])
+  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [], klein4b: [], klein4bTe: [] })
+  const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
   const [log, setLog] = useState<string[]>([])
   const [versione, setVersione] = useState('')

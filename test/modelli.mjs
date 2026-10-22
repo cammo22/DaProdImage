@@ -22,8 +22,8 @@ function uguale(nome, avuto, atteso) {
 }
 
 // la mappa
-uguale('tre modelli, in ordine', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base'])
-uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'qwen-base'])
+uguale('quattro modelli, in ordine', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base', 'klein4b'])
+uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'klein4b', 'qwen-base'])
 uguale('qwen-base', [M.MODELLI['qwen-base'].famiglia, M.MODELLI['qwen-base'].passi, M.MODELLI['qwen-base'].turbo, M.MODELLI['qwen-base'].lora], ['qwen', 40, false, true])
 uguale('klein', [M.MODELLI.klein.famiglia, M.MODELLI.klein.passi, M.MODELLI.klein.cfg, M.MODELLI.klein.veloce], ['klein', 8, 1, true])
 uguale('klein-base', [M.MODELLI['klein-base'].famiglia, M.MODELLI['klein-base'].passi, M.MODELLI['klein-base'].cfg], ['klein-base', 50, 3.5])

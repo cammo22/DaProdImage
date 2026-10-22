@@ -5,7 +5,8 @@ import { appendFileSync, copyFileSync, existsSync, readFileSync, readdirSync, rm
 import { basename, extname, join, normalize } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import type { Download, FiltroGalleria, Impostazioni, InfoLora, Richiesta } from '@shared/tipi'
+import type { Download, Famiglia, FiltroGalleria, Impostazioni, InfoLora, Richiesta } from '@shared/tipi'
+import { vaBeneCon } from '@shared/loraBase'
 import { DATI, ENTRATA, MINIATURE, RADICE, TEMP, assicura } from './percorsi'
 import { impostazioni, salvaImpostazioni } from './impostazioni'
 import { annullaSetup, cercaModelliEsistenti, controlloSistema, installa, motoreInstallato, scaricaVoce, statoModelli, type OpzioniSetup } from './installa/installatore'
@@ -195,6 +196,8 @@ function registraIpc(): void {
 
   // modelli
   gestisci('modelli:stato', () => statoModelli())
+  // BiRefNet (togli sfondo) e SAM 2 (estrai fedele): presenti o da scaricare (si scaricano da soli al primo uso)
+  gestisci('modelli:segmentatori', () => statoModelli().filter((v) => v.ruolo === 'sfondo' || v.ruolo === 'segmentatore'))
   gestisci('modelli:file', () => {
     const c = impostazioni().cartellaModelli
     const leggi = (sotto: string, ext: RegExp): string[] => {
@@ -218,7 +221,9 @@ function registraIpc(): void {
       upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i),
       klein: tutti.filter(isKlein),
       kleinTe: enc.filter(isKleinTe),
-      kleinVae: vae.filter(isKleinVae)
+      kleinVae: vae.filter(isKleinVae),
+      klein4b: tutti.filter((n) => /klein.*4b|4b.*klein/i.test(n)),
+      klein4bTe: enc.filter((n) => /^qwen_?3_4b/i.test(n))
     }
   })
   gestisci('modelli:inutilizzati', () => fileInutilizzati())
@@ -317,6 +322,8 @@ function registraIpc(): void {
 
   // LoRA
   gestisci('lora:elenco', () => elencoLora())
+  // i LoRA che si possono usare con questo modello: compatibili ('si') e da provare ('?'), non quelli di un altro modello
+  gestisci('lora:compatibili', (famiglia: Famiglia) => elencoLora().filter((l) => vaBeneCon(l, famiglia) !== 'no'))
   gestisci('lora:aggiorna', (file: string, m: Partial<InfoLora>) => aggiornaLora(file, m))
   gestisci('lora:importa', (percorsi: string[]) => importaLora(percorsi))
   gestisci('lora:elimina', (file: string) => eliminaLora(file))

@@ -1,5 +1,17 @@
 # Changelog
 
+## Non rilasciato — engine v2
+
+Il motore impara cose nuove (la versione dell'app non cambia qui: la alza chi pubblica). `engine/versioni.json`: motore 9, quindi al primo avvio l'app aggiorna il motore da sola. Il contratto con l'interfaccia è in `docs/contratto-engine-gui.md`.
+
+- **FLUX.2 Klein 4B** (Apache-2.0, 4 passi) come quarto modello. Misurato su RTX 4060: Crea 5,4 s contro 6,4 s di Klein 3, zona 21 s contro 25 s, Modifica 9,6 s contro 11,5 s (`docs/bench-engine-v2.md`). Non è il predefinito.
+- **LoRA multipli con pesi** su tutti i modelli (Qwen e Klein): in fila, forza da −2 a 2. Il riconoscimento dai nomi dei tensori dice per quale modello è fatto un LoRA (`src/shared/loraBase.ts`); nuovo IPC `lora.compatibili(famiglia)`.
+- **Senza sfondo** (BiRefNet, MIT) e **estrai fedele** (SAM 2.1, Apache-2.0): ritagliano dai pixel della tua foto, senza ridisegnarla; i modelli si scaricano al primo uso e girano a parte. Con Klein, «sfondo trasparente» in Crea = disegno + BiRefNet.
+- **Riquadri nell'Editor box** (regional prompting): Klein 3 li legge nel suo formato (JSON con le coordinate), Qwen e Klein 4B a parole. Nuovo adattatore dalla richiesta della GUI (`box`, `promptScena`, `sfondo`).
+- **Catalogo con licenza e ruolo**, modelli «uncensored» marcati e scaricabili solo su richiesta: interruttore acceso, avviso accettato e licenza valida (Apache, MIT, BSD, CC-BY o Qwen Research con avviso; mai FLUX Kommunity). Un LLM uncensored (Qwen3-VL 4B abliterated) per i testi.
+- Correzioni: Klein 4B ha la sua chiave VRAM nella regola «una cosa alla volta»; le parole chiave dei LoRA entrano nel prompt anche con Klein.
+- Prove: `npm test` (modelli, catalogo, spazio, lora, regioni, adatta, grafi v2, grafi Qwen identici).
+
 ## 1.1.0 — 2026-10-21
 
 Un'app più semplice da usare: tre modelli al posto delle «qualità», una sola scheda per scrivere cosa cambiare (tutta la foto o solo una zona), le ricette dentro Modifica e il testo scritto dal Qwen3-VL 4B anche con Qwen. Il motore passa a ComfyUI 0.42.3.

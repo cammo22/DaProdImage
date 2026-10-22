@@ -8,6 +8,7 @@ import type { Famiglia, Impostazioni, Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
+import { adattaRichiesta } from './adatta'
 import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
 import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nodiDisponibili, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
@@ -42,7 +43,7 @@ const casuale = (): number => Math.floor(Math.random() * 2 ** 48)
 
 /** i LoRA accesi si usano sempre: la loro parola chiave entra nel prompt da sola (se non c'è già), da qualsiasi pagina arrivi la richiesta */
 function conParoleLora(q: Richiesta): Richiesta {
-  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length || (q.famiglia ?? impostazioni().famiglia) !== 'qwen') return q
+  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length) return q
   let info
   try {
     info = elencoLora()
@@ -58,7 +59,7 @@ function conParoleLora(q: Richiesta): Richiesta {
 }
 
 export function accodaRichiesta(q0: Richiesta): Lavoro[] {
-  const q = conParoleLora(q0)
+  const q = conParoleLora(adattaRichiesta(q0))
   const quante = Math.max(1, Math.min(16, q.quante || 1))
   const base = q.seed >= 0 ? q.seed : -1
   const nuovi: Lavoro[] = []
@@ -276,6 +277,29 @@ async function traduttorePronto(l: Lavoro): Promise<boolean> {
   }
 }
 
+/** le modalità che usano un segmentatore (si scarica da solo, una volta, al primo uso): voce del catalogo e nome in italiano */
+const SEGMENTATORI: Record<string, { id: string; nome: string }> = {
+  sfondo: { id: 'sfondo-birefnet', nome: 'BiRefNet' },
+  segmenta: { id: 'seg-sam2', nome: 'SAM 2' }
+}
+
+/** il segmentatore è sul disco? se manca lo scarica (BiRefNet ~450 MB, SAM 2 ~185 MB); se non ci riesce il lavoro fallisce con un messaggio chiaro */
+async function segmentatorePronto(l: Lavoro, s: { id: string; nome: string }): Promise<void> {
+  const stato = (): boolean => !!statoModelli().find((v) => v.id === s.id)?.presente
+  if (stato()) return
+  l.fase = `Scarico ${s.nome}`
+  avvisa(l)
+  try {
+    await scaricaVoce(s.id, (r, t) => {
+      l.fase = `Scarico ${s.nome}${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      avvisa(l, false)
+    })
+  } catch (e) {
+    throw new Error(`Non riesco a scaricare ${s.nome}: ${(e as Error).message}`)
+  }
+  if (!stato()) throw new Error(`${s.nome} non è sul disco: scaricalo da Opzioni → Scarica altri modelli.`)
+}
+
 // le didascalie già scritte (più immagini dallo stesso prompt = un'espansione sola)
 const potenziati = new Map<string, string>()
 
@@ -334,11 +358,12 @@ function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp
 }
 
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
-async function inInglese(l: Lavoro): Promise<string> {
+async function inInglese(l: Lavoro, testo?: string): Promise<string> {
   const q = l.richiesta
-  const p = q.prompt.trim()
+  const originale = testo ?? q.prompt
+  const p = originale.trim()
   const imp = impostazioni()
-  if (!imp.traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return q.prompt
+  if (!imp.traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return originale
   const gia = tradotti.get(p)
   if (gia) return gia
   l.fase = 'Traduco il prompt in inglese'
@@ -413,11 +438,12 @@ async function esegui(l: Lavoro): Promise<void> {
       await avviaMotore()
     }
     if (!collegato()) await connetti()
+    if (l.richiesta.modalita in SEGMENTATORI) await segmentatorePronto(l, SEGMENTATORI[l.richiesta.modalita])
     const ing = await prepara(l.richiesta)
     // FLUX 3 Klein: i suoi file (scelti, scaricati dall'app o messi a mano) e, se serve, il prompt espanso
     const fam = l.richiesta.famiglia ?? imp.famiglia
     let impLavoro = imp
-    const usaKlein = fam !== 'qwen' && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci' && l.richiesta.modalita !== 'ingrandisci'
+    const usaKlein = fam !== 'qwen' && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci' && l.richiesta.modalita !== 'ingrandisci' && !(l.richiesta.modalita in SEGMENTATORI)
     if (usaKlein) {
       const f = fileKlein(imp, fam)
       if (typeof f === 'string') throw new Error(f)
@@ -436,6 +462,9 @@ async function esegui(l: Lavoro): Promise<void> {
       }
     } else inglese = await inInglese(l)
     if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
+    // i prompt dei riquadri (Editor box) vanno al modello in inglese come quello della scena
+    let regioniInglese = l.richiesta.regioni
+    if (regioniInglese?.length) regioniInglese = await Promise.all(regioniInglese.map(async (r) => ({ ...r, prompt: await inInglese(l, r.prompt) })))
     tempiPasso = []
     ultimoPasso = 0
     // l'ingranditore NVIDIA RTX, se il motore ce l'ha e non l'hai spento in Opzioni
@@ -443,14 +472,14 @@ async function esegui(l: Lavoro): Promise<void> {
     // lavori di testo con Klein: scrivono col suo 4B (vedi conEncoderDiTesto)
     const lavoroTesto = conEncoderDiTesto(l.richiesta, impLavoro)
     impLavoro = lavoroTesto.imp
-    const grafo = costruisci({ ...lavoroTesto.q, prompt: inglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
+    const grafo = costruisci({ ...lavoroTesto.q, prompt: inglese, regioni: regioniInglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
     l.stima = grafo.megapixel ? Math.round(stimaPasso(grafo.megapixel) * grafo.passi + 6) : undefined
     const testo = l.richiesta.modalita === 'descrivi'
     // la chiave della VRAM: chi scrive (4B o 8B), chi disegna (la famiglia), o l'ingranditore che non sposta niente
-    const occupa = testo ? occupaTesto(lavoroTesto.q.encoderKlein) : l.richiesta.modalita === 'ingrandisci' ? 'leggero' : occupaImmagine(fam)
+    const occupa = testo ? occupaTesto(lavoroTesto.q.encoderKlein) : l.richiesta.modalita === 'ingrandisci' || l.richiesta.modalita in SEGMENTATORI ? 'leggero' : occupaImmagine(fam)
     const uscita = await lancia(grafo, occupa, l, testo)
     if (testo) {
       l.testo = lavoroTesto.q.encoderKlein ? senzaTitolo(uscita?.testo || '') : (uscita?.testo || '').trim()
@@ -471,7 +500,7 @@ async function esegui(l: Lavoro): Promise<void> {
           sampler: q.sampler,
           scheduler: q.scheduler,
           lora: q.lora,
-          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
+          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : fam === 'klein4b' ? 'FLUX.2 Klein 4B · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
           forza: q.forza,
           trasparente: q.trasparente,
           origine: q.origine,

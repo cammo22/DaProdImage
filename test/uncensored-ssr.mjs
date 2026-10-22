@@ -16,9 +16,9 @@ const voce = { id: 'fixture', nome: 'Componente di prova', tipo: 'encoder', unce
 const props = { imp: {}, catalogo: [voce], download: {}, salva: async () => {}, scarica: async () => { throw Error('mai scaricare nel rendering') } }
 const render = imp => renderToStaticMarkup(React.createElement(LaboratorioUncensored, { ...props, imp }))
 assert.doesNotMatch(render({}), /Componente di prova/, 'catalogo nascosto di serie')
-assert.doesNotMatch(render({ uncensored: { abilitato: true } }), /Componente di prova/, 'flag senza consenso insufficiente')
-assert.doesNotMatch(render({ uncensored: { abilitato: true, accettatoIl: 1, versioneDisclaimer: 0 } }), /Componente di prova/, 'consenso obsoleto insufficiente')
-const acceso = render({ uncensored: { abilitato: true, accettatoIl: 1, versioneDisclaimer: 1 } })
+assert.doesNotMatch(render({ uncensored: true }), /Componente di prova/, 'flag senza consenso insufficiente')
+assert.doesNotMatch(render({ uncensored: true, uncensoredAccettato: false }), /Componente di prova/, 'consenso obsoleto insufficiente')
+const acceso = render({ uncensored: true, uncensoredAccettato: true })
 assert.match(acceso, /Componente di prova/)
 assert.match(acceso, /Uncensored/)
 assert.match(acceso, /Qwen Research/)
