@@ -33,6 +33,26 @@ export interface Regione {
   prompt: string
 }
 
+/** Un riquadro dell'Editor box della GUI v2: dove sta nella tela finale (frazioni 0–1) e cosa ci deve essere.
+ *  Il motore lo trasforma in `Regione` (`adattaRichiesta`): la conversione al formato di Klein 3 o alle parole di Qwen la fa solo lui. */
+export interface BoxRegione {
+  id: string
+  /** x0, y0, x1, y1 normalizzati 0–1 sulla tela finale */
+  rect: [number, number, number, number]
+  tipo: 'persona' | 'oggetto' | 'testo' | 'sfondo'
+  prompt: string
+  /** foto di riferimento di questo box (→ <imageN>): il motore non la usa ancora */
+  rif?: string
+  /** guida = composizione suggerita · decisa = il modello resta lì dentro · blocca = maschera e compositing (per ora vale come decisa) */
+  rigidita: 'guida' | 'decisa' | 'blocca'
+  ordine: number
+  /** l'occhio spento nell'editor: il riquadro resta ma non parte */
+  nascosta?: boolean
+}
+
+/** Lo sfondo di una creazione: la scena, trasparente (PNG con alfa) o una tinta unita (#rrggbb). */
+export type SfondoRichiesto = 'scena' | 'trasparente' | { tinta: string }
+
 /** Estrai fedele: cosa ritagliare con SAM2 (tutto in coordinate 0–1 sulla foto) */
 export interface OpzioniSegmenta {
   box?: Box01
@@ -118,6 +138,11 @@ export interface Richiesta {
   lora: LoraAttiva[]
   /** Editor box (regional prompting): più riquadri, ognuno col suo prompt; `prompt` resta la descrizione di tutta la scena. Per 'crea' e 'modifica'. */
   regioni?: Regione[]
+  /** GUI v2, Editor box: i riquadri con il loro testo (→ `regioni`) e la scena generale (→ `prompt`, se ci sono riquadri validi) */
+  box?: BoxRegione[]
+  promptScena?: string
+  /** GUI v2: lo sfondo richiesto ('trasparente' = come `trasparente`; { tinta } = una riga in più nel prompt) */
+  sfondo?: SfondoRichiesto
   /** 'segmenta': cosa estrarre */
   segmenta?: OpzioniSegmenta
   /** Turbo: LoRA di distillazione a 8 passi (CFG 1), circa 5 volte più veloce */

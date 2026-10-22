@@ -8,6 +8,7 @@ import type { Famiglia, Impostazioni, Lavoro, Richiesta } from '@shared/tipi'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
+import { adattaRichiesta } from './adatta'
 import { SISTEMA_TRADUCI, daTradurre, pulisciTraduzione, tokenPer } from './traduci'
 import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nodiDisponibili, scaricaModelli, suAnteprima, suMessaggio, usciteDa, type MessaggioComfy } from './cliente'
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
@@ -42,7 +43,7 @@ const casuale = (): number => Math.floor(Math.random() * 2 ** 48)
 
 /** i LoRA accesi si usano sempre: la loro parola chiave entra nel prompt da sola (se non c'è già), da qualsiasi pagina arrivi la richiesta */
 function conParoleLora(q: Richiesta): Richiesta {
-  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length || (q.famiglia ?? impostazioni().famiglia) !== 'qwen') return q
+  if (q.modalita === 'descrivi' || !q.prompt?.trim() || !q.lora?.length) return q
   let info
   try {
     info = elencoLora()
@@ -58,7 +59,7 @@ function conParoleLora(q: Richiesta): Richiesta {
 }
 
 export function accodaRichiesta(q0: Richiesta): Lavoro[] {
-  const q = conParoleLora(q0)
+  const q = conParoleLora(adattaRichiesta(q0))
   const quante = Math.max(1, Math.min(16, q.quante || 1))
   const base = q.seed >= 0 ? q.seed : -1
   const nuovi: Lavoro[] = []
@@ -357,11 +358,12 @@ function conEncoderDiTesto(q: Richiesta, imp: Impostazioni): { q: Richiesta; imp
 }
 
 /** il prompt in inglese per il modello: se è in italiano lo traduce il traduttore dedicato (o, se manca, Qwen3-VL già caricato); se no resta com'è */
-async function inInglese(l: Lavoro): Promise<string> {
+async function inInglese(l: Lavoro, testo?: string): Promise<string> {
   const q = l.richiesta
-  const p = q.prompt.trim()
+  const originale = testo ?? q.prompt
+  const p = originale.trim()
   const imp = impostazioni()
-  if (!imp.traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return q.prompt
+  if (!imp.traduci || !CON_PROMPT.has(q.modalita) || !p || !daTradurre(p)) return originale
   const gia = tradotti.get(p)
   if (gia) return gia
   l.fase = 'Traduco il prompt in inglese'
@@ -460,6 +462,9 @@ async function esegui(l: Lavoro): Promise<void> {
       }
     } else inglese = await inInglese(l)
     if (inglese !== l.richiesta.prompt) l.promptInglese = inglese
+    // i prompt dei riquadri (Editor box) vanno al modello in inglese come quello della scena
+    let regioniInglese = l.richiesta.regioni
+    if (regioniInglese?.length) regioniInglese = await Promise.all(regioniInglese.map(async (r) => ({ ...r, prompt: await inInglese(l, r.prompt) })))
     tempiPasso = []
     ultimoPasso = 0
     // l'ingranditore NVIDIA RTX, se il motore ce l'ha e non l'hai spento in Opzioni
@@ -467,7 +472,7 @@ async function esegui(l: Lavoro): Promise<void> {
     // lavori di testo con Klein: scrivono col suo 4B (vedi conEncoderDiTesto)
     const lavoroTesto = conEncoderDiTesto(l.richiesta, impLavoro)
     impLavoro = lavoroTesto.imp
-    const grafo = costruisci({ ...lavoroTesto.q, prompt: inglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
+    const grafo = costruisci({ ...lavoroTesto.q, prompt: inglese, regioni: regioniInglese }, impLavoro, ing, l.id.slice(0, 8), profiloMemoria(infoMotore().vramTotale), rtx)
     l.areaAnteprima = grafo.area
     l.megapixel = grafo.megapixel || undefined
     l.passiTotali = grafo.passi
