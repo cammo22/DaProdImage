@@ -1,6 +1,6 @@
 // L'API del processo principale, con i tipi giusti.
 import type {
-  ControlloSistema, Download, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, Risorse, StatoAggiornamento, StatoVoce
+  ControlloSistema, Download, Famiglia, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, Risorse, StatoAggiornamento, StatoVoce
 } from '@shared/tipi'
 
 type Via = () => void
@@ -66,6 +66,8 @@ export interface Api {
   modelli: {
     stato(): Promise<StatoVoce[]>; file(): Promise<FileModelli>; scarica(id: string): Promise<Download>; annulla(id: string): Promise<void>
     inutilizzati(): Promise<FileInutile[]>; elimina(percorso: string): Promise<void>
+    /** BiRefNet (togli sfondo) e SAM 2 (estrai fedele): `presente` false = si scarica da solo al primo uso */
+    segmentatori(): Promise<StatoVoce[]>
   }
   motore: {
     info(): Promise<InfoMotore>; avvia(): Promise<void>; riavvia(): Promise<void>; ferma(): Promise<void>
@@ -80,7 +82,9 @@ export interface Api {
     importaFoto(png: string, nome: string): Promise<Opera>
   }
   lora: {
-    elenco(): Promise<InfoLora[]>; aggiorna(file: string, m: Partial<InfoLora>): Promise<void>; importa(p: string[]): Promise<string[]>
+    elenco(): Promise<InfoLora[]>; aggiorna(file: string, m: Partial<InfoLora>): Promise<void>;
+    /** i LoRA buoni per quel modello (compatibili e «da provare»; mai quelli fatti per un altro) */
+    compatibili(famiglia: Famiglia): Promise<InfoLora[]>; importa(p: string[]): Promise<string[]>
     elimina(file: string): Promise<void>; scarica(link: string): Promise<Download>; apriCartella(): Promise<void>
   }
   file: {
