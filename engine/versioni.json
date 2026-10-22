@@ -1,5 +1,5 @@
 {
-  "motore": 8,
+  "motore": 9,
   "python": "3.13",
   "comfyui": {
     "commit": "edb3db00fd88f059e748c8a400391b5eab76266b",
