@@ -96,6 +96,8 @@ export interface StatoModifica {
   /** le azioni rapide sono idee che si sommano: quanta fantasia ha il modello nel mescolarle, e il piano che ne esce */
   fantasia: 'fedele' | 'normale' | 'tanta'
   pianoIdee: { chiave: string; testo: string } | null
+  /** GUI v2: quanto forte è lo stile scelto fra le idee (0 leggero · 1 pieno · 2 estremo) */
+  intensitaStile: 0 | 1 | 2
 }
 
 export interface Avviso {
@@ -170,7 +172,7 @@ const BOX0: StatoBox = { scena: '', regioni: [], selezionata: null }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], esempio: null, modo: 'scrivi', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima',
-  pianoEsempio: null, fantasia: 'normale', pianoIdee: null
+  pianoEsempio: null, fantasia: 'normale', pianoIdee: null, intensitaStile: 1
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione; fino alla 1.0 c'era la qualità «turbo» (ora «alta») */
