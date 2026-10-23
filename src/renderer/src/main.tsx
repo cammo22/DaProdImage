@@ -4,6 +4,8 @@ import './orbita.css'
 import { App } from './App'
 import { Component, type ReactNode } from 'react'
 import { usaStato } from './stato'
+import { ImgAsset } from './componenti/Tessere'
+import { MASCOTTE } from './anteprime'
 
 /** se una pagina va in errore non resta la finestra bianca: si vede cosa è successo e si può ricaricare */
 class Salvagente extends Component<{ children: ReactNode }, { errore: string | null }> {
@@ -15,6 +17,7 @@ class Salvagente extends Component<{ children: ReactNode }, { errore: string | n
     if (!this.state.errore) return this.props.children
     return (
       <div style={{ padding: 32, fontFamily: 'sans-serif' }}>
+        <ImgAsset chiave={MASCOTTE.errore} stile={{ width: 120, height: 120, objectFit: 'contain' }} />
         <h2>Qualcosa è andato storto</h2>
         <p style={{ color: '#666' }}>{this.state.errore}</p>
         <p>Le tue foto e la galleria sono al sicuro. Ricarica l'interfaccia per ripartire.</p>

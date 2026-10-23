@@ -13,6 +13,7 @@ import { ControlliCategoria } from '../../componenti/ControlliCategoria'
 import { controlliDi, prefissoIdea, rapidaVisibile } from '../../controlli'
 import { FANTASIE } from '../../regista'
 import { iconaRapida } from '../../iconeRapide'
+import { chiaveCategoria, chiaveModoModifica } from '../../anteprime'
 import { frasiStileModifica, stileDa, type Intensita } from '../../stili'
 import type { PropsScrivi } from './SchedaScrivi'
 
@@ -42,13 +43,13 @@ export function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, 
     <div className="sezione">
       <h3>Idee <span className="dx">sommale: il modello le mescola</span></h3>
       <Tessere colonne={2} stile={{ marginBottom: 8 }}>
-        <Tessera id="cat-estrai" icona={<I.estrai />} nome="Estrai" sotto="persone e oggetti, un clic" titolo="Estrai una persona o un oggetto dalla foto: un clic sulla cosa, poi scegli l'uscita" onClick={() => setModifica({ modo: 'estrai' })} />
-        <Tessera id="cat-espandi" icona={<I.espandi />} nome="Espandi" sotto="allarga oltre i bordi" titolo="Allarga la foto oltre i bordi" onClick={() => setModifica({ modo: 'espandi' })} />
+        <Tessera id="cat-estrai" icona={<I.estrai />} asset={chiaveModoModifica('estrai')} nome="Estrai" sotto="persone e oggetti, un clic" titolo="Estrai una persona o un oggetto dalla foto: un clic sulla cosa, poi scegli l'uscita" onClick={() => setModifica({ modo: 'estrai' })} />
+        <Tessera id="cat-espandi" icona={<I.espandi />} asset={chiaveModoModifica('espandi')} nome="Espandi" sotto="allarga oltre i bordi" titolo="Allarga la foto oltre i bordi" onClick={() => setModifica({ modo: 'espandi' })} />
       </Tessere>
       <Tessere colonne={3}>
         {categorie.map((c) => {
           const Ic = (I as Record<string, () => JSX.Element>)[c.icona] || I.crea
-          return <Tessera key={c.id} id={`cat-${c.id}`} icona={<Ic />} nome={c.nome} su={cat?.id === c.id} pallina={quante(c.id)} onClick={() => setCategoria(c.id)} />
+          return <Tessera key={c.id} id={`cat-${c.id}`} icona={<Ic />} asset={chiaveCategoria(c.id)} nome={c.nome} su={cat?.id === c.id} pallina={quante(c.id)} onClick={() => setCategoria(c.id)} />
         })}
       </Tessere>
 

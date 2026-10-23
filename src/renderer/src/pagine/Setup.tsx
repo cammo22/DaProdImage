@@ -3,6 +3,8 @@ import { useEffect, useState, type JSX } from 'react'
 import { api, type ModelloTrovato } from '../api'
 import { usaStato, ricaricaImp } from '../stato'
 import { byte } from '../util'
+import { ImgAsset } from '../componenti/Tessere'
+import { MASCOTTE } from '../anteprime'
 import type { ControlloSistema, PassoSetup, StatoVoce } from '@shared/tipi'
 
 type Fase = 'controllo' | 'modello' | 'installa'
@@ -93,6 +95,7 @@ export function Setup({ fatto, aggiorna }: { fatto: () => void; aggiorna?: boole
   return (
     <div className="setup">
       <div className="scheda">
+        <ImgAsset chiave={MASCOTTE.setup} className="mascotte-setup" />
         <img src="./icona.svg" alt="" style={{ width: 64, height: 64 }} />
         <h1>DAPROD <b>IMAGE</b></h1>
         {aggiorna ? (

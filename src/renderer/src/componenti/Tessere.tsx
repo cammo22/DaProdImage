@@ -1,6 +1,7 @@
 // I pezzi base della GUI v2 «Orbita»: la tessera (icona grande + una parola), la griglia, la fascetta Uncensored e i pulsanti di misura.
 // Regola d'oro: una tessera ha un'icona e una parola; il nome lungo sta nel tooltip (`titolo`). Niente chip di testo sotto le tessere.
-import type { CSSProperties, JSX, ReactNode } from 'react'
+import { useState, type CSSProperties, type JSX, type ReactNode } from 'react'
+import { urlAsset } from '../asset'
 import { I } from './Icone'
 
 export interface PropsTessera {
@@ -22,15 +23,33 @@ export interface PropsTessera {
   fondo?: string
   uncensored?: boolean
   id?: string
+  /** l'immagine di resources/gui («gruppo/id», vedi anteprime.ts): al posto dell'icona, o a tutta tessera con `pieno`. Se il file manca o non si carica resta l'icona di prima */
+  asset?: string
+  /** l'immagine riempie la tessera (anteprime degli stili) invece di fare da icona */
+  pieno?: boolean
+}
+
+/** l'immagine di un asset, o niente se il file non c'è o non si carica (il chiamante ripiega sull'icona) */
+export function ImgAsset(p: { chiave: string | undefined; className?: string; stile?: CSSProperties; ripiego?: ReactNode }): JSX.Element | null {
+  const url = urlAsset(p.chiave)
+  const [rotto, setRotto] = useState<string | null>(null)
+  if (!url || rotto === url) return <>{p.ripiego ?? null}</>
+  return <img src={url} alt="" aria-hidden draggable={false} className={p.className} style={p.stile} onError={() => setRotto(url)} />
 }
 
 export function Tessera(p: PropsTessera): JSX.Element {
   const larga = p.sotto !== undefined
-  const classe = ['tessera-o', larga ? 'larga' : '', p.fondo ? 'anteprima' : '', p.su ? 'su' : '', p.daScaricare ? 'da-scaricare' : '', p.uncensored ? 'fiamma' : '', p.disabilitata ? 'spenta' : ''].filter(Boolean).join(' ')
+  const url = urlAsset(p.asset)
+  const [rotto, setRotto] = useState<string | null>(null)
+  const img = url && rotto !== url ? url : undefined
+  const pieno = !!img && !!p.pieno && !larga
+  const classe = ['tessera-o', larga ? 'larga' : '', p.fondo || pieno ? 'anteprima' : '', pieno ? 'foto' : '', img && !pieno ? 'con-img' : '', p.su ? 'su' : '', p.daScaricare ? 'da-scaricare' : '', p.uncensored ? 'fiamma' : '', p.disabilitata ? 'spenta' : ''].filter(Boolean).join(' ')
+  const immagine = img ? <img src={img} alt="" aria-hidden draggable={false} className={pieno ? 'pieno' : 'ic-img'} onError={() => setRotto(img)} /> : null
   return (
     <button type="button" className={classe} disabled={p.disabilitata} onClick={p.onClick} title={p.titolo || p.nome} aria-pressed={p.su} aria-label={p.nome} data-id={p.id}>
       {p.fondo && <span className="fondo" style={{ background: p.fondo }} />}
-      <span className="ic">{p.icona}</span>
+      {pieno && immagine}
+      {!pieno && <span className="ic">{immagine || p.icona}</span>}
       {larga ? (
         <span className="testi">
           <span className="nome">{p.nome} {p.uncensored && <Fascetta />}</span>

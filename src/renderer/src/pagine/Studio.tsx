@@ -5,6 +5,8 @@ import type { JSX } from 'react'
 import { usaStato, type Pagina } from '../stato'
 import { MODELLI, modelloDaImpostazioni } from '@shared/modelli'
 import { I } from '../componenti/Icone'
+import { ImgAsset } from '../componenti/Tessere'
+import { chiaveModo } from '../anteprime'
 
 export type ModoStudio = 'crea' | 'modifica' | 'box' | 'ricette'
 
@@ -49,7 +51,7 @@ export function StripModi(): JSX.Element {
     <div className="strip-modi" role="tablist" aria-label="Modi dello Studio">
       {MODI.map((x) => (
         <button key={x.id} type="button" role="tab" aria-selected={attivo === x.id} className={`modo ${attivo === x.id ? 'su' : ''}`} onClick={() => vaiModo(x.id)} title={x.titolo} data-modo={x.id}>
-          <x.icona /> {x.nome}
+          <ImgAsset chiave={chiaveModo(x.id)} className="ic-modo" ripiego={<x.icona />} /> {x.nome}
         </button>
       ))}
       <span className="spazio" />

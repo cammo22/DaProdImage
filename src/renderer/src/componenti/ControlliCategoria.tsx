@@ -2,6 +2,7 @@
 // campioni colore, il quadrante 3×3 e le righe di testo. Il valore sta nell'id dell'idea attiva: qui non c'è stato proprio.
 import { useEffect, useState, type JSX } from 'react'
 import { Tessera, Tessere } from './Tessere'
+import { chiaveOpzione } from '../anteprime'
 import { conControllo, controlliDi, leggiMulti, scriviMulti, valoreDa, type Controllo, type Parte } from '../controlli'
 import type { Rapida } from '../rapide'
 
@@ -70,7 +71,7 @@ function Multi(props: { c: Extract<Controllo, { tipo: 'multi' }>; valore: Record
         }
         return (
           <Tessere key={x.id} colonne={x.opzioni.length <= 2 ? 2 : x.opzioni.length <= 4 ? 4 : 5}>
-            {x.opzioni.map((o) => <Tessera key={o.id} id={`ctl-${p.c.id}-${o.id}`} icona={<span aria-hidden>{o.icona}</span>} nome={o.nome} su={p.valore[x.id] === o.id} titolo={`${o.nome} · un clic la accende, un altro la spegne`} onClick={() => imposta(x.id, o.id)} />)}
+            {x.opzioni.map((o) => <Tessera key={o.id} id={`ctl-${p.c.id}-${o.id}`} icona={<span aria-hidden>{o.icona}</span>} asset={chiaveOpzione(p.c.id, o.id)} nome={o.nome} su={p.valore[x.id] === o.id} titolo={`${o.nome} · un clic la accende, un altro la spegne`} onClick={() => imposta(x.id, o.id)} />)}
           </Tessere>
         )
       })}

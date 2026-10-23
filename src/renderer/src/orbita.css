@@ -310,3 +310,34 @@ body.meno-movimento .palco::before { animation: none; }
 .quadrante .cella.su { background: var(--nebulosa, #8b5cf6); color: #fff; border-color: transparent; }
 .quadrante .cella.soggetto { cursor: default; opacity: 0.4; border-style: dashed; }
 @media (prefers-reduced-motion: reduce) { .campione:hover { transform: none; } }
+
+
+/* ---------- asset della GUI v2 (resources/gui, spec §4.1 e §13): url() relativi, Vite li mette in out/renderer/assets e quindi nell'installer ---------- */
+/* sfondo del palco: la nebulosa (opacità .35, spec §8) sotto le stelle in CSS. Se il file manca resta il gradiente di prima */
+.palco::after { content: ''; position: absolute; inset: 0; z-index: -2; pointer-events: none; opacity: 0.35; background: url('../../../resources/gui/sfondi/nebulosa.webp') center / cover no-repeat; }
+/* tessere: l'immagine al posto dell'icona (3D con trasparenza) o a tutta tessera (anteprime degli stili) */
+.tessera-o.con-img { padding-top: 6px; }
+.tessera-o .ic:has(.ic-img) { width: 46px; height: 46px; }
+.tessera-o .ic-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45)); transition: transform var(--t-base) var(--molla); }
+.tessera-o:hover .ic-img { transform: scale(1.08); }
+.tessera-o.su .ic-img { filter: drop-shadow(0 0 8px rgba(255, 61, 242, 0.55)); }
+.tessera-o.anteprima.foto .pieno { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 1; }
+.tessera-o.anteprima.foto:hover .pieno { transform: scale(1.06); transition: transform var(--t-base) var(--curva); }
+.opz-nav .tessera-o .ic:has(.ic-img), .modi-modifica .tessera-o .ic:has(.ic-img), .filtri-lora .tessera-o .ic:has(.ic-img) { width: 28px; height: 28px; }
+.tessera-o.larga .ic:has(.ic-img) { width: 40px; height: 40px; }
+/* strip dei modi */
+.strip-modi .modo .ic-modo { width: 24px; height: 24px; object-fit: contain; margin-left: -2px; }
+/* ricette: la locandina in cima alla carta */
+.carta-wf .locandina-wf { display: block; width: calc(100% + 28px); height: 92px; margin: -13px -14px 2px; object-fit: cover; border-radius: 12px 12px 0 0; }
+/* stati vuoti: pianeta in basso a sinistra del palco e astronauta che galleggia (6 s) */
+.hero-pianeta { position: absolute; left: 0; bottom: 0; width: min(46%, 460px); opacity: 0.9; pointer-events: none; z-index: -1; user-select: none; }
+.mascotte-vuoto { display: block; width: 132px; height: 132px; margin: 0 auto 6px; object-fit: contain; animation: galleggia 6s ease-in-out infinite; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5)); user-select: none; }
+@keyframes galleggia { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+.vuoto.caldo { position: relative; padding: 36px 40px; border-radius: 18px; background: linear-gradient(rgba(9, 6, 20, 0.6), rgba(9, 6, 20, 0.6)), url('../../../resources/gui/sfondi/nebulosa-calda.webp') center / cover no-repeat; }
+/* setup: l'astronauta che saluta e il pianeta in basso a destra */
+.setup { background-image: url('../../../resources/gui/sfondi/setup-pianeta.webp'), linear-gradient(rgba(8, 5, 18, 0.9), rgba(8, 5, 18, 0.9)), url('../../../resources/gui/sfondi/stelle.webp'), radial-gradient(ellipse at 50% 0%, #2a1650 0%, var(--fondo) 60%); background-repeat: no-repeat, no-repeat, repeat, no-repeat; background-position: right -40px bottom -40px, 0 0, 0 0, 0 0; background-size: min(46%, 460px), auto, 1024px 1024px, auto; background-attachment: fixed, scroll, scroll, scroll; }
+.setup .scheda { position: relative; }
+.mascotte-setup { position: absolute; right: 0; top: -6px; width: 120px; height: 120px; object-fit: contain; pointer-events: none; user-select: none; animation: galleggia 6s ease-in-out infinite; }
+/* impostazioni: il banner aurora in cima */
+.banner-aurora { max-width: 920px; height: 110px; margin: 0 auto 18px; border-radius: 16px; border: 1px solid var(--bordo-vetro); background: url('../../../resources/gui/sfondi/aurora.webp') center / cover no-repeat; }
+@media (prefers-reduced-motion: reduce) { .mascotte-vuoto, .mascotte-setup { animation: none; } }

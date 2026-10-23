@@ -2,6 +2,7 @@
 import type { JSX } from 'react'
 import { INTENSITA, SCAFFALI, STILI, type Intensita } from '../stili'
 import { Pianeti, Tessera } from './Tessere'
+import { chiaveStile } from '../anteprime'
 
 export function ScaffaliStili(p: { valore: string; scegli: (id: string) => void }): JSX.Element {
   return (
@@ -11,7 +12,7 @@ export function ScaffaliStili(p: { valore: string; scegli: (id: string) => void 
           <div className="titolo-scaffale">{sc.nome}</div>
           <div className="scaffale">
             {STILI.filter((s) => s.scaffale === sc.id).map((s) => (
-              <Tessera key={s.id} id={`stile-${s.id}`} icona={<span aria-hidden>{s.icona}</span>} nome={s.nome} fondo={s.fondo} titolo={`${s.nome}: ${s.frammento}`} su={p.valore === s.id} onClick={() => p.scegli(p.valore === s.id ? '' : s.id)} />
+              <Tessera key={s.id} id={`stile-${s.id}`} icona={<span aria-hidden>{s.icona}</span>} nome={s.nome} fondo={s.fondo} asset={chiaveStile(s.id)} pieno titolo={`${s.nome}: ${s.frammento}`} su={p.valore === s.id} onClick={() => p.scegli(p.valore === s.id ? '' : s.id)} />
             ))}
           </div>
         </div>
