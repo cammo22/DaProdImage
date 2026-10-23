@@ -1,13 +1,14 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import { FAMIGLIE, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
+import { FAMIGLIE, type BoxRegione, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
 import { senzaTurbo } from '@shared/modelli'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
 // 'laboratorio' è sparito dalla rotaia (T7): T9 ha spostato le sue ricette nella scheda 'ricette' di Modifica.
 // I LoRA stanno dentro Opzioni (`SchedaOpzioni`).
-export type Pagina = 'crea' | 'modifica' | 'album' | 'galleria' | 'impostazioni'
+/** 'crea', 'modifica' e 'box' sono i tre modi dello Studio (con Ricette = modifica + modo 'ricette'); 'lora' ha la pagina sua */
+export type Pagina = 'crea' | 'modifica' | 'box' | 'album' | 'galleria' | 'lora' | 'impostazioni'
 export type SchedaOpzioni = 'generali' | 'lora'
 export type Qualita = 'bozza' | 'alta' | 'massima'
 /** Scrivi = tutta la foto, o solo la zona se ne hai disegnata una (si decide al momento dell'invio) */
@@ -48,6 +49,20 @@ export interface StatoCrea {
   campi: Record<string, string>
   /** le dimensioni precise (se scelte): il modello lavora ai megapixel, poi si porta a questa misura */
   misura: Misura
+  /** GUI v2: lo stile nuovo (id di `stili.ts`, '' = nessuno) e quanto forte: 0 leggero · 1 pieno · 2 estremo */
+  stileId: string
+  intensita: 0 | 1 | 2
+  /** GUI v2: lo sfondo (`trasparente` qui sotto resta il flag che il motore già conosce e va sempre d'accordo con questo), la tinta unita e come si guarda la trasparenza */
+  sfondo: 'scena' | 'trasparente' | 'tinta'
+  tinta: string
+  anteSfondo: 'scacchi' | 'bianco' | 'nero' | 'colore'
+}
+
+/** L'Editor box: i riquadri disegnati sulla tela di Crea (stesso formato, stessa misura) e la scena generale */
+export interface StatoBox {
+  scena: string
+  regioni: BoxRegione[]
+  selezionata: string | null
 }
 
 export interface StatoModifica {
@@ -81,6 +96,8 @@ export interface StatoModifica {
   /** le azioni rapide sono idee che si sommano: quanta fantasia ha il modello nel mescolarle, e il piano che ne esce */
   fantasia: 'fedele' | 'normale' | 'tanta'
   pianoIdee: { chiave: string; testo: string } | null
+  /** GUI v2: quanto forte è lo stile scelto fra le idee (0 leggero · 1 pieno · 2 estremo) */
+  intensitaStile: 0 | 1 | 2
 }
 
 export interface Avviso {
@@ -100,6 +117,8 @@ interface Stato {
   loraAttive: LoraAttiva[]
   crea: StatoCrea
   modifica: StatoModifica
+  /** l'Editor box (modo Box dello Studio) */
+  box: StatoBox
   codaAperta: boolean
   avvisi: Avviso[]
   /** l'opera aperta nel visore (galleria) */
@@ -118,6 +137,7 @@ interface Stato {
   setImp(i: Impostazioni): void
   setCrea(m: Partial<StatoCrea>): void
   setModifica(m: Partial<StatoModifica>): void
+  setBox(m: Partial<StatoBox>): void
   setLoraAttive(l: LoraAttiva[]): void
   toggleLora(file: string, forza?: number): void
   avvisa(testo: string, tipo?: Avviso['tipo']): void
@@ -145,12 +165,14 @@ const leggiLista = <T,>(k: string): T[] => {
 
 const CREA0: StatoCrea = {
   prompt: '', formato: '1:1', ris: 1024, mpLavoro: 0, quante: 1, seed: 0, casuale: true, trasparente: false,
-  riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' }
+  riferimenti: [], preset: '', stile: '', campi: {}, misura: { tipo: 'auto' },
+  stileId: '', intensita: 1, sfondo: 'scena', tinta: '#ffffff', anteSfondo: 'scacchi'
 }
+const BOX0: StatoBox = { scena: '', regioni: [], selezionata: null }
 const MOD0: StatoModifica = {
   base: null, versioni: [], riferimenti: [], esempio: null, modo: 'scrivi', prompt: '', mp: 1, qualita: 'alta', quante: 1, forza: 1, contesto: 0.6,
   ritaglia: true, segnaZona: false, riempi: false, sfuma: 10, allarga: 8, bordi: { sinistra: 0, sopra: 0, destra: 0, sotto: 0 }, trasparente: false, misura: { tipo: 'auto' }, formatoFusion: 'prima',
-  pianoEsempio: null, fantasia: 'normale', pianoIdee: null
+  pianoEsempio: null, fantasia: 'normale', pianoIdee: null, intensitaStile: 1
 }
 
 /** le scelte salvate dalla 0.1 avevano i megapixel al posto della risoluzione; fino alla 1.0 c'era la qualità «turbo» (ora «alta») */
@@ -181,6 +203,7 @@ export const usaStato = create<Stato>((set, get) => ({
   loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
   crea: { ...daVecchio(leggiLocale('dpi-crea', CREA0)), riferimenti: [] },
   modifica: daVecchioMod({ ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [], esempio: null }),
+  box: { ...BOX0, ...leggiLocale<Partial<StatoBox>>('dpi-box', {}), selezionata: null },
   codaAperta: false,
   avvisi: [],
   visore: null,
@@ -189,7 +212,7 @@ export const usaStato = create<Stato>((set, get) => ({
   scarico: null,
   selettore: null,
   vai: (pagina) => set({ pagina }),
-  vaiOpzioni: (schedaOpzioni) => set({ pagina: 'impostazioni', schedaOpzioni }),
+  vaiOpzioni: (schedaOpzioni) => (schedaOpzioni === 'lora' ? set({ pagina: 'lora' }) : set({ pagina: 'impostazioni', schedaOpzioni })),
   setImp: (imp) => set({ imp }),
   setCrea: (m) => {
     const crea = { ...get().crea, ...m }
@@ -207,6 +230,16 @@ export const usaStato = create<Stato>((set, get) => ({
     try {
       const { base: _b, versioni: _v, riferimenti: _r, esempio: _e, ...resto } = modifica
       localStorage.setItem('dpi-modifica', JSON.stringify(resto))
+    } catch {
+      /* niente */
+    }
+  },
+  setBox: (m) => {
+    const box = { ...get().box, ...m }
+    set({ box })
+    try {
+      const { selezionata: _s, ...resto } = box
+      localStorage.setItem('dpi-box', JSON.stringify(resto))
     } catch {
       /* niente */
     }

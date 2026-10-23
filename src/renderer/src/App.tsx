@@ -6,9 +6,11 @@ import { I } from './componenti/Icone'
 import { Coda } from './componenti/Coda'
 import { Crea } from './pagine/Crea'
 import { Modifica } from './pagine/Modifica'
+import { Box } from './pagine/Box'
+import { Lora } from './pagine/Lora'
+import { StripModi, PAGINE_STUDIO, vaiModo, type ModoStudio } from './pagine/Studio'
 import { Album } from './pagine/Album'
 import { BarraStato } from './componenti/BarraStato'
-import { SelettoreModello } from './componenti/ScegliModello'
 import { SelettoreFoto } from './componenti/SelettoreFoto'
 import { Galleria } from './pagine/Galleria'
 import { Impostazioni } from './pagine/Impostazioni'
@@ -16,12 +18,15 @@ import { Setup } from './pagine/Setup'
 import { normalizza } from './util'
 import { apriInModifica } from './azioni'
 
-const VOCI: { id: Pagina; nome: string; icona: () => JSX.Element }[] = [
-  { id: 'crea', nome: 'Crea', icona: I.crea },
-  { id: 'modifica', nome: 'Modifica', icona: I.modifica },
+/** la rotaia: Studio (con i suoi modi in cima), Galleria, Album, LoRA */
+const VOCI: { id: Pagina | 'studio'; nome: string; icona: () => JSX.Element }[] = [
+  { id: 'studio', nome: 'Studio', icona: I.studio },
   { id: 'galleria', nome: 'Galleria', icona: I.galleria },
-  { id: 'album', nome: 'Album', icona: I.album }
+  { id: 'album', nome: 'Album', icona: I.album },
+  { id: 'lora', nome: 'LoRA', icona: I.pila }
 ]
+/** l'ultimo modo dello Studio, per tornarci dalla rotaia */
+let ultimoModo: ModoStudio = 'crea'
 
 const gb = (b: number): string => (b / 1073741824).toFixed(b >= 10 * 1073741824 ? 0 : 1)
 
@@ -56,7 +61,7 @@ function Indicatori(): JSX.Element | null {
 }
 
 export function App(): JSX.Element {
-  const { pagina, schedaOpzioni, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
+  const { pagina, vai, motore, lavori, codaAperta, avvisi, avvisa, agg, imp } = usaStato()
   const [pronto, setPronto] = useState(false)
   const [installato, setInstallato] = useState(true)
   // il motore era installato ma la sua versione è cambiata (aggiornamento dell'app): si aggiorna da solo
@@ -139,6 +144,27 @@ export function App(): JSX.Element {
     }
   }, [])
 
+  // l'ultimo modo dello Studio (per tornarci dalla rotaia) e le scorciatoie 1–7 e «,» (non quando si scrive)
+  useEffect(() => {
+    const t = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
+      const mappa: Record<string, () => void> = {
+        '1': () => vaiModo('crea'), '2': () => vaiModo('modifica'), '3': () => vaiModo('box'), '4': () => vaiModo('ricette'),
+        '5': () => usaStato.getState().vai('galleria'), '6': () => usaStato.getState().vai('album'), '7': () => usaStato.getState().vai('lora'), ',': () => usaStato.getState().vai('impostazioni')
+      }
+      const f = mappa[e.key]
+      if (f && !usaStato.getState().visore) {
+        e.preventDefault()
+        f()
+      }
+    }
+    window.addEventListener('keydown', t)
+    return () => window.removeEventListener('keydown', t)
+  }, [])
+  const modoCorrente = usaStato((s) => (s.pagina === 'modifica' ? (s.modifica.modo === 'ricette' ? 'ricette' : 'modifica') : s.pagina === 'box' ? 'box' : s.pagina === 'crea' ? 'crea' : null))
+  if (modoCorrente) ultimoModo = modoCorrente
+
   // Monitoraggio VRAM: se resta sopra il 95% per più di 10 s a coda ferma, avvisa.
   useEffect(() => {
     const attiviNow = lavori.some((l) => l.stato === 'in coda' || l.stato === 'in corso')
@@ -165,7 +191,6 @@ export function App(): JSX.Element {
           <img src="./icona.svg" alt="" />
           DAPROD <b>IMAGE</b>
         </div>
-        {pronto && installato && <SelettoreModello />}
         <span className="spazio" />
         {agg.stato === 'scarico' && (
           <span className="pillola" title={`Scarico DaProd Image ${agg.versione}`} onClick={() => vai('impostazioni')}>
@@ -197,12 +222,15 @@ export function App(): JSX.Element {
       ) : (
         <>
           <nav className="rotaia">
-            {VOCI.map((v) => (
-              <button key={v.id} className={pagina === v.id ? 'attiva' : ''} onClick={() => vai(v.id)}>
-                <v.icona />
-                {v.nome}
-              </button>
-            ))}
+            {VOCI.map((v) => {
+              const attiva = v.id === 'studio' ? PAGINE_STUDIO.includes(pagina) : pagina === v.id
+              return (
+                <button key={v.id} className={attiva ? 'attiva' : ''} onClick={() => (v.id === 'studio' ? (PAGINE_STUDIO.includes(pagina) ? undefined : vaiModo(ultimoModo)) : vai(v.id))} data-voce={v.id}>
+                  <v.icona />
+                  {v.nome}
+                </button>
+              )
+            })}
             <span className="riempi" />
             <button className={codaAperta ? 'attiva' : ''} onClick={() => usaStato.setState({ codaAperta: !codaAperta })}>
               <I.coda />
@@ -216,10 +244,17 @@ export function App(): JSX.Element {
           </nav>
           <main className="contenuto">
             {/* le pagine restano montate: la maschera disegnata o il prompt non si perdono cambiando pagina */}
-            <div className={pagina === 'crea' ? '' : 'nascosto'}><Crea /></div>
-            <div className={pagina === 'modifica' ? '' : 'nascosto'}><Modifica /></div>
+            <div className={PAGINE_STUDIO.includes(pagina) ? 'studio' : 'nascosto'}>
+              <StripModi />
+              <div className="studio-corpo">
+                <div className={pagina === 'crea' ? '' : 'nascosto'}><Crea /></div>
+                <div className={pagina === 'modifica' ? '' : 'nascosto'}><Modifica /></div>
+                <div className={pagina === 'box' ? '' : 'nascosto'}><Box /></div>
+              </div>
+            </div>
             <div className={pagina === 'album' ? '' : 'nascosto'}>{pagina === 'album' && <Album />}</div>
             <div className={pagina === 'galleria' ? '' : 'nascosto'}>{pagina === 'galleria' && <Galleria />}</div>
+            <div className={pagina === 'lora' ? '' : 'nascosto'}>{pagina === 'lora' && <Lora />}</div>
             <div className={pagina === 'impostazioni' ? '' : 'nascosto'}>{pagina === 'impostazioni' && <Impostazioni />}</div>
             <Coda />
           </main>
@@ -241,7 +276,7 @@ export function App(): JSX.Element {
       </div>
       {rilascio && (
         <div className="velo-rilascio">
-          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'impostazioni' && schedaOpzioni === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
+          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
         </div>
       )}
     </div>

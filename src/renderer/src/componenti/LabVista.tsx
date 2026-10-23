@@ -28,7 +28,7 @@ export function Catalogo(p: { cerca: string; scelto: string | null; scegli: (id:
             <h2><span className="ic-wf">{icona(c.icona)}</span> {c.nome} <small>{c.testo}</small></h2>
             <div className="carte-wf">
               {voci.map((w) => (
-                <button key={w.id} className={`carta-wf ${p.scelto === w.id ? 'su' : ''}`} onClick={() => p.scegli(w.id)}>
+                <button key={w.id} className={`carta-wf ${p.scelto === w.id || (w.id === 'r-mix' && (p.scelto === 'unisci' || p.scelto === 'esempio')) ? 'su' : ''}`} onClick={() => p.scegli(w.id)}>
                   <div className="riga spazia">
                     <span className="ic-wf grande">{icona(w.icona)}</span>
                     <span className="riga" style={{ gap: 6 }}>{w.utente && <span className="distintivo">mia</span>}<span className={`distintivo ${w.modo === 'catena' ? 'forse' : 'si'}`}>{w.modo === 'catena' ? <><I.catena /> catena</> : w.modo === 'speciale' ? <><I.crea /> foto nuova</> : <><I.serie /> serie</>}</span></span>

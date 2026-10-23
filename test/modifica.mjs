@@ -29,7 +29,7 @@ await win.click('.visore button:has-text("Modifica")')
 await pausa(1500)
 
 // Espandi a 16:9
-await win.click('.segmenti button:has-text("Espandi")')
+await win.click('.modi-modifica button[data-id="modo-espandi"]')
 await win.click('.chip:has-text("+25% ovunque")')
 await win.fill('.colonna.destra textarea', 'the rest of a cozy Neapolitan café interior')
 await pausa(500)

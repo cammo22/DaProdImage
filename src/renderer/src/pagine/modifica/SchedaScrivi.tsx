@@ -1,13 +1,11 @@
 // Modifica, scheda Scrivi: il prompt, Migliora, i segnaposto delle foto e le Idee (azioni rapide che si sommano).
 // Se sulla tela c'è una zona disegnata il lavoro vale solo per la zona, se no per tutta la foto (lo decide Modifica.tsx).
 import { type JSX, type RefObject } from 'react'
+import type { PosizioneCamera } from '../../componenti/Camera'
 import { usaStato, type FotoBase } from '../../stato'
 import { I } from '../../componenti/Icone'
 import { Casella } from '../../componenti/Casella'
-import { Segmenti } from '../../componenti/Controlli'
-import { AvvisoLora } from '../../componenti/AvvisoLora'
-import { ControlloCamera, type PosizioneCamera } from '../../componenti/Camera'
-import { FANTASIE } from '../../regista'
+import { SchedaIdee } from './SchedaIdee'
 import { usaSpeciale } from '../../workflow'
 import type { Rapida, CategoriaRapide } from '../../rapide'
 
@@ -96,61 +94,6 @@ function SchedaTesto({ prompt, base, griglia, zona, scrivendo, migliora, setCame
           Serve {rapida?.rifNome || 'una foto di riferimento'}: aggiungila qui sotto in <b>Riferimenti</b> (nel testo è <b>&lt;image2&gt;</b>).
         </div>
       )}
-    </div>
-  )
-}
-
-/** Idee (le azioni rapide, che si sommano), il comando Camera e il piano delle idee */
-function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, setIdee, usaRapida, chiaveIdee, camera, cambiaCamera, loraCamera }: PropsScrivi): JSX.Element | null {
-  const { modifica: m, setModifica } = usaStato()
-  if (m.modo === 'espandi' || griglia) return null
-  return (
-    <div className="sezione">
-      <h3>Idee <span className="dx">sommale: il modello le mescola</span></h3>
-      <div className="cat-rapide">
-        {categorie.map((c) => {
-          const Ic = (I as Record<string, () => JSX.Element>)[c.icona] || I.crea
-          return (
-            <button key={c.id} className={cat?.id === c.id ? 'su' : ''} onClick={() => setCategoria(c.id)}>
-              <Ic />
-              {c.nome}
-            </button>
-          )
-        })}
-      </div>
-      {cat && cat.id === 'prospettiva' && !zona && (
-        <div style={{ marginTop: 12 }}>
-          <ControlloCamera valore={camera} cambia={cambiaCamera} lora={loraCamera} />
-          <AvvisoLora id="lora-camera" perche="Rifà la foto da un'altra posizione della camera, molto più fedele. Si accende da solo con il comando Camera." />
-        </div>
-      )}
-      {cat && cat.id === 'vestiti' && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-vestiti" perche="Tiene volto, pose e sfondo mentre cambia il vestito. Si accende da solo qui." /></div>}
-      <div className="riga a-capo" style={{ marginTop: 10, gap: 6 }}>
-        {cat?.voci.map((r) => (
-          <button key={r.id} className={`chip ${idee.some((x) => x.id === r.id) ? 'su' : ''}`} onClick={() => void usaRapida(r)} title={r.rif ? `Serve ${r.rifNome || 'una foto di riferimento'}` : 'Un clic la accende, un altro la spegne: puoi sommarne quante vuoi'}>
-            {r.rif ? '＋ ' : ''}{r.nome}
-          </button>
-        ))}
-      </div>
-      {idee.length > 0 && (
-        <div className="idee-scelte">
-          <div className="riga spazia">
-            <b className="oro piccolo">{idee.length} {idee.length === 1 ? 'idea' : 'idee'}: {idee.map((r) => r.nome.replace('…', '')).join(' + ')}</b>
-            <button className="btn piccolo fantasma" onClick={() => setIdee([])}>Togli tutte</button>
-          </div>
-          <span className="piccolo tenue">Fantasia del modello</span>
-          <Segmenti valore={m.fantasia} cambia={(fantasia) => setModifica({ fantasia })} voci={FANTASIE.map((f) => ({ id: f.id, nome: f.nome, sotto: f.sotto }))} />
-          {m.pianoIdee && m.pianoIdee.chiave === chiaveIdee ? (
-            <div style={{ marginTop: 8 }}>
-              <div className="riga spazia"><span className="piccolo tenue">Il piano del modello (puoi correggerlo)</span><button className="btn piccolo fantasma" onClick={() => setModifica({ pianoIdee: null })} title="Al prossimo lavoro il modello rimescola le idee, con dettagli nuovi">Rifai</button></div>
-              <Casella minimo={110} senzaCestino valore={m.pianoIdee.testo} cambia={(testo) => setModifica({ pianoIdee: { chiave: m.pianoIdee!.chiave, testo } })} />
-            </div>
-          ) : (
-            <div className="piccolo spento" style={{ marginTop: 6 }}>Quando premi «Modifica» il modello guarda la foto, mescola le idee e inventa i dettagli. Qui vedrai cosa ha deciso.</div>
-          )}
-        </div>
-      )}
-      {cat && ['luce', 'ritocco', 'situazioni'].includes(cat.id) && <div style={{ marginTop: 10 }}><AvvisoLora id="lora-coerenza" perche="Le modifiche restano sul fotogramma: luce, colori e stili cambiano, i contorni no. Si accende da solo in queste azioni." /></div>}
     </div>
   )
 }

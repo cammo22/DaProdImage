@@ -79,5 +79,26 @@ export const I = {
   catena: () => <S><rect x="2.5" y="8" width="6" height="8" rx="1.5" /><rect x="15.5" y="8" width="6" height="8" rx="1.5" /><path d="M9 12h6M13 9.5l2.5 2.5-2.5 2.5" /></S>,
   freccia: () => <S><path d="M5 12h14M13 6l6 6-6 6" /></S>,
   casa: () => <S><path d="M3 11l9-8 9 8" /><path d="M5 10v10h5v-6h4v6h5V10" /></S>,
-  gioca: () => <S><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none" /></S>
+  gioca: () => <S><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none" /></S>,
+  // --- GUI v2 «Orbita» ---
+  studio: () => <S><circle cx="12" cy="12" r="3.2" /><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(-24 12 12)" /><circle cx="19.2" cy="7.6" r="1.1" fill="currentColor" stroke="none" /></S>,
+  estrai: () => <S><circle cx="6" cy="6.5" r="2.4" /><circle cx="6" cy="17.5" r="2.4" /><path d="M8 8l12 8M8 16L20 8" /></S>,
+  box: () => <S><rect x="3.5" y="4.5" width="10" height="8" rx="1.4" /><rect x="10.5" y="10.5" width="10" height="9" rx="1.4" strokeDasharray="3 2.5" /></S>,
+  ricette: () => <S><path d="M9 3h6M10 3v6L4.6 18.6A1.6 1.6 0 006 21h12a1.6 1.6 0 001.4-2.4L14 9V3" /><path d="M7.5 15h9" /><circle cx="11" cy="17.6" r=".7" fill="currentColor" stroke="none" /></S>,
+  pila: () => <S><path d="M12 3l9 4.5-9 4.5-9-4.5z" /><path d="M3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5" /></S>,
+  fiamma: () => <S><path d="M12 22c4 0 7-2.7 7-6.7 0-3-1.8-4.9-3.3-6.6-.3 1.3-1 2.2-2 2.7.4-3.3-1-6.6-4.1-9.4.2 3.4-1.4 5.2-2.8 7C5.7 11 5 12.5 5 14.8 5 19 8 22 12 22z" /></S>,
+  lucchetto: () => <S><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></S>,
+  scacchi: () => <S><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h18M12 3v18" /><rect x="3" y="3" width="9" height="9" fill="currentColor" stroke="none" opacity=".4" /><rect x="12" y="12" width="9" height="9" fill="currentColor" stroke="none" opacity=".4" /></S>,
+  scena: () => <S><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" /><circle cx="16.5" cy="8.5" r="1.4" /></S>,
+  tinta: () => <S><path d="M12 3s6 6.3 6 11a6 6 0 01-12 0c0-4.700 6-11 6-11z" /></S>,
+  ritaglio: () => <S><path d="M6 2v14a2 2 0 002 2h14M2 6h14a2 2 0 012 2v14" /></S>,
+  ricrea: () => <S><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z" /><path d="M4 20h5M15 20h5M12 17v4" /></S>,
+  susfondo: () => <S><rect x="3" y="3" width="18" height="18" rx="2.5" /><circle cx="12" cy="10" r="3" /><path d="M6 19c1-3 3.200-4.500 6-4.500s5 1.500 6 4.500" /></S>,
+  ingranaggi: () => <S><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.900 4.900l2.100 2.100M17 17l2.100 2.100M4.900 19.100L7 17M17 7l2.100-2.100" /></S>,
+  interruttore: () => <S><rect x="2.500" y="7" width="19" height="10" rx="5" /><circle cx="16.500" cy="12" r="2.600" fill="currentColor" stroke="none" /></S>,
+  cartello: () => <S><path d="M12 22V9M5 4h14l2 3-2 3H5z" /></S>,
+  occhioBarrato: () => <S><path d="M2 12s3.500-7 10-7c2 0 3.700.7 5.100 1.600M22 12s-3.500 7-10 7c-2 0-3.700-.7-5.100-1.600M3 3l18 18" /></S>,
+  sposta: () => <S><path d="M12 2v20M2 12h20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3" /></S>,
+  cursore: () => <S><path d="M5 3l14 7-6 2-2 6z" /></S>,
+  duplica: () => <S><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" /><path d="M14 11v6M11 14h6" /></S>
 }
