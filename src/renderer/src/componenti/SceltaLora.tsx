@@ -5,6 +5,7 @@ import { urlFile } from '../api'
 import { I } from './Icone'
 import { ImgAsset } from './Tessere'
 import { chiaveLora } from '../anteprime'
+import { NOME_GRUPPO, gruppoDiFamiglia, vaBeneCon } from '@shared/loraBase'
 import type { InfoLora } from '@shared/tipi'
 
 export function coloreDa(nome: string): string {
@@ -35,8 +36,10 @@ export function Copertina({ l, grande }: { l: InfoLora; grande?: boolean }): JSX
 
 export function SceltaLora(): JSX.Element {
   const { lore: tutte, loraAttive, setLoraAttive, toggleLora, vaiOpzioni, imp } = usaStato()
-  // il Turbo si accende dalla Qualità, non da qui
-  const lore = tutte.filter((l) => l.file !== imp?.loraTurbo)
+  // il Turbo si accende dalla Qualità, non da qui; e si vedono solo i LoRA che vanno col modello scelto (Qwen o Flux: due scaffali)
+  const famiglia = imp?.famiglia || 'qwen'
+  const gruppo = gruppoDiFamiglia(famiglia)
+  const lore = tutte.filter((l) => l.file !== imp?.loraTurbo && vaBeneCon(l, famiglia) !== 'no')
   const [aperto, setAperto] = useState(false)
   const rif = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -79,13 +82,13 @@ export function SceltaLora(): JSX.Element {
         <button className="btn piccolo" onClick={() => setAperto(!aperto)}>
           <I.piu /> LoRA
         </button>
-        {lore.length === 0 && <span className="piccolo spento">Nessun LoRA: aggiungili da Opzioni → LoRA.</span>}
+        {lore.length === 0 && <span className="piccolo spento">Nessun LoRA per {NOME_GRUPPO[gruppo]}: aggiungili dalla pagina LoRA.</span>}
       </div>
       {aperto && (
         <div className="scelta-lora pannello" style={{ top: '100%', left: 0, marginTop: 6 }}>
           {lore.length === 0 && (
             <div className="col" style={{ padding: 10 }}>
-              <span className="tenue">Non hai ancora LoRA.</span>
+              <span className="tenue">Non hai ancora LoRA per {NOME_GRUPPO[gruppo]}.</span>
               <button className="btn piccolo" onClick={() => vaiOpzioni('lora')}>Vai ai LoRA</button>
             </div>
           )}
@@ -99,7 +102,7 @@ export function SceltaLora(): JSX.Element {
                 <div className="flex1">
                   <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.nome}</div>
                   <div className="piccolo spento" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {l.compatibile === 'no' ? '⚠ ' + (l.base || 'altro modello') : l.parole || l.file}
+                    {vaBeneCon(l, famiglia) === '?' ? '? da verificare' : l.parole || l.file}
                   </div>
                 </div>
                 {su && <span className="oro" style={{ fontWeight: 700 }}>✓</span>}
@@ -115,7 +118,6 @@ export function SceltaLora(): JSX.Element {
 /** aggiunge al prompt le parole chiave dei LoRA attivi che non ci sono già */
 export function conParoleLora(prompt: string): string {
   const { lore, loraAttive, imp } = usaStato.getState()
-  if (imp && imp.famiglia !== 'qwen') return prompt
   const extra: string[] = []
   for (const a of loraAttive) {
     const p = lore.find((l) => l.file === a.file)?.parole?.trim()

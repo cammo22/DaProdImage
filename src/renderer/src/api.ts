@@ -1,6 +1,6 @@
 // L'API del processo principale, con i tipi giusti.
 import type {
-  ControlloSistema, Download, Famiglia, FiltroGalleria, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, Risorse, StatoAggiornamento, StatoVoce
+  ControlloSistema, Download, Famiglia, FiltroGalleria, GruppoLora, Impostazioni, InfoLora, InfoMotore, Lavoro, Opera, PassoSetup, Richiesta, Risorse, StatoAggiornamento, StatoVoce
 } from '@shared/tipi'
 
 type Via = () => void
@@ -36,9 +36,6 @@ export interface FileModelli {
   klein: string[]
   kleinTe: string[]
   kleinVae: string[]
-  /** i file di FLUX.2 Klein 4B (modello, text encoder, VAE condiviso) */
-  klein4b: string[]
-  klein4bTe: string[]
 }
 export interface ModelloTrovato {
   percorso: string
@@ -84,8 +81,10 @@ export interface Api {
   lora: {
     elenco(): Promise<InfoLora[]>; aggiorna(file: string, m: Partial<InfoLora>): Promise<void>;
     /** i LoRA buoni per quel modello (compatibili e «da provare»; mai quelli fatti per un altro) */
-    compatibili(famiglia: Famiglia): Promise<InfoLora[]>; importa(p: string[]): Promise<string[]>
-    elimina(file: string): Promise<void>; scarica(link: string): Promise<Download>; apriCartella(): Promise<void>
+    compatibili(famiglia: Famiglia): Promise<InfoLora[]>
+    /** `gruppo`: lo scaffale della scheda da cui si carica (Qwen o Flux); se i nomi dei tensori dicono un altro modello vince quello. Ritorna i nomi dei file (con la sottocartella). */
+    importa(p: string[], gruppo?: GruppoLora): Promise<string[]>
+    elimina(file: string): Promise<void>; scarica(link: string, gruppo?: GruppoLora): Promise<Download>; apriCartella(): Promise<void>
   }
   file: {
     scegliImmagini(multiple: boolean): Promise<string[]>; scegli(nome: string, est: string[]): Promise<string | null>

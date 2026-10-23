@@ -3,7 +3,6 @@
 // il prompt e i riquadri non si perdono passando da un modo all'altro.
 import type { JSX } from 'react'
 import { usaStato, type Pagina } from '../stato'
-import { MODELLI, modelloDaImpostazioni } from '@shared/modelli'
 import { I } from '../componenti/Icone'
 import { ImgAsset } from '../componenti/Tessere'
 import { chiaveModo } from '../anteprime'
@@ -42,11 +41,9 @@ const MODI: { id: ModoStudio; nome: string; icona: () => JSX.Element; titolo: st
 export function StripModi(): JSX.Element {
   const pagina = usaStato((s) => s.pagina)
   const modo = usaStato((s) => s.modifica.modo)
-  const imp = usaStato((s) => s.imp)
   const nLora = usaStato((s) => s.loraAttive.length)
   const vai = usaStato((s) => s.vai)
   const attivo: ModoStudio = pagina === 'modifica' ? (modo === 'ricette' ? 'ricette' : 'modifica') : pagina === 'box' ? 'box' : 'crea'
-  const m = MODELLI[modelloDaImpostazioni(imp)]
   return (
     <div className="strip-modi" role="tablist" aria-label="Modi dello Studio">
       {MODI.map((x) => (
@@ -55,14 +52,9 @@ export function StripModi(): JSX.Element {
         </button>
       ))}
       <span className="spazio" />
-      <span className="pillola-motore" title="Il modello che disegna: si sceglie nel pannello a sinistra, in «Motore»">
-        <I.chip /> Motore <b>{m.nome}</b>
-      </span>
-      {(
-        <button type="button" className="pillola-motore" onClick={() => vai('lora')} title="La pila dei LoRA accesi: forza, ordine, parole chiave">
-          <I.pila /> LoRA <b>{nLora}</b>
-        </button>
-      )}
+      <button type="button" className="pillola-motore" onClick={() => vai('lora')} title="La pila dei LoRA accesi: forza, ordine, parole chiave">
+        <I.pila /> LoRA <b>{nLora}</b>
+      </button>
     </div>
   )
 }

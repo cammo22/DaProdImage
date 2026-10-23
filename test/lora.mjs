@@ -31,8 +31,8 @@ uguale('Klein 3 (content_mode_blocks)', ris(['diffusion_model.content_mode_block
 
 const doppi = (n) => Array.from({ length: n }, (_, i) => `diffusion_model.double_blocks.${i}.img_attn.qkv.lora_A.weight`)
 const flux2 = (n) => [...doppi(n), 'diffusion_model.double_blocks.0.img_mlp.0.lora_A.weight', 'diffusion_model.double_blocks.0.txt_mlp.0.lora_A.weight', 'diffusion_model.single_blocks.0.linear1.lora_A.weight']
-uguale('Klein 4B (5 blocchi doppi)', ris(flux2(5)), ['si', 'FLUX.2 Klein 4B', ['klein4b']])
-uguale('Klein 4B con forma 3072', ris(flux2(5), { 'diffusion_model.double_blocks.0.img_attn.qkv.lora_A.weight': [16, 3072] }), ['si', 'FLUX.2 Klein 4B', ['klein4b']])
+// FLUX.2 Klein 4B/9B non sono più dell'app (1.2.1): i loro LoRA non vanno con nessun modello
+uguale('FLUX.2 Klein 4B (5 blocchi doppi): non dell\'app', ris(flux2(5)), ['no', 'FLUX.2', []])
 uguale('FLUX.2 grande (8 doppi)', ris(flux2(8)), ['no', 'FLUX.1 / FLUX.2 grande', []])
 uguale('FLUX.2 9B (forma 4096)', ris(flux2(5), { 'diffusion_model.double_blocks.0.img_attn.qkv.lora_A.weight': [16, 4096] }), ['no', 'FLUX.2', []])
 uguale('sconosciuto', ris(['foo.bar.weight']), ['?', undefined, []])
@@ -41,10 +41,26 @@ uguale('sconosciuto', ris(['foo.bar.weight']), ['?', undefined, []])
 uguale('Qwen con Qwen', L.vaBeneCon({ compatibile: 'si', famiglie: ['qwen'] }, 'qwen'), 'si')
 uguale('Qwen con Klein', L.vaBeneCon({ compatibile: 'si', famiglie: ['qwen'] }, 'klein'), 'no')
 uguale('Klein 3 vale per Base', L.vaBeneCon({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }, 'klein-base'), 'si')
-uguale('Klein 3 non per 4B', L.vaBeneCon({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }, 'klein4b'), 'no')
+uguale('Klein 3 non per Qwen', L.vaBeneCon({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }, 'qwen'), 'no')
 uguale('vecchio LoRA senza famiglie (si) vale', L.vaBeneCon({ compatibile: 'si' }, 'qwen'), 'si')
 uguale('vecchio LoRA senza famiglie (no)', L.vaBeneCon({ compatibile: 'no' }, 'qwen'), 'no')
 uguale('non si capisce → si lascia provare', L.vaBeneCon({ compatibile: '?' }, 'klein'), '?')
+
+// --- gli scaffali: Qwen e Flux (Klein veloce e Klein Base) ---
+uguale('gruppoDiFamiglia', ['qwen', 'klein', 'klein-base'].map(L.gruppoDiFamiglia), ['qwen', 'flux', 'flux'])
+uguale('gruppoDiFamiglia di niente = qwen', L.gruppoDiFamiglia(undefined), 'qwen')
+uguale('scaffale: Qwen dai tensori', L.gruppoDa({ compatibile: 'si', famiglie: ['qwen'] }), 'qwen')
+uguale('scaffale: Klein dai tensori', L.gruppoDa({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }), 'flux')
+uguale('scaffale: i tensori battono la scelta di chi carica', L.gruppoDa({ compatibile: 'si', famiglie: ['qwen'], gruppo: 'flux' }), 'qwen')
+uguale('scaffale: non riconosciuto → quello scelto', L.gruppoDa({ compatibile: '?', famiglie: [], gruppo: 'flux' }), 'flux')
+uguale('scaffale: non riconosciuto e non scelto → nessuno', L.gruppoDa({ compatibile: '?', famiglie: [] }), undefined)
+uguale('scaffale: SDXL senza scelta → nessuno (sta in «Altri»)', L.gruppoDa({ compatibile: 'no', famiglie: [] }), undefined)
+uguale('scaffale: SDXL che l\'utente assegna a Flux', L.gruppoDa({ compatibile: 'no', famiglie: [], gruppo: 'flux' }), 'flux')
+uguale('scaffale: libreria vecchia, si senza famiglie → Qwen', L.gruppoDa({ compatibile: 'si' }), 'qwen')
+uguale('Flux scelto a mano: vale per Klein veloce e Base, non per Qwen', ['klein', 'klein-base', 'qwen'].map((f) => L.vaBeneCon({ compatibile: '?', famiglie: [], gruppo: 'flux' }, f)), ['si', 'si', 'no'])
+uguale('Qwen scelto a mano su un LoRA non riconosciuto', ['qwen', 'klein'].map((f) => L.vaBeneCon({ compatibile: 'no', famiglie: [], gruppo: 'qwen' }, f)), ['si', 'no'])
+// il bug della 1.2.0: l'elenco non portava `famiglie` e ogni LoRA di Klein risultava «non compatibile» con Klein
+uguale('LoRA di Klein con Klein veloce e con Klein Base: sì', ['klein', 'klein-base'].map((f) => L.vaBeneCon({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }, f)), ['si', 'si'])
 
 console.log(falliti ? `${falliti} FALLITI su ${fatti}` : `TUTTI OK (${fatti} controlli)`)
 process.exit(falliti ? 1 : 0)

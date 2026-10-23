@@ -1,5 +1,5 @@
 // Test del catalogo (src/main/installa/catalogo.ts + scegli.ts): niente Electron, niente rete (gli alberi dei repo sono in test/campioni-hf/).
-//  - ogni voce con `repo` trova il suo file nell'albero vero (percorso esatto per Klein, FLUX.2 Klein 4B, BiRefNet, SAM2, LLM uncensored)
+//  - ogni voce con `repo` trova il suo file nell'albero vero (percorso esatto per Klein, BiRefNet, SAM2, LLM uncensored)
 //  - le voci uncensored hanno il flag, l'avviso e la guardia di scaricamento funziona
 //  - ogni voce ha licenza e ruolo; i modelli Qwen Research hanno l'avviso; nessuna voce uncensored è `consigliato` (non si scarica mai da sola)
 //
@@ -64,8 +64,7 @@ for (const id of ['klein-base-int8', 'klein-base-bf16']) {
 }
 
 // nuove voci
-uguale('FLUX.2 Klein 4B fp8', trova(voce('klein4b-fp8')), 'flux-2-klein-4b-fp8.safetensors')
-uguale('FLUX.2 Klein 4B encoder', trova(voce('klein4b-te')), 'split_files/text_encoders/qwen_3_4b.safetensors')
+uguale('FLUX.2 Klein 4B non è più nel catalogo (1.2.1)', [CATALOGO.some((v) => v.id.startsWith('klein4b')), voce('klein4b-fp8')], [false, undefined])
 uguale('BiRefNet', trova(voce('sfondo-birefnet')), 'model.safetensors')
 uguale('SAM2 small', trova(voce('seg-sam2')), 'model.safetensors')
 uguale('LLM uncensored 4B', trova(voce('llm-huihui-4b')), 'Huihui-Qwen3-VL-4B-Instruct-abliterated-int8_convrot.safetensors')
@@ -77,7 +76,7 @@ for (const id of ['sfondo-birefnet', 'seg-sam2']) {
 }
 // i repo con revisione fissata: l'albero è stato salvato a quella revisione
 for (const v of CATALOGO.filter((x) => x.repo && x.revisione)) uguale(`revisione di ${v.id}`, alberi[v.repo].revisione, v.revisione)
-for (const id of ['klein-int8', 'klein-te', 'klein4b-fp8', 'klein4b-te', 'sfondo-birefnet', 'seg-sam2', 'llm-huihui-4b']) uguale(`${id} ha una revisione fissata`, /^[0-9a-f]{40}$/.test(voce(id).revisione || ''), true)
+for (const id of ['klein-int8', 'klein-te', 'sfondo-birefnet', 'seg-sam2', 'llm-huihui-4b']) uguale(`${id} ha una revisione fissata`, /^[0-9a-f]{40}$/.test(voce(id).revisione || ''), true)
 
 // uncensored: flag, avviso e guardia
 const unc = CATALOGO.filter((v) => v.uncensored).map((v) => v.id).sort()

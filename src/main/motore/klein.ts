@@ -1,4 +1,4 @@
-// FLUX 3 Klein e FLUX.2 Klein 4B: quali file usare. Le impostazioni possono dirlo; se sono vuote si usano quelli scaricati dall'app (risolti.json) e,
+// FLUX 3 Klein: quali file usare. Le impostazioni possono dirlo; se sono vuote si usano quelli scaricati dall'app (risolti.json) e,
 // in mancanza, si cerca nelle cartelle dei modelli (chi ha già i file li mette lì a mano).
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -53,9 +53,8 @@ export function encoderDiTesto(imp: Impostazioni): string {
   return llmUncensoredFile(imp) || encoderKleinFile(imp)
 }
 
-/** i file di Klein (o di Klein Base, o di FLUX.2 Klein 4B) da usare adesso, o l'errore da mostrare in italiano se mancano */
+/** i file di Klein (o di Klein Base) da usare adesso, o l'errore da mostrare in italiano se mancano */
 export function fileKlein(imp: Impostazioni, famiglia: Famiglia): FileKlein | string {
-  if (famiglia === 'klein4b') return fileKlein4b(imp)
   const base = famiglia === 'klein-base'
   const idModelli = base ? ['klein-base-int8', 'klein-base-bf16'] : ['klein-int8', 'klein-bf16']
   const scelto = base ? imp.kleinBase : imp.kleinModello
@@ -72,22 +71,8 @@ export function fileKlein(imp: Impostazioni, famiglia: Famiglia): FileKlein | st
   return { modello, encoder, vae }
 }
 
-/** il VAE di FLUX.2 (lo stesso per Klein 3 e Klein 4B) */
+/** il VAE di FLUX.2 (quello di Klein 3) */
 function vaeKlein(imp: Impostazioni): string {
   const vae = sul(imp, 'vae', imp.kleinVae) || sul(imp, 'vae', risoltoSalvato('klein-vae')?.file)
   return vae || preferisci(lista(imp, 'vae'), [/^flux2-vae\./i, /klein/i, /flux.?[23]/i, /^ae\./i, /flux/i])
-}
-
-/** FLUX.2 Klein 4B: il denoiser (FP8 ufficiale), il Qwen3 4B di solo testo e il VAE di FLUX.2 */
-function fileKlein4b(imp: Impostazioni): FileKlein | string {
-  let modello = sul(imp, 'diffusion_models', risoltoSalvato('klein4b-fp8')?.file)
-  if (!modello) {
-    const tutti = [...lista(imp, 'diffusion_models'), ...lista(imp, 'unet')].filter((n) => /klein.*4b|4b.*klein/i.test(n) && !/base/i.test(n) && !/vae|text_enc/i.test(n))
-    modello = preferisci(tutti, [/fp8/i, /bf16/i, /./])
-  }
-  const encoder = sul(imp, 'text_encoders', risoltoSalvato('klein4b-te')?.file) || preferisci(lista(imp, 'text_encoders'), [/^qwen_3_4b\.safetensors$/i, /^qwen_?3_4b/i])
-  const vae = vaeKlein(imp)
-  const mancano = [!modello && 'il modello FLUX.2 Klein 4B', !encoder && 'il text encoder (Qwen3 4B)', !vae && 'il VAE'].filter(Boolean)
-  if (mancano.length) return `FLUX.2 Klein 4B non è pronto: mancano ${mancano.join(', ')}. Scaricali dal selettore del modello (o da Opzioni → Scarica altri modelli).`
-  return { modello, encoder, vae }
 }

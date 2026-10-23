@@ -5,7 +5,6 @@ import { usaStato, type FotoBase } from '../../stato'
 import { urlFile } from '../../api'
 import { I } from '../../componenti/Icone'
 import { Casella } from '../../componenti/Casella'
-import { ScegliModello } from '../../componenti/ScegliModello'
 import { Contatore, Segmenti } from '../../componenti/Controlli'
 import { SceltaLora } from '../../componenti/SceltaLora'
 import { Riferimenti } from '../../componenti/Riferimenti'
@@ -26,7 +25,7 @@ interface Props extends PropsScrivi {
 }
 
 export function SchedeModifica(p: Props): JSX.Element {
-  const { modifica: m, setModifica, imp } = usaStato()
+  const { modifica: m, setModifica } = usaStato()
   const sp = usaSpeciale()
   const fusion = sp === 'unisci'
   const esempioMode = sp === 'esempio'
@@ -35,7 +34,6 @@ export function SchedeModifica(p: Props): JSX.Element {
   return (
     <div className="colonna destra">
       <div className="scorri">
-        <div className="sezione"><ScegliModello /></div>
         <SchedaScrivi {...p} />
         <SchedaEsempio />
         <SchedaEspandi espandiPreset={p.espandiPreset} />
@@ -56,12 +54,10 @@ export function SchedeModifica(p: Props): JSX.Element {
         <SchedaDimensioni base={base} zona={p.zona} />
         <SchedaQualita passi={passi} stima={stima} />
 
-        {(imp?.famiglia || 'qwen') === 'qwen' && (
-          <div className="sezione">
-            <h3>LoRA</h3>
-            <SceltaLora />
-          </div>
-        )}
+        <div className="sezione">
+          <h3>LoRA</h3>
+          <SceltaLora />
+        </div>
       </div>
       <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
         <button className="btn primario grande" style={{ width: '100%' }} onClick={manda} disabled={fusion ? !m.riferimenti.length : esempioMode ? !m.esempio || !m.riferimenti.length : !base}>

@@ -11,7 +11,6 @@ import { SezioneChiudibile } from '../componenti/Controlli'
 import { conParoleLora } from '../componenti/SceltaLora'
 import { percentuale } from '../componenti/Coda'
 import { VistaZoom } from '../componenti/VistaZoom'
-import { SelettoreModello } from '../componenti/ScegliModello'
 import { AtmosferaGenere, CampiGenere, GrigliaGeneri } from '../componenti/Generi'
 import { IntensitaStile, ScaffaliStili } from '../componenti/ScaffaliStili'
 import { HudCrea, SezFormato, SezMisura, SezQuante, SezSfondo } from '../componenti/SezioniCrea'
@@ -50,7 +49,7 @@ export function Crea(): JSX.Element {
   // la misura: la stessa funzione che costruisce la richiesta e che disegna il HUD («la cifra che vedi è quella che esce»)
   const mis = misuraCrea(crea)
   const { finale, lav } = mis
-  // il modello si sceglie dalle tessere «Motore» e porta con sé i passi (e il CFG)
+  // il modello si sceglie dalla barra in alto e porta con sé i passi (e il CFG)
   const modello = MODELLI[modelloDaImpostazioni(imp)]
   const passi = modello.passi
   const quante = Math.max(1, Math.min(8, crea.quante))
@@ -261,11 +260,6 @@ export function Crea(): JSX.Element {
       <div className="colonna destra">
         <div className="scorri">
           <div className="sezione">
-            <h3>Motore <span className="dx">{modello.nome}</span></h3>
-            <SelettoreModello variante="tessere" />
-          </div>
-
-          <div className="sezione">
             <h3>Cosa <span className="dx">{preset ? preset.nome : 'libero'}</span></h3>
             <GrigliaGeneri prima={setPrecedente} />
             {preset && <div style={{ marginTop: 10 }}><CampiGenere /></div>}
@@ -350,11 +344,9 @@ export function Crea(): JSX.Element {
             )}
           </div>
 
-          {qwen && (
-            <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
-              <SceltaLora />
-            </SezioneChiudibile>
-          )}
+          <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
+            <SceltaLora />
+          </SezioneChiudibile>
         </div>
 
         <div className="sezione azione-prima" style={{ borderTop: '1px solid var(--bordo-vetro)' }}>
@@ -364,7 +356,7 @@ export function Crea(): JSX.Element {
               {stileAttivo && <button type="button" title={`Stile: ${stileAttivo.nome} (clic: toglilo)`} onClick={() => setCrea({ stileId: '' })}><span aria-hidden>{stileAttivo.icona}</span></button>}
               {crea.sfondo !== 'scena' && <button type="button" title={crea.sfondo === 'trasparente' ? 'Senza sfondo (clic: torna alla scena)' : 'Tinta unita (clic: torna alla scena)'} onClick={() => setCrea({ sfondo: 'scena', trasparente: false })}>{crea.sfondo === 'trasparente' ? <I.scacchi /> : <I.tinta />}</button>}
               {crea.riferimenti.length > 0 && <button type="button" title={`${crea.riferimenti.length} foto di riferimento`} onClick={() => setCrea({ riferimenti: [] })}><I.immagine /></button>}
-              {qwen && nLora > 0 && <button type="button" title={`${nLora} LoRA accesi`} onClick={() => usaStato.getState().vai('lora')}><I.pila /></button>}
+              {nLora > 0 && <button type="button" title={`${nLora} LoRA accesi`} onClick={() => usaStato.getState().vai('lora')}><I.pila /></button>}
             </div>
             <Hud corto d={{ w: finale.w, h: finale.h, rapporto: mis.rapporto, mp: mis.mp, stato: mis.stato, nota: mis.nota }} />
           </div>

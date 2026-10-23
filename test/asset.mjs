@@ -81,8 +81,9 @@ assert.equal(m.chiaveRicetta('mia-ricetta'), undefined, 'le ricette dell\'utente
 
 // ---- LoRA: la copertina generica della famiglia, e niente se non si capisce
 assert.equal(m.chiaveLora({ famiglie: ['qwen'] }), 'lora/qwen')
-assert.equal(m.chiaveLora({ famiglie: ['klein4b'] }), 'lora/klein')
-assert.equal(m.chiaveLora({ famiglie: ['klein', 'klein-base', 'klein4b'] }), 'lora/klein')
+assert.equal(m.chiaveLora({ famiglie: ['klein', 'klein-base'] }), 'lora/klein')
+assert.equal(m.chiaveLora({ compatibile: '?', famiglie: [], gruppo: 'flux' }), 'lora/klein', 'scaffale scelto a mano')
+assert.equal(m.chiaveLora({ compatibile: '?', famiglie: [], gruppo: 'qwen' }), 'lora/qwen')
 assert.equal(m.chiaveLora({ famiglie: ['qwen', 'klein'] }), undefined)
 assert.equal(m.chiaveLora({ compatibile: 'si' }), 'lora/qwen')
 assert.equal(m.chiaveLora({ compatibile: '?' }), undefined)

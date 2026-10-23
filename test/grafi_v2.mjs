@@ -1,4 +1,4 @@
-// Test dei grafi dell'engine v2 (src/main/motore/grafi.ts): FLUX.2 Klein 4B, LoRA multipli con pesi, senza sfondo, estrai fedele (SAM 2), riquadri nel prompt.
+// Test dei grafi dell'engine v2 (src/main/motore/grafi.ts): LoRA multipli con pesi, senza sfondo, estrai fedele (SAM 2), riquadri nel prompt.
 // grafi.ts importa altri file senza estensione: si impacchetta con esbuild in una cartella temporanea.
 //
 // Esecuzione: node test/grafi_v2.mjs
@@ -35,7 +35,7 @@ function uguale(nome, avuto, atteso) {
 const imp = {
   cartellaModelli: 'C:/models', cartellaGalleria: 'C:/gallery',
   modello: 'qwen-image-2.1-UC-Q4_K_M.gguf', encoder: 'qwen3-vl-8b.safetensors', vae: 'ae.safetensors', upscaler: '4x.safetensors',
-  famiglia: 'qwen', kleinModello: 'klein4b_fp8.safetensors', kleinBase: '', kleinEncoder: 'qwen_3_4b.safetensors', kleinVae: 'flux2-vae.safetensors',
+  famiglia: 'qwen', kleinModello: 'flux3_klein_int8.safetensors', kleinBase: '', kleinEncoder: 'qwen3vl_4b_int8.safetensors', kleinVae: 'flux2-vae.safetensors',
   upscalerRtx: false, cacheKV: 'gpu', cacheTipo: 'default', encoderSuCpu: false, loraTurbo: '', memoria: 'auto', vramMB: 8192, traduci: false, modelloScelto: 'qwen-base'
 }
 const base = {
@@ -46,25 +46,19 @@ const tipi = (g) => Object.values(g.prompt).map((n) => n.class_type)
 const nodi = (g, tipo) => Object.values(g.prompt).filter((n) => n.class_type === tipo)
 const costruisci = (q, i = imp, ing = { immagini: [] }) => G.costruisci({ ...base, ...q }, i, ing, 'prova')
 
-// --- FLUX.2 Klein 4B: Crea ---
-const k4 = costruisci({ modalita: 'crea', famiglia: 'klein4b' })
-uguale('4B: text encoder di tipo flux2', nodi(k4, 'CLIPLoader')[0].inputs.type, 'flux2')
-uguale('4B: scaletta Flux2Scheduler con la misura', [nodi(k4, 'Flux2Scheduler')[0].inputs.steps, nodi(k4, 'Flux2Scheduler')[0].inputs.width, nodi(k4, 'Flux2Scheduler')[0].inputs.height], [4, 1024, 768])
-uguale('4B: CFGGuider a 1 + SamplerCustomAdvanced', [nodi(k4, 'CFGGuider')[0].inputs.cfg, nodi(k4, 'SamplerCustomAdvanced').length], [1, 1])
-uguale('4B: latente vuota Flux2', nodi(k4, 'EmptyFlux2LatentImage').length, 1)
-uguale('4B: non c\'è la cache KV di Qwen', tipi(k4).includes('QwenImage21Cache'), false)
+// --- FLUX 3 Klein: Crea ---
 const k3 = costruisci({ modalita: 'crea', famiglia: 'klein', passi: 8 })
 uguale('Klein 3: text encoder flux3', nodi(k3, 'CLIPLoader')[0].inputs.type, 'flux3')
 
 // --- LoRA multipli con pesi: nell'ordine, forza 0 saltata, tetto a ±2 ---
 const lora = [{ file: 'a.safetensors', forza: 0.6 }, { file: 'b.safetensors', forza: 0 }, { file: 'c.safetensors', forza: 5 }, { file: 'd.safetensors', forza: -0.5 }]
-for (const fam of ['qwen', 'klein', 'klein-base', 'klein4b']) {
+for (const fam of ['qwen', 'klein', 'klein-base']) {
   const g = costruisci({ modalita: 'crea', famiglia: fam, lora })
   uguale(`LoRA ${fam}: tre applicati (il 0 salta)`, nodi(g, 'LoraLoaderModelOnly').map((n) => [n.inputs.lora_name, n.inputs.strength_model]), [['a.safetensors', 0.6], ['c.safetensors', 2], ['d.safetensors', -0.5]])
 }
 // in catena: ognuno prende il modello del precedente
 {
-  const g = costruisci({ modalita: 'crea', famiglia: 'klein4b', lora })
+  const g = costruisci({ modalita: 'crea', famiglia: 'klein', lora })
   const ls = Object.entries(g.prompt).filter(([, n]) => n.class_type === 'LoraLoaderModelOnly')
   uguale('LoRA in catena', ls[1][1].inputs.model[0], ls[0][0])
 }
@@ -100,8 +94,6 @@ const rk = costruisci({ modalita: 'crea', famiglia: 'klein', passi: 8, regioni }
 uguale('Klein 3 + riquadri: JSON con le coordinate', /"bbox":\[0,0,500,500\]/.test(testoDi(rk)), true)
 const rq = costruisci({ modalita: 'crea', famiglia: 'qwen', passi: 20, regioni })
 uguale('Qwen + riquadri: a parole', /Compose the image with these elements/.test(testoDi(rq)) && !testoDi(rq).includes('bbox'), true)
-const r4 = costruisci({ modalita: 'crea', famiglia: 'klein4b', regioni })
-uguale('Klein 4B + riquadri: a parole', /Compose the image with these elements/.test(testoDi(r4)), true)
 uguale('senza riquadri il prompt è quello', testoDi(costruisci({ modalita: 'crea', famiglia: 'klein', passi: 8 })), base.prompt)
 
 console.log(falliti ? `${falliti} FALLITI su ${fatti}` : `TUTTI OK (${fatti} controlli)`)

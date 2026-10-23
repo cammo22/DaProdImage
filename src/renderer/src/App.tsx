@@ -8,6 +8,7 @@ import { Crea } from './pagine/Crea'
 import { Modifica } from './pagine/Modifica'
 import { Box } from './pagine/Box'
 import { Lora } from './pagine/Lora'
+import { SelettoreModello } from './componenti/ScegliModello'
 import { StripModi, PAGINE_STUDIO, vaiModo, type ModoStudio } from './pagine/Studio'
 import { Album } from './pagine/Album'
 import { BarraStato } from './componenti/BarraStato'
@@ -191,6 +192,8 @@ export function App(): JSX.Element {
           <img src="./icona.svg" alt="" />
           DAPROD <b>IMAGE</b>
         </div>
+        {/* il modello che disegna si sceglie qui, in alto, da qualsiasi pagina */}
+        {pronto && installato && <SelettoreModello />}
         <span className="spazio" />
         {agg.stato === 'scarico' && (
           <span className="pillola" title={`Scarico DaProd Image ${agg.versione}`} onClick={() => vai('impostazioni')}>

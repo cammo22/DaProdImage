@@ -8,10 +8,6 @@ const ENC_MR = 'mradermacher/Qwen3-VL-8B-Instruct-Uncensored-V2-GGUF'
 const KLEIN = 'black-forest-labs/flux-3-image-klein-comfy'
 // revisioni fissate (controllate il 22/10/2026): il download è riproducibile anche se il repo cambia dopo
 const KLEIN_REV = 'feef60b0aaf63a4773ace96636ebbcf43b881312'
-const KLEIN4B_FP8 = 'black-forest-labs/FLUX.2-klein-4b-fp8'
-const KLEIN4B_FP8_REV = '5b4408e59397a4a37ccb46afe426d8ed86379441'
-const KLEIN4B_COMFY = 'Comfy-Org/vae-text-encorder-for-flux-klein-4b'
-const KLEIN4B_COMFY_REV = '87cfba3d4b98662fb80f23921bb37bf887c97c58'
 const BIREFNET = 'ZhengPeng7/BiRefNet'
 const BIREFNET_REV = 'e2bf8e4460fc8fa32bba5ea4d94b3233d367b0e4'
 const SAM2 = 'facebook/sam2.1-hiera-small'
@@ -116,20 +112,6 @@ const GREZZO: VoceCatalogo[] = [
     descrizione: 'Il decoder delle immagini di Klein (piccolo).',
     file: '', cartella: 'vae', url: '', byte: 336_211_292, circa: true,
     repo: KLEIN, revisione: KLEIN_REV, cerca: ['^flux2-vae\\.safetensors$', '^(?=.*flux)(?=.*vae)', '^(?=.*vae)(?!.*qwen)']
-  },
-  // --- FLUX.2 Klein 4B (Black Forest Labs, gennaio 2026): licenza Apache-2.0, 4 passi senza CFG. Il denoiser è l'FP8 ufficiale (4 GB);
-  //     l'encoder è un Qwen3 4B di solo testo (quello dei workflow di ComfyUI); il VAE è lo stesso di Klein 3 (flux2-vae, voce `klein-vae`). ---
-  {
-    id: 'klein4b-fp8', tipo: 'klein', nome: 'FLUX.2 Klein 4B · FP8',
-    descrizione: 'Klein da 4 miliardi di parametri: 4 passi senza CFG, licenza Apache-2.0 (uso commerciale libero). Non fa le modifiche con tante foto bene come Klein 3.',
-    file: '', cartella: 'diffusion_models', url: '', byte: 4_070_624_520, circa: true,
-    repo: KLEIN4B_FP8, revisione: KLEIN4B_FP8_REV, cerca: ['^flux-2-klein-4b-fp8\\.safetensors$', '^(?=.*klein)(?=.*4b)(?!.*base)(?=.*fp8)']
-  },
-  {
-    id: 'klein4b-te', tipo: 'klein-te', nome: 'Text encoder di FLUX.2 Klein 4B (Qwen3 4B)',
-    descrizione: 'Il Qwen3 4B di solo testo che legge il prompt per FLUX.2 Klein 4B. Pesa 8 GB e lavora dalla RAM.',
-    file: '', cartella: 'text_encoders', url: '', byte: 8_044_982_048, circa: true,
-    repo: KLEIN4B_COMFY, revisione: KLEIN4B_COMFY_REV, cerca: ['^qwen_3_4b\\.safetensors$']
   },
   // --- togli sfondo e estrai fedele: si scaricano al primo uso, girano in una fase a parte (pochi centinaia di MB di VRAM) e poi escono dalla scheda ---
   {
@@ -243,8 +225,6 @@ const META: Record<string, Partial<VoceCatalogo>> = {
   ...Object.fromEntries(['klein-int8', 'klein-bf16', 'klein-base-int8', 'klein-base-bf16'].map((id) => [id, { licenza: 'FLUX Kommunity', licenzaUrl: LIC_KOMMUNITY, ruolo: 'denoiser', avviso: AVVISO_KOMMUNITY } as Partial<VoceCatalogo>])),
   'klein-te': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder' },
   'klein-vae': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'vae' },
-  'klein4b-fp8': { licenza: 'Apache-2.0', licenzaUrl: 'https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/raw/main/LICENSE.md', ruolo: 'denoiser' },
-  'klein4b-te': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'encoder' },
   'sfondo-birefnet': { licenza: 'MIT', licenzaUrl: 'https://huggingface.co/ZhengPeng7/BiRefNet', ruolo: 'sfondo' },
   'seg-sam2': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'segmentatore' },
   'llm-huihui-4b': { licenza: 'Apache-2.0', licenzaUrl: LIC_APACHE, ruolo: 'llm', avviso: AVVISO_UNC },

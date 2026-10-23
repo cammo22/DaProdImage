@@ -9,7 +9,6 @@ import { Tessera, Tessere, E } from '../componenti/Tessere'
 import { AdattaFoto } from '../componenti/AdattaFoto'
 import { Casella } from '../componenti/Casella'
 import { SezioneChiudibile } from '../componenti/Controlli'
-import { SelettoreModello } from '../componenti/ScegliModello'
 import { HudCrea, SezFormato, SezMisura, SezQuante, SezSfondo } from '../componenti/SezioniCrea'
 import { IntensitaStile, ScaffaliStili } from '../componenti/ScaffaliStili'
 import { Hud } from '../componenti/Hud'
@@ -23,7 +22,7 @@ import { misuraCrea } from '../misura'
 import { promptCrea, sfondoRichiesto } from '../creaPrompt'
 import { stileDa } from '../stili'
 import { richiestaBase } from '../azioni'
-import { DISPOSIZIONI, MAX_BOX, TIPI_BOX, coloreBox, fraseBox, nuovaRegione, promptDaBox, rettDaPunti, trasforma, type Maniglia, type Rect } from '../box'
+import { DISPOSIZIONI, MAX_BOX, TIPI_BOX, coloreBox, fraseBox, nuovaRegione, promptDaBox, rettDaPunti, riquadroSotto, trasforma, type Maniglia, type Rect } from '../box'
 import type { BoxRegione, Opera } from '@shared/tipi'
 
 const MANIGLIE: Maniglia[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
@@ -41,6 +40,9 @@ export function Box(): JSX.Element {
   const [scelto, setScelto] = useState<string | null>(null)
   const [vedoInCorso, setVedoInCorso] = useState(true)
   const [vistaRis, setVistaRis] = useState(false)
+  // «disegna»: si trascina ovunque per fare un riquadro nuovo, anche dentro uno grande (si sposta dal numero o con le maniglie);
+  // «sposta»: si afferra un riquadro dal corpo e lo si muove. Su un punto vuoto della tela si disegna in tutti e due.
+  const [strumento, setStrumento] = useState<'disegna' | 'sposta'>('disegna')
 
   const mis = misuraCrea(crea)
   const { finale, lav } = mis
@@ -101,10 +103,6 @@ export function Box(): JSX.Element {
   }
   const giuTela = (e: PE): void => {
     if (e.button !== 0 || vistaRis) return
-    if (usaStato.getState().box.regioni.length >= MAX_BOX) {
-      avvisa(`Al massimo ${MAX_BOX} riquadri`, 'errore')
-      return
-    }
     const p = punto(e)
     gesto.current = { tipo: 'disegna', ...p }
     setBozza([p.x, p.y, p.x, p.y])
@@ -139,9 +137,16 @@ export function Box(): JSX.Element {
     const p = punto(e)
     const r = rettDaPunti(g.x, g.y, p.x, p.y)
     setBozza(null)
-    // un clic senza trascinare non fa un riquadro
-    if (r[2] - r[0] < 0.03 || r[3] - r[1] < 0.03) return
+    // un clic senza trascinare non fa un riquadro: sceglie quello che c'è sotto (il più piccolo), o toglie la scelta
+    if (r[2] - r[0] < 0.03 || r[3] - r[1] < 0.03) {
+      seleziona(riquadroSotto(usaStato.getState().box.regioni, p.x, p.y)?.id ?? null)
+      return
+    }
     const s = usaStato.getState().box
+    if (s.regioni.length >= MAX_BOX) {
+      avvisa(`Al massimo ${MAX_BOX} riquadri`, 'errore')
+      return
+    }
     const n = nuovaRegione(r, s.regioni, r[2] - r[0] > 0.9 && r[3] - r[1] > 0.9 ? 'sfondo' : 'oggetto')
     setBox({ regioni: [...s.regioni, n], selezionata: n.id })
   }
@@ -245,9 +250,9 @@ export function Box(): JSX.Element {
             <VistaZoom src={urlFile(op.file)} scacchi={op.trasparente} />
           ) : (
             <AdattaFoto ar={finale.w / finale.h} margine={26}>
-              <div ref={cornice} className="box-cornice" style={{ width: '100%', height: '100%' }} onPointerDown={giuTela} onPointerMove={muoviTela} onPointerUp={suTela} onPointerCancel={suTela} data-box-tela>
+              <div ref={cornice} className={`box-cornice ${strumento}`} style={{ width: '100%', height: '100%' }} onPointerDown={giuTela} onPointerMove={muoviTela} onPointerUp={suTela} onPointerCancel={suTela} data-box-tela>
                 {regioni.length === 0 && !bozza && (
-                  <div className="box-vuoto"><div><b>DISEGNA UN RIQUADRO</b>Trascina sulla tela e di' cosa ci va dentro. Oppure scegli una disposizione a sinistra.</div></div>
+                  <div className="box-vuoto"><div><b>DISEGNA UN RIQUADRO</b>Trascina sulla tela e di' cosa ci va dentro (anche dentro un riquadro già fatto). Oppure scegli una disposizione a sinistra.</div></div>
                 )}
                 {regioni.map((r, i) => (
                   <div
@@ -257,7 +262,7 @@ export function Box(): JSX.Element {
                     onPointerDown={(e) => giuRegione(e, r, 'corpo')}
                     data-box={r.id}
                   >
-                    <span className="numero">{i + 1}</span>
+                    <span className="numero" title="Trascina il numero per spostare il riquadro" onPointerDown={(e) => giuRegione(e, r, 'corpo')}>{i + 1}</span>
                     <div className="testo-box">{r.prompt || (r.rif ? 'foto di riferimento' : '')}</div>
                     {r.id === selezionata && MANIGLIE.map((m) => <span key={m} className={`maniglia ${m}`} onPointerDown={(e) => giuRegione(e, r, m)} />)}
                   </div>
@@ -294,8 +299,7 @@ export function Box(): JSX.Element {
         <div className="scorri">
           <div className="sezione">
             <h3>Motore <span className="dx">{modello.nome}</span></h3>
-            <SelettoreModello variante="tessere" />
-            {modello.id === 'qwen-base' && <div className="piccolo spento" style={{ marginTop: 6 }}>Con Qwen i riquadri guidano la composizione a parole; con Klein 3 il motore li userà come regioni vere.</div>}
+            <div className="piccolo spento">Il modello si sceglie nella barra in alto. {modello.id === 'qwen-base' ? 'Con Qwen i riquadri guidano la composizione a parole; con Klein 3 il motore li usa come regioni vere.' : 'Con Klein 3 il motore usa i riquadri come regioni vere.'}</div>
           </div>
 
           <div className="sezione">
@@ -316,6 +320,11 @@ export function Box(): JSX.Element {
 
           <div className="sezione">
             <h3>Riquadri <span className="dx">{regioni.length} / {MAX_BOX}</span></h3>
+            <div className="box-strumenti" role="radiogroup" aria-label="Strumento sulla tela">
+              <button type="button" role="radio" aria-checked={strumento === 'disegna'} className={strumento === 'disegna' ? 'su' : ''} onClick={() => setStrumento('disegna')} title="Trascina sulla tela per disegnare un riquadro nuovo, anche dentro un altro. Per spostarne uno usa il suo numero, per ridimensionarlo le maniglie" data-strumento="disegna"><I.box /> Disegna</button>
+              <button type="button" role="radio" aria-checked={strumento === 'sposta'} className={strumento === 'sposta' ? 'su' : ''} onClick={() => setStrumento('sposta')} title="Afferra un riquadro dal corpo per spostarlo" data-strumento="sposta"><I.trascina /> Sposta</button>
+            </div>
+            <div className="piccolo spento" style={{ margin: '6px 0 8px' }}>{strumento === 'disegna' ? 'Trascina sulla tela per un riquadro nuovo, anche dentro un altro. Sposta un riquadro dal suo numero.' : 'Afferra un riquadro dal corpo per spostarlo. Sui punti vuoti della tela si disegna.'}</div>
             {regioni.length === 0 && <div className="piccolo spento">Nessun riquadro: trascina sulla tela per disegnarne uno.</div>}
             <div className="box-lista">
               {regioni.map((r, i) => {
