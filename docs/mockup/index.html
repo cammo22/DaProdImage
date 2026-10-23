@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>DaProd Image — GUI v2 «Orbita» · mockup statico</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Mockup statico della spec docs/gui-v2-spec.md. Nessuna dipendenza: si apre con doppio clic.
+     Le immagini sono sostituite da gradienti (gli asset veri li genera Klein, §13 della spec). -->
+<style>
+:root{
+  --vuoto:#04030c;--spazio-1:#0a0716;--spazio-2:#110c24;--spazio-3:#1a1338;--spazio-4:#251c4d;
+  --vetro:rgba(22,15,50,.62);--bordo-vetro:rgba(190,160,255,.16);
+  --testo:#f1ecff;--tenue:#b2a7d8;--spento:#7a70a3;
+  --nebulosa:#8a5cff;--supernova:#ff3df2;--plasma:#3fe0ff;--stella:#ffd54a;--cometa:#ffb627;
+  --ok:#3ee08f;--errore:#ff5470;--ember:#ff8a3d;
+  --aurora:linear-gradient(135deg,#8a5cff 0%,#ff3df2 55%,#3fe0ff 100%);
+  --corona:linear-gradient(135deg,#ffd54a,#ff8a3d);
+  --raggio-s:8px;--raggio:12px;--raggio-l:18px;
+  --alone-nebulosa:0 0 0 1px rgba(138,92,255,.7),0 0 22px rgba(138,92,255,.45);
+  --t-rapido:120ms;--t-base:200ms;--curva:cubic-bezier(.2,.8,.2,1);--molla:cubic-bezier(.34,1.56,.64,1);
+  --titolo:'Orbitron','Rajdhani',sans-serif;--font:'Rajdhani','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--vuoto);color:var(--testo);font-family:var(--font);font-weight:500;font-size:15px;overflow:hidden;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.stelle{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(1200px 700px at 78% 8%,rgba(138,92,255,.28),transparent 60%),
+  radial-gradient(900px 600px at 8% 95%,rgba(255,61,242,.18),transparent 60%),
+  radial-gradient(700px 500px at 60% 70%,rgba(63,224,255,.08),transparent 60%),var(--vuoto)}
+.stelle i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.6;animation:tw 4s infinite ease-in-out}
+@keyframes tw{50%{opacity:.15}}
+.app{position:relative;z-index:1;height:100vh;display:grid;grid-template-rows:38px 1fr 52px;grid-template-columns:78px 1fr}
+/* barra titolo bianca (invariata) */
+.titolo{grid-column:1/-1;background:#fff;color:#1b1530;display:flex;align-items:center;gap:14px;padding:0 14px;border-bottom:1px solid #e4def5}
+.titolo b{font-family:var(--titolo);font-weight:900;font-size:14px;letter-spacing:1.5px}
+.titolo b span{background:linear-gradient(90deg,#8a2cff,#ff3df2);-webkit-background-clip:text;color:transparent}
+.titolo .sp{flex:1}.metro{font-size:12.5px;color:#4a4068}.metro i{display:inline-block;width:46px;height:6px;border-radius:3px;background:#ebe6f6;margin:0 6px;vertical-align:middle;overflow:hidden}
+.metro i u{display:block;height:100%;background:linear-gradient(90deg,#3ee08f,#2bb673)}
+/* dock */
+.dock{background:linear-gradient(180deg,rgba(17,12,36,.9),rgba(10,7,22,.9));border-right:1px solid var(--bordo-vetro);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:6px}
+.dock button{width:60px;height:56px;border-radius:var(--raggio);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--tenue);font-size:11.5px;transition:all var(--t-base) var(--curva)}
+.dock button svg{width:24px;height:24px}
+.dock button:hover{background:var(--spazio-3);color:var(--testo)}
+.dock button.su{background:var(--spazio-3);color:var(--stella);box-shadow:var(--alone-nebulosa)}
+.dock .fine{flex:1}
+/* contenuto */
+.main{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
+.strip{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bordo-vetro);background:rgba(10,7,22,.6);backdrop-filter:blur(10px)}
+.modo{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:var(--spazio-3);border:1px solid var(--bordo-vetro);color:var(--tenue);font-family:var(--titolo);font-size:12px;letter-spacing:.8px;transition:all var(--t-base) var(--curva)}
+.modo:hover{transform:translateY(-1px);color:var(--testo)}
+.modo.su{color:#fff;background:var(--spazio-4);box-shadow:var(--alone-nebulosa);border-color:transparent}
+.modo.su::after{content:"";position:absolute}
+.strip .sp{flex:1}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--spazio-3);border:1px solid var(--bordo-vetro);font-size:13.5px}
+.pill b{color:var(--stella)}
+.ember{background:var(--corona);color:#2a1300;font-weight:700;font-size:10px;letter-spacing:1px;padding:2px 7px;border-radius:999px;text-transform:uppercase}
+.schermata{display:none;min-height:0}
+.schermata.su{display:grid}
+.studio{grid-template-columns:48px 1fr 392px;grid-template-rows:1fr auto;min-height:0}
+.tools{grid-row:1/3;padding:10px 6px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--bordo-vetro)}
+.tool{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--spazio-3);color:var(--tenue);border:1px solid transparent;font-size:15px}
+.tool.su{color:var(--stella);border-color:var(--nebulosa);box-shadow:var(--alone-nebulosa)}
+/* palco */
+.palco{position:relative;min-height:0;display:grid;place-items:center;padding:18px;overflow:hidden}
+.cornice{position:relative;border-radius:var(--raggio);border:1.5px dashed rgba(190,160,255,.35);background:
+  radial-gradient(circle at 70% 25%,rgba(138,92,255,.25),transparent 55%),linear-gradient(160deg,#150f2d,#0b0818);display:grid;place-items:center;text-align:center;transition:aspect-ratio 240ms var(--molla)}
+.cornice.scacchi{background:conic-gradient(#2a2250 25%,#1c1640 0 50%,#2a2250 0 75%,#1c1640 0) 0 0/24px 24px}
+.cornice .foto{position:absolute;inset:0;border-radius:inherit;background:
+  radial-gradient(circle at 30% 70%,#ff8a3d55,transparent 40%),linear-gradient(#27447a,#d98a5a 62%,#3b2a4a 62%,#1a1330)}
+.pianeta{position:absolute;left:-60px;bottom:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle at 70% 25%,#a487ff,#4a2c9e 55%,#120a33);box-shadow:0 0 60px rgba(138,92,255,.35);opacity:.9}
+.astro{font-size:46px;animation:fl 6s infinite ease-in-out}
+@keyframes fl{50%{transform:translateY(-10px) rotate(4deg)}}
+.vuoto h2{font-family:var(--titolo);font-size:20px;margin:6px 0}
+.vuoto p{color:var(--tenue);margin:0 0 10px}
+.avvio{display:flex;gap:10px;justify-content:center}
+/* HUD */
+.hud{position:absolute;left:18px;bottom:16px;background:var(--vetro);backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--bordo-vetro);border-radius:var(--raggio);padding:10px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 40px rgba(0,0,0,.5);cursor:pointer;max-width:calc(100% - 120px)}
+.hud .forma{width:38px;height:38px;display:grid;place-items:center}
+.hud .forma i{display:block;width:30px;height:20px;border:2px solid var(--plasma);border-radius:3px;transition:all 240ms var(--molla)}
+.hud .px{font-family:var(--titolo);font-size:22px;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.hud .px small{font-size:12px;color:var(--spento);margin-left:4px}
+.hud .meta{font-size:13px;color:var(--tenue)}
+.hud .meta b{color:var(--stella)}
+.stato{display:flex;align-items:center;gap:6px;font-size:13px;margin-top:2px}
+.stato.nativa{color:var(--ok)}.stato.ingr{color:var(--plasma)}.stato.rid{color:var(--cometa)}
+.zoom{position:absolute;right:18px;bottom:16px;background:var(--vetro);border:1px solid var(--bordo-vetro);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tenue)}
+/* pannello */
+.pannello{grid-row:1/3;border-left:1px solid var(--bordo-vetro);background:rgba(17,12,36,.72);backdrop-filter:blur(10px);overflow:auto;padding:14px;min-height:0}
+.pannello h3{margin:16px 0 8px;font-size:11.5px;letter-spacing:1.6px;color:var(--tenue);font-weight:700;display:flex;justify-content:space-between;text-transform:uppercase}
+.pannello h3:first-child{margin-top:0}
+.pannello h3 em{font-style:normal;color:var(--stella);letter-spacing:.5px;text-transform:none;font-size:13px}
+.griglia{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.griglia.g3{grid-template-columns:repeat(3,1fr)}
+.griglia.g2{grid-template-columns:repeat(2,1fr)}
+.griglia.g5{grid-template-columns:repeat(5,1fr)}
+.t{position:relative;aspect-ratio:1/1;border-radius:var(--raggio);background:var(--spazio-3);border:1px solid var(--bordo-vetro);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--tenue);font-size:12.5px;transition:transform var(--t-base) var(--curva),box-shadow var(--t-base),background var(--t-base);overflow:hidden}
+.t .ic{font-size:26px;line-height:1;filter:saturate(1.2)}
+.t:hover{transform:translateY(-2px);background:var(--spazio-4);color:var(--testo);box-shadow:0 8px 20px rgba(138,92,255,.25)}
+.t.su{color:var(--stella);border-color:transparent;box-shadow:var(--alone-nebulosa);background:var(--spazio-4)}
+.t.su::before{content:"";position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent,rgba(138,92,255,.7),rgba(255,61,242,.7),rgba(63,224,255,.7),transparent 60%);animation:giro 12s linear infinite;z-index:0}
+.t.su::after{content:"";position:absolute;inset:1.5px;border-radius:11px;background:var(--spazio-4);z-index:0}
+.t.su>*{position:relative;z-index:1}
+@keyframes giro{to{transform:rotate(360deg)}}
+.t .pal{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--aurora);color:#fff;font-size:11px;display:grid;place-items:center;z-index:2;font-weight:700}
+.t .dl{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--cometa);z-index:2}
+.t.larga{aspect-ratio:auto;flex-direction:row;justify-content:flex-start;padding:10px 12px;gap:10px;text-align:left}
+.t.larga .ic{font-size:24px}
+.t.larga b{display:block;color:var(--testo);font-weight:600}
+.t.larga small{display:block;color:var(--spento);font-size:11.5px}
+.t.larga.em{border-color:rgba(255,138,61,.6)}
+.t.anteprima{aspect-ratio:1/1;justify-content:flex-end;padding:0}
+.t.anteprima span{width:100%;background:rgba(5,3,13,.78);padding:3px 0;font-size:11.5px;text-align:center;position:relative;z-index:1}
+.t.dis{opacity:.42;pointer-events:none}
+.scaffale{display:flex;gap:8px;overflow:auto;padding-bottom:6px}
+.scaffale .t{flex:0 0 76px;width:76px;aspect-ratio:1/1}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tabs button{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--spazio-3);color:var(--tenue)}
+.tabs button.su{background:var(--spazio-4);color:var(--stella)}
+.fm{aspect-ratio:auto;height:62px;gap:6px}
+.fm i{display:block;border:2px solid currentColor;border-radius:3px;opacity:.9}
+.cur{display:flex;align-items:center;gap:10px;margin:6px 0 2px}
+.cur span{font-size:20px}
+.cur .traccia{flex:1;height:4px;border-radius:2px;background:var(--spazio-4);position:relative}
+.cur .traccia i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--aurora)}
+.cur .traccia u{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#fff 25%,var(--stella) 60%);box-shadow:0 0 14px var(--stella)}
+.cols{display:flex;gap:7px;flex-wrap:wrap}.cols i{width:22px;height:22px;border-radius:50%;border:2px solid transparent}
+.cols i.su{border-color:#fff;box-shadow:0 0 10px currentColor}
+.int{width:44px;height:44px;border-radius:50%;background:var(--spazio-3);border:1px solid var(--bordo-vetro);display:grid;place-items:center;font-size:20px}
+.int.su{box-shadow:var(--alone-nebulosa);border-color:transparent;background:var(--spazio-4)}
+.riga{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.aiuto{margin-top:14px;padding:8px 10px;border-radius:var(--raggio-s);background:rgba(63,224,255,.06);border:1px solid rgba(63,224,255,.2);color:var(--tenue);font-size:13px}
+/* console */
+.console{grid-column:2;grid-row:2;margin:0 14px 12px;background:var(--vetro);backdrop-filter:blur(14px);border:1px solid var(--bordo-vetro);border-radius:var(--raggio-l);padding:10px 12px;display:flex;gap:12px;align-items:flex-end}
+.console .ins{flex:1;min-width:0}
+.scelte{display:flex;gap:6px;margin-bottom:6px;min-height:28px}
+.scelte i{width:28px;height:28px;border-radius:50%;background:var(--spazio-4);display:grid;place-items:center;font-style:normal;font-size:14px;border:1px solid var(--bordo-vetro)}
+.casella{width:100%;resize:none;height:54px;background:var(--spazio-2);border:1px solid var(--bordo-vetro);border-radius:var(--raggio);padding:10px 12px;color:var(--testo);font:inherit;user-select:text}
+.casella:focus{outline:0;box-shadow:var(--alone-nebulosa)}
+.mini{display:flex;gap:6px;margin-top:6px}
+.mini button{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--spazio-3);color:var(--tenue)}
+.vai{min-width:210px;height:76px;border-radius:var(--raggio-l);background:var(--aurora);color:#fff;font-family:var(--titolo);letter-spacing:1px;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 8px 30px rgba(255,61,242,.35);transition:all var(--t-base) var(--curva)}
+.vai:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,61,242,.55)}
+.vai:active{transform:scale(.97)}
+.vai small{font-family:var(--font);font-size:12px;opacity:.85;letter-spacing:0}
+.vai.em{background:var(--corona);color:#2a1300}
+.striscia{grid-column:1/-1;display:none}
+/* box */
+.box{position:absolute;border:2px solid;border-radius:6px;animation:pop 240ms var(--molla)}
+.box span{position:absolute;top:-1px;left:-1px;padding:1px 8px;font-size:12px;font-weight:700;border-radius:6px 0 6px 0;color:#0a0716}
+.box em{position:absolute;left:8px;right:8px;bottom:6px;font-style:normal;font-size:12.5px;background:rgba(5,3,13,.7);padding:3px 6px;border-radius:5px}
+.box.sel{border-style:dashed;animation:marcia 1s linear infinite,pop 240ms var(--molla)}
+.box.sel::after{content:"";position:absolute;right:-5px;bottom:-5px;width:10px;height:10px;background:#fff;border-radius:2px}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+@keyframes marcia{to{background-position:20px 0}}
+.livello{background:var(--spazio-3);border:1px solid var(--bordo-vetro);border-radius:var(--raggio);padding:10px;margin-bottom:8px}
+.livello .testa{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.livello .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#0a0716;font-weight:700;font-size:13px}
+.livello .tipi{margin-left:auto;display:flex;gap:4px}
+.livello .tipi i{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-style:normal;background:var(--spazio-2);font-size:14px}
+.livello .tipi i.su{box-shadow:var(--alone-nebulosa)}
+.livello textarea{width:100%;height:44px;resize:none;background:var(--spazio-2);border:1px solid var(--bordo-vetro);border-radius:var(--raggio-s);color:var(--testo);padding:6px 8px;font:inherit;user-select:text}
+.livello .ph{width:44px;height:44px;border:1.5px dashed var(--bordo-vetro);border-radius:8px;display:grid;place-items:center;color:var(--spento)}
+.disp{aspect-ratio:16/10!important}
+.disp svg{width:80%}
+/* impostazioni */
+.imp{grid-template-columns:200px 1fr;min-height:0}
+.imp nav{border-right:1px solid var(--bordo-vetro);padding:14px 10px;display:flex;flex-direction:column;gap:4px}
+.imp nav button{text-align:left;padding:10px 12px;border-radius:var(--raggio);color:var(--tenue);display:flex;gap:10px;align-items:center}
+.imp nav button.su{background:var(--spazio-3);color:var(--stella);box-shadow:var(--alone-nebulosa)}
+.imp .cont{overflow:auto;padding:24px;display:flex;flex-direction:column;gap:16px;max-width:900px}
+.scheda{background:var(--vetro);backdrop-filter:blur(14px);border:1px solid var(--bordo-vetro);border-radius:var(--raggio-l);padding:18px}
+.scheda h2{margin:0 0 6px;font-family:var(--titolo);font-size:14px;letter-spacing:1.2px}
+.scheda p{margin:0;color:var(--tenue)}
+.scheda.uc{border-color:rgba(255,138,61,.45);background:linear-gradient(135deg,rgba(255,138,61,.1),rgba(22,15,50,.62))}
+.sw{margin-left:auto;width:58px;height:30px;border-radius:15px;background:var(--spazio-4);position:relative;transition:background var(--t-base)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#bbb;transition:all 240ms var(--molla)}
+.sw.on{background:var(--corona)}.sw.on::after{left:31px;background:#fff}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th{font-size:11px;letter-spacing:1.2px;color:var(--spento);text-align:left;padding:6px 8px;text-transform:uppercase}
+td{padding:9px 8px;border-top:1px solid var(--bordo-vetro);vertical-align:middle}
+.btn{padding:6px 14px;border-radius:999px;background:var(--spazio-4);border:1px solid var(--bordo-vetro);font-size:13.5px}
+.btn:hover{box-shadow:var(--alone-nebulosa)}
+.btn.p{background:var(--aurora);border:0}
+.btn.dis{opacity:.4;pointer-events:none}
+.lic{color:var(--cometa);font-size:12.5px}
+/* modale */
+.modale{position:fixed;inset:0;z-index:100;background:rgba(2,1,8,.72);backdrop-filter:blur(6px);display:none;place-items:center}
+.modale.su{display:grid}
+.modale .f{width:560px;max-width:92vw;background:var(--spazio-2);border:1px solid rgba(255,138,61,.55);border-radius:var(--raggio-l);padding:22px;box-shadow:0 0 60px rgba(255,138,61,.2)}
+.modale h2{margin:0 0 10px;font-family:var(--titolo);font-size:16px}
+.modale p{color:var(--tenue);line-height:1.45}
+.modale label{display:flex;gap:10px;align-items:center;margin:8px 0;cursor:pointer}
+.modale input{accent-color:#ff8a3d;width:18px;height:18px}
+/* lora cassetto */
+.slot{display:grid;grid-template-columns:20px 44px 1fr;gap:10px;align-items:center;background:var(--spazio-3);border:1px solid var(--bordo-vetro);border-radius:var(--raggio);padding:8px;margin-bottom:8px}
+.slot .th{width:44px;height:44px;border-radius:8px}
+.slot .nm{display:flex;gap:8px;align-items:center;font-weight:600}
+.badge{font-size:10.5px;padding:2px 7px;border-radius:999px;background:rgba(62,224,143,.15);color:var(--ok);font-weight:700}
+.badge.no{background:rgba(255,84,112,.15);color:var(--errore)}
+.slot.off{opacity:.5}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stelle" id="stelle"></div>
+<div class="app">
+  <div class="titolo"><b>DAPROD <span>IMAGE</span></b><span style="font-size:13px;color:#4a4068">● Motore pronto</span><span class="sp"></span>
+    <span class="metro">RAM<i><u style="width:46%"></u></i>14,8 GB</span><span class="metro">VRAM<i><u style="width:38%"></u></i>3,1 GB</span><span class="metro">GPU<i><u style="width:12%"></u></i>12%</span><span style="width:130px"></span></div>
+
+  <aside class="dock">
+    <button class="su" data-vai="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>Studio</button>
+    <button data-vai="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>Galleria</button>
+    <button data-vai="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16"/></svg>Album</button>
+    <button data-vai="lora"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7z"/><path d="M12 22V12"/><path d="M20.5 7L12 12 3.5 7"/></svg>LoRA</button>
+    <span class="fine"></span>
+    <button data-vai="imp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Impost.</button>
+  </aside>
+
+  <div class="main">
+    <div class="strip" id="strip">
+      <button class="modo su" data-modo="crea">✦ CREA</button>
+      <button class="modo" data-modo="modifica">✎ MODIFICA</button>
+      <button class="modo" data-modo="box">▦ BOX</button>
+      <button class="modo" data-modo="ricette">⚡ RICETTE</button>
+      <span class="sp"></span>
+      <span class="pill" id="pillMotore">◉ Motore: <b>Klein veloce</b></span>
+      <span class="pill" style="cursor:pointer" onclick="vaiS('lora')">⬡ LoRA <b>2</b></span>
+    </div>
+
+    <!-- ============ STUDIO ============ -->
+    <section class="schermata studio su" id="studio">
+      <div class="tools" id="tools">
+        <button class="tool su" title="Sposta">✥</button><button class="tool" title="Pennello">🖌</button><button class="tool" title="Rettangolo">▭</button><button class="tool" title="Lazo">➰</button><button class="tool" title="Bacchetta magica">✨</button>
+      </div>
+
+      <div class="palco" id="palco">
+        <div class="pianeta"></div>
+        <div class="cornice vuoto" id="cornice">
+          <div id="contenutoCornice">
+            <div class="astro">🧑‍🚀</div>
+            <h2>Cosa costruiamo oggi?</h2>
+            <p>Scrivi sotto o trascina una foto qui.</p>
+            <div class="avvio"><button class="btn p">✦ Crea dal nulla</button><button class="btn">Apri una foto</button><button class="btn">⚡ Ricetta</button></div>
+          </div>
+        </div>
+        <div class="hud" id="hud" title="Clic: cambia misura">
+          <div class="forma"><i id="hudForma"></i></div>
+          <div>
+            <div class="px" id="hudPx">1536 × 1024<small>px</small></div>
+            <div class="meta" id="hudMeta"><b>3 : 2</b> · 1,57 MP</div>
+            <div class="stato ingr" id="hudStato">⤢ Il modello disegna a 1280 × 848 → ingrandisce ×1,2</div>
+          </div>
+        </div>
+        <div class="zoom">100%</div>
+      </div>
+
+      <aside class="pannello" id="pannello"></aside>
+
+      <div class="console">
+        <div class="ins">
+          <div class="scelte" id="scelte"></div>
+          <textarea class="casella" id="casella" placeholder="Descrivi cosa vuoi vedere…"></textarea>
+          <div class="mini"><button>✦ Migliora</button><button>▣ Da foto</button><button>⚄ Sorprendimi</button><button>⚙ Ingranaggi</button></div>
+        </div>
+        <button class="vai" id="vai"><span id="vaiTesto">CREA ✦</span><small>~1 min · Ctrl+Invio</small></button>
+      </div>
+    </section>
+
+    <!-- ============ LORA ============ -->
+    <section class="schermata" id="lora" style="padding:24px;overflow:auto">
+      <div style="max-width:760px">
+        <h2 style="font-family:var(--titolo);letter-spacing:1px;font-size:16px;margin:0 0 4px">PILA LORA <span class="pill" style="font-family:var(--font);font-size:13px">per Klein veloce</span></h2>
+        <p style="color:var(--tenue);margin:0 0 14px">Trascina per cambiare l'ordine. La forza si regola per ogni slot; ⚠ avvisa se la somma è alta.</p>
+        <div class="slot"><span>⠿</span><div class="th" style="background:linear-gradient(135deg,#8a5cff,#ff3df2)"></div><div>
+          <div class="nm">① Cinema grain <span class="badge">Klein 3 ✓</span></div>
+          <div class="cur"><span>◔</span><div class="traccia"><i style="width:46%"></i><u style="left:46%"></u></div><b style="color:var(--stella)">0,70</b><button class="int" style="width:34px;height:34px;font-size:14px">S</button><button class="int su" style="width:34px;height:34px;font-size:14px">👁</button></div>
+          <div style="margin-top:4px"><button class="btn" style="padding:2px 10px;font-size:12px">cngrain</button> <span style="color:var(--spento);font-size:12px">parola chiave: un clic la inserisce nel prompt</span></div></div></div>
+        <div class="slot"><span>⠿</span><div class="th" style="background:linear-gradient(135deg,#3fe0ff,#8a5cff)"></div><div>
+          <div class="nm">② Visi coerenti <span class="badge">Klein 3 ✓</span></div>
+          <div class="cur"><span>◔</span><div class="traccia"><i style="width:33%"></i><u style="left:33%"></u></div><b style="color:var(--stella)">0,50</b></div></div></div>
+        <div class="slot off"><span>⠿</span><div class="th" style="background:linear-gradient(135deg,#ffd54a,#ff8a3d)"></div><div>
+          <div class="nm">③ Acquerello XL <span class="badge no">⚠ non per Klein</span></div>
+          <div style="color:var(--spento);font-size:13px">Fatto per SDXL: qui non funziona. Resta in pila per un altro modello.</div></div></div>
+        <div class="riga" style="margin-top:12px"><button class="btn p">＋ Aggiungi</button><button class="btn">◧ Prova A/B</button><button class="btn">Salva come look</button><span style="margin-left:auto;color:var(--cometa)">Forza totale 1,20</span></div>
+      </div>
+    </section>
+
+    <!-- ============ IMPOSTAZIONI ============ -->
+    <section class="schermata imp" id="imp">
+      <nav><button>▣ Modelli</button><button class="su">🔥 Uncensored</button><button>⚡ Prestazioni</button><button>📁 Cartelle</button><button>👤 Account</button><button>⚙ Motore</button><button>⟳ Aggiornamenti</button><button>ⓘ Info</button></nav>
+      <div class="cont">
+        <div class="scheda uc">
+          <div class="riga"><div><h2>🔥 LABORATORIO UNCENSORED</h2><p>Modelli che non rifiutano le richieste. Più liberi, non “permessi”: legge e licenze valgono sempre.</p></div>
+            <div class="sw" id="sw" onclick="toggleUC()"></div></div>
+        </div>
+        <div class="scheda" id="catalogoUC" style="display:none">
+          <h2>CATALOGO PER RUOLO</h2>
+          <table>
+            <tr><th>Ruolo</th><th>Modello</th><th>Licenza</th><th>Peso</th><th></th></tr>
+            <tr><td>Testo (LLM)</td><td>Qwen3-VL 4B abliterated <span class="ember">Uncensored</span></td><td>Apache-2.0</td><td>~4 GB</td><td><button class="btn">⤓ Scarica</button></td></tr>
+            <tr><td>Encoder</td><td>Qwen3-VL 8B Uncensored (GGUF) <span class="ember">Uncensored</span></td><td>Apache-2.0</td><td>~5 GB</td><td><button class="btn p">✓ Installato</button></td></tr>
+            <tr><td>Immagine</td><td>Qwen-Image 2.1 Uncensored Q4 / Q6 / Q8 <span class="ember">Uncensored</span></td><td class="lic">Qwen Research<br>solo non commerciale</td><td>4–7 GB</td><td><button class="btn">⤓ Scarica…</button></td></tr>
+            <tr><td>Immagine</td><td>FLUX / Klein 3</td><td class="lic">Kommunity</td><td>—</td><td><button class="btn dis">Non disponibile</button> <span style="color:var(--spento);font-size:12px">ⓘ la licenza vieta di aggirare le protezioni</span></td></tr>
+          </table>
+          <p style="margin-top:12px;font-size:13px;color:var(--spento)">Una volta installati, i modelli compaiono in Studio → Motore con la fascetta Uncensored e vanno scelti da te ogni volta: all'avvio si torna a un modello standard.</p>
+        </div>
+        <div class="scheda"><h2>PRESTAZIONI E MEMORIA</h2>
+          <p style="margin-bottom:10px">Profilo memoria</p>
+          <div class="griglia g5" style="max-width:520px"><button class="t su" style="aspect-ratio:auto;height:56px"><span>Auto</span></button><button class="t" style="aspect-ratio:auto;height:56px">Bassa</button><button class="t" style="aspect-ratio:auto;height:56px">Normale</button><button class="t" style="aspect-ratio:auto;height:56px">Alta</button></div>
+          <p style="margin-top:8px;font-size:13px;color:var(--spento)">I vecchi menu a tendina diventano pulsanti.</p></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="grid-column:1/-1;background:rgba(10,7,22,.9);border-top:1px solid var(--bordo-vetro);display:flex;align-items:center;padding:0 16px;gap:14px;color:var(--tenue)">
+    <span>● <b style="color:var(--testo)">Disegno…</b> 42%</span><div style="width:240px;height:6px;border-radius:3px;background:var(--spazio-4);overflow:hidden"><i style="display:block;width:42%;height:100%;background:var(--aurora)"></i></div><span style="margin-left:auto;font-size:13px">Barra di stato: clic = apre la coda</span></div>
+</div>
+
+<!-- modale disclaimer -->
+<div class="modale" id="modale">
+  <div class="f">
+    <h2>🔥 Prima di continuare</h2>
+    <p>Questi componenti non rifiutano le richieste e possono produrre contenuti sensibili o inesatti. Usali solo per scopi leciti, con i diritti e il consenso necessari. Sono vietati — e non verranno mai supportati — contenuti sessuali che coinvolgono minori, immagini intime non consensuali, deepfake ingannevoli di persone reali, violenza reale o altri usi illegali. «Uncensored» non significa «senza regole»: restano valide le leggi del tuo Paese e le licenze di ogni modello. Rispondi tu di ciò che crei e pubblichi.</p>
+    <label><input type="checkbox" class="c"> Ho almeno 18 anni</label>
+    <label><input type="checkbox" class="c"> Userò questi modelli solo per scopi leciti e nel rispetto delle licenze</label>
+    <label><input type="checkbox" class="c"> Capisco che chi crea i contenuti ne è responsabile</label>
+    <div class="riga" style="justify-content:flex-end;margin-top:14px"><button class="btn" onclick="chiudiM()">Annulla</button><button class="btn p dis" id="attiva" onclick="attivaUC()">Attiva</button></div>
+  </div>
+</div>
+
+<script>
+// ---- stelle ----
+const st=document.getElementById('stelle');for(let i=0;i<110;i++){const s=document.createElement('i');s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.animationDelay=(Math.random()*4)+'s';s.style.opacity=.2+Math.random()*.6;st.appendChild(s)}
+// ---- dati ----
+const motori=[['qwen','◈','Qwen-Image 2.1','40 passi · LoRA',0],['klein','⚡','Klein veloce','8 passi · il più veloce',0],['kbase','✦','Klein Base','50 passi · CFG 3,5',1]];
+const formati=[['1:1',1,1],['4:5',4,5],['3:4',3,4],['2:3',2,3],['9:16',9,16],['5:4',5,4],['4:3',4,3],['3:2',3,2],['16:9',16,9],['21:9',21,9]];
+const generi=[['📷','Foto'],['🧑','Ritratto'],['📦','Prodotto'],['🎟','Poster'],['📊','Infografica'],['◎','Logo'],['📱','Social'],['▶','Miniatura'],['💬','Fumetto'],['💌','Invito'],['🍽','Menù'],['✳','Libero']];
+const stili=['Cinema anamorfico','Flash 2000','Pellicola 35mm','Moda editoriale','Polaroid','Notte al neon','Reportage','Anime da film','Acquerello animato','Manga','Gouache','Risograph','Collage','Linea unica','3D morbido','Plastilina','Vinile','Diorama','Mattoncini','Vetro liquido','Cromo Y2K','Cyberpunk','Synthwave','Aura','Pixel 32-bit','Space age ’60','Solarpunk','Poster svizzero'];
+const grad=['#8a5cff,#ff3df2','#3fe0ff,#8a5cff','#ffd54a,#ff8a3d','#ff3df2,#ffd54a','#3ee08f,#3fe0ff','#ff8a3d,#8a5cff'];
+const categorie=[['✂','Estrai'],['🧑','Persone'],['👕','Vestiti'],['🌍','Situazioni'],['🎥','Prospettiva'],['💡','Luce e colore'],['🎨','Stili'],['🔤','Testi'],['🪄','Ritocco']];
+let modo='crea',formato=7,misura=2,motore=1,sfondo=0,stileSel=-1,catAperta=1,quante=0;
+
+const T=(ic,nome,su,extra='')=>`<button class="t ${su?'su':''}" ${extra}><span class="ic">${ic}</span><span>${nome}</span></button>`;
+function stile(i,su){const g=grad[i%grad.length];return `<button class="t anteprima ${su?'su':''}" data-stile="${i}" style="background:linear-gradient(135deg,${g})"><span>${stili[i]}</span></button>`}
+
+function pannelloCrea(){
+ const m=motori.map((x,i)=>`<button class="t larga ${i==motore?'su':''}" data-motore="${i}">${x[4]?'<i class="dl"></i>':''}<span class="ic">${x[1]}</span><div><b>${x[2]}</b><small>${x[3]}</small></div></button>`).join('');
+ const umc=window.UC?`<button class="t larga em" data-motore="9"><span class="ic">🔥</span><div><b>Qwen 2.1 UC</b><small><span class="ember">Uncensored</span></small></div></button>`:'';
+ return `<h3>Motore</h3><div class="griglia g2">${m}${umc}</div>
+ <h3>Cosa <em>Foto</em></h3><div class="griglia">${generi.map((g,i)=>T(g[0],g[1],i==0)).join('')}</div>
+ <h3>Stile <em>${stileSel<0?'nessuno':stili[stileSel]}</em></h3>
+ <div class="scaffale">${stili.slice(0,10).map((s,i)=>stile(i,i==stileSel)).join('')}</div>
+ <div class="riga" style="margin-top:6px"><span style="color:var(--tenue);font-size:12.5px;margin-right:4px">Intensità</span>${['·','●','⬤'].map((x,i)=>`<button class="int ${i==1?'su':''}" style="width:${34+i*6}px;height:${34+i*6}px;font-size:${12+i*3}px">${x}</button>`).join('')}</div>
+ <h3>Formato <em>${formati[formato][0]}</em></h3>
+ <div class="griglia g5">${formati.map((f,i)=>{const k=Math.max(f[1],f[2]);return `<button class="t fm ${i==formato?'su':''}" data-formato="${i}"><i style="width:${f[1]/k*26}px;height:${f[2]/k*26}px"></i><span style="font-size:11.5px">${f[0]}</span></button>`}).join('')}</div>
+ <h3>Misura <em>${['S','M','L','XL','MAX'][misura]}</em></h3>
+ <div class="griglia g5">${['S','M','L','XL','MAX'].map((x,i)=>`<button class="t fm ${i==misura?'su':''}" data-misura="${i}"><b style="font-family:var(--titolo);font-size:15px">${x}</b><span style="font-size:10.5px">${[512,768,1024,1440,2048][i]}p</span></button>`).join('')}</div>
+ <h3>Sfondo</h3>
+ <div class="griglia g3">${[['🌆','Scena'],['◫','Senza sfondo'],['■','Tinta unita']].map((x,i)=>`<button class="t ${i==sfondo?'su':''}" data-sfondo="${i}"><span class="ic">${x[0]}</span><span>${x[1]}</span></button>`).join('')}</div>
+ ${sfondo==1?'<div class="riga" style="margin-top:8px">'+['Scacchi','Bianco','Nero','Colore'].map((x,i)=>`<button class="btn" style="${i==0?'box-shadow:var(--alone-nebulosa)':''}">${x}</button>`).join('')+'</div>':''}
+ <h3>Quante</h3>
+ <div class="riga">${[1,2,4,8].map((n,i)=>`<button class="int ${i==quante?'su':''}" data-quante="${i}">${n}</button>`).join('')}<span style="flex:1"></span><button class="int">🎲</button><button class="int">🔒</button></div>
+ <div class="aiuto" id="aiuto">Passa il mouse su una tessera: qui compare la spiegazione.</div>`;
+}
+function pannelloModifica(){
+ const ambito=[['🖼','Tutta'],['◌','Una zona'],['⤢','Espandi']];
+ return `<h3>Cosa tocchi?</h3><div class="griglia g3">${ambito.map((x,i)=>T(x[0],x[1],i==0)).join('')}</div>
+ <h3>Cosa vuoi fare? <em>${catAperta>=0?categorie[catAperta][1]:''}</em></h3>
+ <div class="griglia g3">${categorie.map((c,i)=>`<button class="t ${i==catAperta?'su':''}" data-cat="${i}">${i==1?'<i class="pal">2</i>':''}<span class="ic">${c[0]}</span><span>${c[1]}</span></button>`).join('')}</div>
+ ${catAperta==1?controlliPersone():catAperta==0?controlliEstrai():'<div class="aiuto">Qui compaiono i controlli di questa categoria (§6.2 della spec).</div>'}
+ <h3>Fantasia del modello</h3><div class="riga">${['Fedele','Libera','Selvaggia'].map((x,i)=>`<button class="int ${i==0?'su':''}" style="width:${38+i*8}px;height:${38+i*8}px;font-size:11px">${x[0]}</button>`).join('')}</div>`;
+}
+function controlliPersone(){
+ return `<div class="scheda" style="padding:12px;margin-top:10px;background:var(--spazio-2)">
+  <div class="riga" style="margin-bottom:10px">${['🙂','😄','😐','😮','😢','😉'].map((x,i)=>`<button class="int ${i==0?'su':''}">${x}</button>`).join('')}<button class="int" title="Occhi aperti">👁</button><button class="int" title="Occhiali">🕶</button></div>
+  <div class="cur"><span>🧒</span><div class="traccia"><i style="width:60%"></i><u style="left:60%"></u></div><span>🧓</span></div>
+  <div class="cols" style="margin:10px 0">${['#2b1b12','#6b3f1f','#c68a45','#e8c07d','#c9c9c9','#ff3d6e','#8a5cff','#3fe0ff','#3ee08f'].map((c,i)=>`<i class="${i==1?'su':''}" style="background:${c};color:${c}"></i>`).join('')}</div>
+  <div class="riga">${['🐶','🐱','🐴','🐦','🐉'].map(x=>`<button class="int">${x}</button>`).join('')}<div class="ph" style="width:44px;height:44px;border:1.5px dashed var(--bordo-vetro);border-radius:8px;display:grid;place-items:center;color:var(--spento)" title="Cambia persona (foto)">＋</div></div>
+ </div><div class="aiuto">Niente chip di testo: icone, cursori e campioni colore. Il nome completo è nel tooltip.</div>`;
+}
+function controlliEstrai(){
+ return `<div class="scheda" style="padding:12px;margin-top:10px;background:var(--spazio-2)"><p style="margin-bottom:10px">1 · Clicca la cosa nella foto (oppure <button class="btn" style="padding:2px 10px">Trova</button>)<br>2 · Scegli l'uscita:</p>
+  <div class="griglia g3">${T('✂','Ritaglio',true)}${T('✦','Ricrea',false)}${T('▣','Su sfondo',false)}</div>
+  <p style="margin-top:10px;font-size:13px;color:var(--spento)">Ritaglio = pixel originali (SAM2 + BiRefNet). Ricrea = nuova posa/vista, identità non garantita.</p></div>`;
+}
+function pannelloBox(){
+ const col=['#8a5cff','#3fe0ff','#ff3df2','#ffd54a'];
+ const L=(n,t,tx,tp)=>`<div class="livello"><div class="testa"><span class="n" style="background:${col[n-1]}">${n}</span><b>${t}</b><div class="tipi">${['🧑','📦','🔤','🌅'].map((x,i)=>`<i class="${i==tp?'su':''}">${x}</i>`).join('')}</div></div>
+  <div class="riga" style="flex-wrap:nowrap"><div class="ph">＋</div><textarea>${tx}</textarea></div></div>`;
+ const disp=(s)=>`<button class="t disp"><svg viewBox="0 0 80 50" fill="none" stroke="currentColor" stroke-width="2">${s}</svg></button>`;
+ return `<h3>Disposizioni</h3><div class="griglia g5">${disp('<rect x="8" y="8" width="64" height="34"/>')}${disp('<rect x="6" y="8" width="30" height="34"/><rect x="44" y="8" width="30" height="34"/>')}${disp('<rect x="4" y="8" width="20" height="34"/><rect x="30" y="8" width="20" height="34"/><rect x="56" y="8" width="20" height="34"/>')}${disp('<rect x="6" y="6" width="30" height="16"/><rect x="44" y="6" width="30" height="16"/><rect x="6" y="28" width="68" height="16"/>')}${disp('<rect x="6" y="6" width="32" height="38"/><rect x="44" y="6" width="30" height="16"/><rect x="44" y="28" width="30" height="16"/>')}</div>
+ <h3>Box <em>3</em></h3>${L(1,'Persona','una ragazza con cappotto rosso, di spalle',0)}${L(2,'Oggetto','un cane beagle che corre',1)}${L(3,'Sfondo','cielo di tempesta sopra una scogliera',3)}
+ <h3>Rigidità</h3><div class="riga">${['Suggerita','Decisa','Blocca'].map((x,i)=>`<button class="int ${i==0?'su':''}" style="width:${38+i*8}px;height:${38+i*8}px;font-size:10px">${x}</button>`).join('')}</div>
+ <div class="riga" style="margin-top:12px"><button class="btn">⚡ Bozza veloce</button></div>`;
+}
+function pannelloRicette(){
+ const r=[['Foglio','una cosa → tante varianti'],['Mondi','E se…? in più mondi'],['Mix','unisci foto con ruoli'],['Set','sticker, icone, loghi'],['Formati','un\'idea, tutti i formati'],['Rinnova','restaura · disegno→render · arreda']];
+ return `<h3>Superpoteri <em>6</em></h3><div class="griglia g2">${r.map((x,i)=>`<button class="t larga" style="height:96px;background:linear-gradient(135deg,${grad[i]});color:#fff"><div><b>${x[0]}</b><small style="color:rgba(255,255,255,.85)">${x[1]}</small></div></button>`).join('')}</div>
+ <div class="aiuto">Le tue ricette restano nella scheda «Mie». Da ~30 ricette a 6.</div>`;
+}
+
+function disegna(){
+ const p=document.getElementById('pannello');
+ p.innerHTML={crea:pannelloCrea,modifica:pannelloModifica,box:pannelloBox,ricette:pannelloRicette}[modo]();
+ document.getElementById('vaiTesto').textContent={crea:'CREA ✦',modifica:'MODIFICA ✦',box:'COMPONI ✦',ricette:'LANCIA ✦'}[modo];
+ // palco
+ const c=document.getElementById('cornice'),cc=document.getElementById('contenutoCornice');
+ const [f,a,b]=formati[formato];c.style.aspectRatio=a+'/'+b;
+ adatta(c,a,b);
+ c.className='cornice'+(modo=='crea'&&sfondo==1?' scacchi':'')+(modo=='crea'?' vuoto':'');
+ c.querySelectorAll('.box,.foto').forEach(x=>x.remove());
+ if(modo=='crea')cc.style.display='';
+ else{cc.style.display='none'}
+ if(modo=='modifica'){c.insertAdjacentHTML('afterbegin','<div class="foto"></div>');c.style.aspectRatio='3/2';adatta(c,3,2)}
+ if(modo=='box'){
+  c.insertAdjacentHTML('beforeend',`
+   <div class="box" style="left:6%;top:12%;width:34%;height:70%;border-color:#8a5cff;background:rgba(138,92,255,.12)"><span style="background:#8a5cff">1</span><em>una ragazza con cappotto rosso</em></div>
+   <div class="box sel" style="left:46%;top:46%;width:24%;height:40%;border-color:#3fe0ff;background:rgba(63,224,255,.1)"><span style="background:#3fe0ff">2</span><em>un cane beagle</em></div>
+   <div class="box" style="left:3%;top:3%;width:94%;height:30%;border-color:#ff3df2;background:rgba(255,61,242,.08)"><span style="background:#ff3df2">3</span><em>cielo di tempesta</em></div>`);
+ }
+ // strumenti
+ document.getElementById('tools').style.visibility=(modo=='crea'||modo=='ricette')?'hidden':'visible';
+ // scelte attive
+ const sc={crea:['⚡',stileSel>=0?'🎨':'',sfondo==1?'◫':''],modifica:['🙂','🧓'],box:['①','②','③'],ricette:[]}[modo].filter(Boolean);
+ document.getElementById('scelte').innerHTML=sc.map(x=>`<i title="scelta attiva">${x}</i>`).join('');
+ document.getElementById('casella').placeholder={crea:'Descrivi cosa vuoi vedere…',modifica:'Scrivi cosa cambiare (o lascia fare ai pulsanti)…',box:'Scena generale (facoltativa)…',ricette:'Idea o soggetto…'}[modo];
+ hud();
+ // eventi
+ p.querySelectorAll('[data-motore]').forEach(b=>b.onclick=()=>{motore=+b.dataset.motore;document.getElementById('pillMotore').innerHTML='◉ Motore: <b>'+(motore==9?'Qwen 2.1 UC':motori[motore][2])+'</b>'+(motore==9?' <span class="ember">Uncensored</span>':'');disegna()});
+ p.querySelectorAll('[data-formato]').forEach(b=>b.onclick=()=>{formato=+b.dataset.formato;disegna()});
+ p.querySelectorAll('[data-misura]').forEach(b=>b.onclick=()=>{misura=+b.dataset.misura;disegna()});
+ p.querySelectorAll('[data-sfondo]').forEach(b=>b.onclick=()=>{sfondo=+b.dataset.sfondo;disegna()});
+ p.querySelectorAll('[data-quante]').forEach(b=>b.onclick=()=>{quante=+b.dataset.quante;disegna()});
+ p.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{catAperta=+b.dataset.cat;disegna()});
+ p.querySelectorAll('[data-stile]').forEach(b=>b.onclick=()=>{const i=+b.dataset.stile;stileSel=stileSel==i?-1:i;disegna()});
+}
+function hud(){
+ const [f,a,b]=formati[formato];const corto=[512,768,1024,1440,2048][misura];
+ let w,h;if(a<=b){w=corto;h=Math.round(corto*b/a)}else{h=corto;w=Math.round(corto*a/b)}
+ const lim=2048*2048;let rid=false;if(w*h>lim){const k=Math.sqrt(lim/(w*h));w=Math.round(w*k/16)*16;h=Math.round(h*k/16)*16;rid=true}
+ w=Math.round(w/16)*16;h=Math.round(h/16)*16;
+ const mp=(w*h/1048576);
+ const nat=mp<=1.1;
+ const wl=Math.round(Math.sqrt(1.0*1048576*w/h)/16)*16,hl=Math.round(wl*h/w/16)*16;
+ document.getElementById('hudPx').innerHTML=w+' × '+h+'<small>px</small>';
+ document.getElementById('hudMeta').innerHTML='<b>'+f.replace(':',' : ')+'</b> · '+mp.toFixed(2).replace('.',',')+' MP';
+ const k=Math.max(a,b);const fi=document.getElementById('hudForma');fi.style.width=(a/k*30)+'px';fi.style.height=(b/k*30)+'px';
+ const s=document.getElementById('hudStato');
+ if(modo=='box'||modo=='crea'||modo=='ricette'||true){
+  if(rid){s.className='stato rid';s.innerHTML='⚠ Limite del modello: scende a '+w+' × '+h}
+  else if(nat){s.className='stato nativa';s.innerHTML='✓ Nativa: il modello disegna proprio a '+w+' × '+h}
+  else{s.className='stato ingr';s.innerHTML='⤢ Il modello disegna a '+wl+' × '+hl+' (1,0 MP) → ingrandisce ×'+(w/wl).toFixed(1).replace('.',',')}
+ }
+}
+// ---- navigazione ----
+function adatta(c,a,b){const p=document.getElementById('palco');const W=p.clientWidth-40,H=p.clientHeight-130;if(W<=0||H<=0)return;const k=Math.min(W/a,H/b);c.style.width=Math.round(a*k)+'px';c.style.height=Math.round(b*k)+'px'}
+addEventListener('resize',()=>disegna());
+document.querySelectorAll('.modo').forEach(b=>b.onclick=()=>{modo=b.dataset.modo;document.querySelectorAll('.modo').forEach(x=>x.classList.toggle('su',x==b));vaiS('studio');disegna()});
+function vaiS(id){document.querySelectorAll('.schermata').forEach(s=>s.classList.toggle('su',s.id==id));document.getElementById('strip').style.display=id=='studio'?'flex':'none'}
+document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>{if(b.dataset.vai=='x')return;document.querySelectorAll('.dock button').forEach(x=>x.classList.toggle('su',x==b));vaiS(b.dataset.vai)});
+// ---- uncensored ----
+window.UC=false;
+function toggleUC(){if(window.UC){window.UC=false;document.getElementById('sw').classList.remove('on');document.getElementById('catalogoUC').style.display='none';disegna()}else{document.getElementById('modale').classList.add('su')}}
+function chiudiM(){document.getElementById('modale').classList.remove('su')}
+document.querySelectorAll('.c').forEach(c=>c.onchange=()=>{const ok=[...document.querySelectorAll('.c')].every(x=>x.checked);document.getElementById('attiva').classList.toggle('dis',!ok)});
+function attivaUC(){window.UC=true;chiudiM();document.getElementById('sw').classList.add('on');document.getElementById('catalogoUC').style.display='block';disegna()}
+document.getElementById('hud').onclick=()=>alert('Qui si apre il popover Misura: formati, S–MAX, campi W×H con lucchetto, Ingrandimento (×1,5 / ×2 / ×4 / Rifinisci 2K), Come l\'originale.');
+disegna();
+</script>
+</body>
+</html>
