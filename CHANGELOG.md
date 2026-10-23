@@ -1,20 +1,10 @@
 # Changelog
 
-## Non rilasciato — engine v2
+## 1.2.0 — 2026-10-23
 
-Il motore impara cose nuove (la versione dell'app non cambia qui: la alza chi pubblica). `engine/versioni.json`: motore 9, quindi al primo avvio l'app aggiorna il motore da sola. Il contratto con l'interfaccia è in `docs/contratto-engine-gui.md`.
+L'app cambia faccia e il motore impara cose nuove: l'**interfaccia Orbita** con il pannello dei controlli a sinistra, un quarto modello veloce (FLUX.2 Klein 4B), più LoRA insieme, l'editor a box, «senza sfondo» ed Estrai con SAM 2. Il motore passa alla versione 9: al primo avvio l'app lo aggiorna da sola (i modelli già scaricati restano dove sono).
 
-- **FLUX.2 Klein 4B** (Apache-2.0, 4 passi) come quarto modello. Misurato su RTX 4060: Crea 5,4 s contro 6,4 s di Klein 3, zona 21 s contro 25 s, Modifica 9,6 s contro 11,5 s (`docs/bench-engine-v2.md`). Non è il predefinito.
-- **LoRA multipli con pesi** su tutti i modelli (Qwen e Klein): in fila, forza da −2 a 2. Il riconoscimento dai nomi dei tensori dice per quale modello è fatto un LoRA (`src/shared/loraBase.ts`); nuovo IPC `lora.compatibili(famiglia)`.
-- **Senza sfondo** (BiRefNet, MIT) e **estrai fedele** (SAM 2.1, Apache-2.0): ritagliano dai pixel della tua foto, senza ridisegnarla; i modelli si scaricano al primo uso e girano a parte. Con Klein, «sfondo trasparente» in Crea = disegno + BiRefNet.
-- **Riquadri nell'Editor box** (regional prompting): Klein 3 li legge nel suo formato (JSON con le coordinate), Qwen e Klein 4B a parole. Nuovo adattatore dalla richiesta della GUI (`box`, `promptScena`, `sfondo`).
-- **Catalogo con licenza e ruolo**, modelli «uncensored» marcati e scaricabili solo su richiesta: interruttore acceso, avviso accettato e licenza valida (Apache, MIT, BSD, CC-BY o Qwen Research con avviso; mai FLUX Kommunity). Un LLM uncensored (Qwen3-VL 4B abliterated) per i testi.
-- Correzioni: Klein 4B ha la sua chiave VRAM nella regola «una cosa alla volta»; le parole chiave dei LoRA entrano nel prompt anche con Klein.
-- Prove: `npm test` (modelli, catalogo, spazio, lora, regioni, adatta, grafi v2, grafi Qwen identici).
-
-## Non rilasciato — interfaccia v2 «Orbita»
-
-L'interfaccia nuova (spec in `docs/gui-v2-spec.md`) sopra l'engine v2, più gli asset grafici.
+### Interfaccia Orbita
 
 - **Studio**: Crea e Modifica nella stessa schermata, pannello dei controlli a sinistra, pulsante CREA fisso in fondo, risoluzione finale sempre visibile (HUD).
 - **Crea a pulsanti** (tessere al posto dei menu a tendina) e **28 stili** con icona in 4 scaffali.
@@ -24,6 +14,22 @@ L'interfaccia nuova (spec in `docs/gui-v2-spec.md`) sopra l'engine v2, più gli 
 - **Asset** in `resources/gui` (111 WebP, con manifest: prompt, seed, modello). 60 sono scontornati per colore, da rifare con BiRefNet.
 - **Asset nelle tessere**: le 111 immagini ora si vedono. Anteprime degli stili (28), generi, categorie di Modifica, luoghi, meteo e stagioni, costumi, animali, espressioni, locandine delle ricette, copertine dei LoRA senza anteprima, modi dello Studio, mascotte e sfondi (nebulosa, pianeta, aurora). Passano da Vite (`src/renderer/src/asset.ts`) e finiscono nell'installer dentro `app.asar`. Se un file manca o non si carica la tessera resta con l'icona. Prove: `test/asset.mjs` (in `npm test`) e `test/asset-ui.mjs`.
 - Non ancora provati con la GPU: qualità di SAM 2 e BiRefNet, riquadri dal vivo, LoRA su Klein.
+
+### Motore
+
+- **FLUX.2 Klein 4B** (Apache-2.0, 4 passi) come quarto modello. Misurato su RTX 4060: Crea 5,4 s contro 6,4 s di Klein 3, zona 21 s contro 25 s, Modifica 9,6 s contro 11,5 s (`docs/bench-engine-v2.md`). Non è il predefinito.
+- **LoRA multipli con pesi** su tutti i modelli (Qwen e Klein): in fila, forza da −2 a 2. Il riconoscimento dai nomi dei tensori dice per quale modello è fatto un LoRA (`src/shared/loraBase.ts`); nuovo IPC `lora.compatibili(famiglia)`.
+- **Senza sfondo** (BiRefNet, MIT) e **estrai fedele** (SAM 2.1, Apache-2.0): ritagliano dai pixel della tua foto, senza ridisegnarla; i modelli si scaricano al primo uso e girano a parte. Con Klein, «sfondo trasparente» in Crea = disegno + BiRefNet.
+- **Riquadri nell'Editor box** (regional prompting): Klein 3 li legge nel suo formato (JSON con le coordinate), Qwen e Klein 4B a parole. Nuovo adattatore dalla richiesta della GUI (`box`, `promptScena`, `sfondo`).
+- **Catalogo con licenza e ruolo**, modelli «uncensored» marcati e scaricabili solo su richiesta: interruttore acceso, avviso accettato e licenza valida (Apache, MIT, BSD, CC-BY o Qwen Research con avviso; mai FLUX Kommunity). Un LLM uncensored (Qwen3-VL 4B abliterated) per i testi.
+- Correzioni: Klein 4B ha la sua chiave VRAM nella regola «una cosa alla volta»; le parole chiave dei LoRA entrano nel prompt anche con Klein.
+- Prove: `npm test` (modelli, catalogo, spazio, lora, regioni, adatta, grafi v2, grafi Qwen identici).
+
+### Misure e prove
+
+- **Klein 4B (4 passi) contro Klein 3 veloce (8 passi), a caldo, RTX 4060 8 GB, 1024×1024** (mediana di 3 giri, seme 1000–1002): Crea 5,4 s contro 6,4 s (−16 %), Modifica 9,6 s contro 11,5 s (−17 %), zona 21,3 s contro 24,9 s (−15 %). A pari passi (8) il 4B è più lento (Crea 8,5 s contro 6,4 s): il vantaggio viene dai passi in meno. I tempi vengono dal benchmark registrato (`docs/bench-engine-v2.md`); il json grezzo non è nel repo.
+- Il rilascio è stato provato con typecheck, `npm test`, build e installer: l'app impacchettata parte con una cartella dati separata. Le prove con la GPU vera restano a parte.
+
 
 ## 1.1.0 — 2026-10-21
 
