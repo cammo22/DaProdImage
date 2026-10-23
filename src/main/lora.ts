@@ -1,11 +1,12 @@
 // I LoRA: i file stanno in models/loras, le note (nome, parole chiave, forza, anteprima) in lora.json.
 // Si importano trascinandoli, si scaricano da un link (Hugging Face, Civitai o diretto),
-// e dall'intestazione safetensors si capisce per quale modello sono (Qwen-Image 2.1, FLUX 3 Klein, FLUX.2 Klein 4B: `shared/loraBase.ts`).
+// e dall'intestazione safetensors si capisce per quale modello sono (Qwen-Image 2.1 o FLUX 3 Klein: `shared/loraBase.ts`).
+// Due scaffali: i LoRA di Qwen stanno in loras/qwen, quelli di Flux (Klein 3) in loras/flux; quelli che non si riconoscono restano in loras.
 import { shell } from 'electron'
-import { copyFileSync, existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, relative, resolve, sep } from 'node:path'
-import type { Famiglia, InfoLora } from '@shared/tipi'
-import { analizzaChiavi } from '@shared/loraBase'
+import type { Famiglia, GruppoLora, InfoLora } from '@shared/tipi'
+import { analizzaChiavi, gruppoDa } from '@shared/loraBase'
 import { DATI, assicura, scriviAtomico } from './percorsi'
 import { impostazioni } from './impostazioni'
 import { scarica } from './installa/scarica'
@@ -15,6 +16,12 @@ const NOTE = join(DATI, 'lora.json')
 type Nota = Partial<Omit<InfoLora, 'file' | 'dimensione' | 'compatibile'>> & { compatibile?: InfoLora['compatibile']; base?: string }
 
 const cartellaLora = (): string => join(impostazioni().cartellaModelli, 'loras')
+const FAMIGLIE_VALIDE: Famiglia[] = ['qwen', 'klein', 'klein-base']
+/** un LoRA messo a mano in loras/qwen o loras/flux sta in quello scaffale (se i nomi dei tensori non dicono altro) */
+const gruppoDaCartella = (file: string): GruppoLora | undefined => {
+  const primo = file.split(/[\\/]/)[0].toLowerCase()
+  return file.includes('\\') || file.includes('/') ? (primo === 'qwen' || primo === 'flux' ? primo : undefined) : undefined
+}
 
 function note(): Record<string, Nota> {
   try {
@@ -101,7 +108,8 @@ export function elencoLora(): InfoLora[] {
       // ComfyUI vuole il nome relativo alla cartella loras, con le barre di Windows
       const file = relative(c, p)
       let nota = n[file]
-      if (!nota || nota.compatibile === undefined || nota.famiglie === undefined) {
+      // (le note di prima della 1.2.1 possono dire 'klein4b', un modello che l'app non ha più: si rianalizzano)
+      if (!nota || nota.compatibile === undefined || nota.famiglie === undefined || nota.famiglie.some((f) => !FAMIGLIE_VALIDE.includes(f))) {
         const a = analizza(p)
         const delCatalogo = CATALOGO.find((x) => x.tipo === 'lora' && x.file === v)
         nota = { nome: delCatalogo?.nome || a.nome || basename(v, extname(v)), parole: a.parole || '', forza: 1, aggiunta: st.mtimeMs, ...nota, compatibile: a.compatibile, base: a.base, famiglie: a.famiglie }
@@ -119,6 +127,8 @@ export function elencoLora(): InfoLora[] {
         note: nota.note,
         compatibile: nota.compatibile || '?',
         base: nota.base,
+        famiglie: nota.famiglie,
+        gruppo: nota.gruppo ?? gruppoDaCartella(file),
         aggiunta: nota.aggiunta || st.mtimeMs
       })
     }
@@ -134,16 +144,30 @@ export function aggiornaLora(file: string, modifiche: Partial<InfoLora>): void {
   scriviNote(n)
 }
 
-export function importaLora(percorsi: string[]): string[] {
+/** dove va un file da mettere fra i LoRA: i nomi dei tensori decidono lo scaffale (qwen o flux); se non dicono niente vale la scelta di chi lo carica;
+ *  se non c'è nemmeno quella resta nella cartella grande. Ritorna la cartella e lo scaffale (undefined = nessuno). */
+function scaffale(percorso: string, scelto?: GruppoLora): { cartella: string; gruppo?: GruppoLora; riconosciuto: boolean } {
+  const a = analizza(percorso)
+  const riconosciuto = gruppoDa({ compatibile: a.compatibile, famiglie: a.famiglie })
+  // un LoRA di un altro modello (SD, SDXL…) non va in nessuno scaffale, nemmeno se l'utente ha aperto quello: si vede in «Altri»
+  const gruppo = riconosciuto ?? (a.compatibile === '?' ? scelto : undefined)
+  return { cartella: gruppo ? join(cartellaLora(), gruppo) : cartellaLora(), gruppo, riconosciuto: !!riconosciuto }
+}
+
+/** `gruppo`: lo scaffale della scheda da cui si carica (Qwen o Flux). Se i nomi dei tensori dicono un altro modello, vince quello. */
+export function importaLora(percorsi: string[], gruppo?: GruppoLora): string[] {
   const c = cartellaLora()
   assicura(c)
   const fatti: string[] = []
   for (const p of percorsi) {
     if (!/\.safetensors$/i.test(p)) continue
-    const dest = join(c, basename(p))
+    const s = scaffale(p, gruppo)
+    assicura(s.cartella)
+    const dest = join(s.cartella, basename(p))
     if (!existsSync(dest)) copyFileSync(p, dest)
-    aggiornaLora(basename(p), { aggiunta: Date.now() })
-    fatti.push(basename(p))
+    const file = relative(c, dest)
+    aggiornaLora(file, { aggiunta: Date.now(), ...(s.gruppo && !s.riconosciuto ? { gruppo: s.gruppo } : {}) })
+    fatti.push(file)
   }
   return fatti
 }
@@ -221,12 +245,26 @@ async function risolvi(link: string): Promise<{ url: string; nome?: string; file
   return { url: u.toString(), file: basename(u.pathname) || 'lora.safetensors', intestazioni }
 }
 
-export async function scaricaLora(link: string, avanz: (r: number, t: number, v: number) => void, segnale?: AbortSignal): Promise<string> {
+/** `gruppo`: lo scaffale della scheda da cui si scarica (Qwen o Flux), come in `importaLora` */
+export async function scaricaLora(link: string, avanz: (r: number, t: number, v: number) => void, segnale?: AbortSignal, gruppo?: GruppoLora): Promise<string> {
   const d = await risolvi(link)
   let file = (d.file || 'lora.safetensors').replace(/[<>:"/\\|?*]+/g, '_')
   if (!/\.safetensors$/i.test(file)) file += '.safetensors'
+  assicura(cartellaLora())
   const dest = join(cartellaLora(), file)
   await scarica({ url: d.url, destinazione: dest, intestazioni: d.intestazioni, segnale, avanzamento: avanz })
+  // arrivato, si guarda di che modello è e lo si mette nel suo scaffale
+  const s = scaffale(dest, gruppo)
+  let finale = dest
+  if (s.gruppo) {
+    assicura(s.cartella)
+    const nuovo = join(s.cartella, file)
+    if (!existsSync(nuovo)) {
+      renameSync(dest, nuovo)
+      finale = nuovo
+    }
+  }
+  const relativo = relative(cartellaLora(), finale)
   let anteprima: string | undefined
   if (d.anteprima) {
     try {
@@ -237,6 +275,6 @@ export async function scaricaLora(link: string, avanz: (r: number, t: number, v:
       anteprima = undefined
     }
   }
-  aggiornaLora(file, { nome: d.nome, parole: d.parole, fonte: link, anteprima, aggiunta: Date.now() })
-  return file
+  aggiornaLora(relativo, { nome: d.nome, parole: d.parole, fonte: link, anteprima, aggiunta: Date.now(), ...(s.gruppo && !s.riconosciuto ? { gruppo: s.gruppo } : {}) })
+  return relativo
 }

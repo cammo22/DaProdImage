@@ -5,7 +5,7 @@ import { appendFileSync, copyFileSync, existsSync, readFileSync, readdirSync, rm
 import { basename, extname, join, normalize } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import type { Download, Famiglia, FiltroGalleria, Impostazioni, InfoLora, Richiesta } from '@shared/tipi'
+import type { Download, Famiglia, FiltroGalleria, GruppoLora, Impostazioni, InfoLora, Richiesta } from '@shared/tipi'
 import { vaBeneCon } from '@shared/loraBase'
 import { DATI, ENTRATA, MINIATURE, RADICE, TEMP, assicura } from './percorsi'
 import { impostazioni, salvaImpostazioni } from './impostazioni'
@@ -210,20 +210,20 @@ function registraIpc(): void {
     const tutti = [...leggi('diffusion_models', /\.(gguf|safetensors)$/i), ...leggi('unet', /\.(gguf|safetensors)$/i)]
     const enc = leggi('text_encoders', /\.(safetensors|gguf)$/i)
     const vae = leggi('vae', /\.safetensors$/i)
-    // i file di Klein sono altri: nelle scelte di Qwen non devono comparire
-    const isKlein = (n: string): boolean => /klein/i.test(n)
-    const isKleinTe = (n: string): boolean => /(qwen3|qwen_3).*4b/i.test(n) || isKlein(n)
+    // i file di Klein sono altri: nelle scelte di Qwen non devono comparire. I file di FLUX.2 Klein 4B/9B (tolto nella 1.2.1) e il
+    // Qwen3 4B di solo testo che serviva a lui non sono di FLUX 3 Klein: restano fuori da tutte le liste.
+    const eFlux2 = (n: string): boolean => /klein.*[-_](4b|9b)|[-_](4b|9b).*klein|^qwen_3_4b\./i.test(n)
+    const isKlein = (n: string): boolean => /klein/i.test(n) && !eFlux2(n)
+    const isKleinTe = (n: string): boolean => (/(qwen3|qwen_3).*4b/i.test(n) && !eFlux2(n)) || isKlein(n)
     const isKleinVae = (n: string): boolean => isKlein(n) || /flux.?[23]/i.test(n)
     return {
-      diffusione: tutti.filter((n) => !isKlein(n)),
-      encoder: enc.filter((n) => !isKleinTe(n)),
+      diffusione: tutti.filter((n) => !isKlein(n) && !eFlux2(n)),
+      encoder: enc.filter((n) => !isKleinTe(n) && !eFlux2(n)),
       vae: vae.filter((n) => !isKleinVae(n)),
       upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i),
       klein: tutti.filter(isKlein),
       kleinTe: enc.filter(isKleinTe),
-      kleinVae: vae.filter(isKleinVae),
-      klein4b: tutti.filter((n) => /klein.*4b|4b.*klein/i.test(n)),
-      klein4bTe: enc.filter((n) => /^qwen_?3_4b/i.test(n))
+      kleinVae: vae.filter(isKleinVae)
     }
   })
   gestisci('modelli:inutilizzati', () => fileInutilizzati())
@@ -325,14 +325,14 @@ function registraIpc(): void {
   // i LoRA che si possono usare con questo modello: compatibili ('si') e da provare ('?'), non quelli di un altro modello
   gestisci('lora:compatibili', (famiglia: Famiglia) => elencoLora().filter((l) => vaBeneCon(l, famiglia) !== 'no'))
   gestisci('lora:aggiorna', (file: string, m: Partial<InfoLora>) => aggiornaLora(file, m))
-  gestisci('lora:importa', (percorsi: string[]) => importaLora(percorsi))
+  gestisci('lora:importa', (percorsi: string[], gruppo?: GruppoLora) => importaLora(percorsi, gruppo))
   gestisci('lora:elimina', (file: string) => eliminaLora(file))
   gestisci('lora:apriCartella', () => {
     const c = join(impostazioni().cartellaModelli, 'loras')
     assicura(c)
     return shell.openPath(c)
   })
-  gestisci('lora:scarica', async (link: string) => {
+  gestisci('lora:scarica', async (link: string, gruppo?: GruppoLora) => {
     const d = nuovoDownload('LoRA da ' + (() => {
       try {
         return new URL(link).hostname
@@ -341,7 +341,7 @@ function registraIpc(): void {
       }
     })())
     try {
-      const file = await scaricaLora(link, d.avanz, d.ctrl.signal)
+      const file = await scaricaLora(link, d.avanz, d.ctrl.signal, gruppo)
       d.info.stato = 'fatto'
       d.info.nome = file
     } catch (e) {

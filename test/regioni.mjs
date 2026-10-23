@@ -1,4 +1,4 @@
-// Test del regional prompting (src/main/motore/regioni.ts): riquadri → testo per Klein 3 (JSON con le coordinate) e per Qwen/Klein 4B (a parole).
+// Test del regional prompting (src/main/motore/regioni.ts): riquadri → testo per Klein 3 (JSON con le coordinate) e per Qwen (a parole).
 //
 // Esecuzione: node test/regioni.mjs
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -50,7 +50,7 @@ const pm = JSON.parse(R.promptKleinConBox('', reg, true).slice(R.promptKleinConB
 uguale('Klein modifica: tgt_bbox', pm[0], { id: 'obj_1', from: 'target', src_bbox: null, tgt_bbox: [0, 0, 500, 500], desc: 'A red fox' })
 uguale('senza regioni il testo non cambia', R.promptKleinConBox('x', []), 'x')
 
-// Qwen / Klein 4B: a parole
+// Qwen: a parole
 uguale('dove: in alto a sinistra, piccolo', R.dove([0.02, 0.02, 0.2, 0.2]), 'small, at the top left of the frame')
 uguale('dove: al centro', R.dove([0.35, 0.35, 0.65, 0.65]), 'in the center of the frame')
 uguale('dove: grande a destra', R.dove([0.5, 0.1, 1, 0.9]), 'large, at the right of the frame')

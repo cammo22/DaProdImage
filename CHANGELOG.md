@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.2.1 — 2026-10-23
+
+Tre correzioni dell'interfaccia Orbita e una semplificazione: i modelli si scelgono dalla barra in alto e sono due (Qwen e Klein 3), l'Editor box non si blocca più dopo qualche riquadro, e i LoRA hanno due scaffali, Qwen e Flux, che ora funzionano anche con Klein.
+
+### Modelli
+
+- **La scelta del modello sta nella barra in alto** dell'app (quella bianca, con RAM e VRAM), visibile da qualsiasi pagina: **Qwen**, **Klein 3** (8 passi) e **Klein 3 Base** (50 passi). Spariscono le tessere «Motore» dai pannelli di Crea, Modifica e Box. Se i file di Klein non ci sono, la pillola ha il puntino e il pannellino per scaricarli.
+- **FLUX.2 Klein 4B è tolto**: via dal selettore, dal catalogo (modello e text encoder), dai grafi, dal riconoscimento dei LoRA. Le impostazioni salvate con Klein 4B passano da sole a Qwen; una foto fatta con lui si apre come Qwen. I suoi file già scaricati compaiono in Opzioni → File inutilizzati («tolto dal catalogo») e non vengono più scambiati per quelli di Klein 3.
+
+### Editor box
+
+- **Più di tre riquadri, e riquadri dentro i riquadri.** Un riquadro grande si prendeva tutto il mouse, quindi non si poteva più disegnare niente sopra; col terzo o quarto riquadro la tela era già piena. Ora lo strumento **Disegna** (di serie) fa nascere un riquadro nuovo ovunque, anche dentro un altro; il **numero** del riquadro lo sposta, le maniglie lo ridimensionano. Lo strumento **Sposta** afferra il riquadro dal corpo come prima. Un clic su un punto sceglie il riquadro più piccolo che lo contiene. Il tetto passa da 8 a **16**, come nel motore.
+
+### LoRA
+
+- **Due scaffali: Qwen e Flux (Klein 3).** La pagina LoRA ha una scheda per scaffale, ognuna con la sua zona per trascinare i file o incollare un link, la sua pila (ordine e forza) e le sue carte. I file vanno in `loras/qwen` e `loras/flux`; i nomi dei tensori decidono lo scaffale anche se carichi dalla scheda sbagliata (l'app lo dice). I LoRA che non si riconoscono restano nello scaffale della scheda da cui li hai caricati; quelli fatti per altri modelli (SD, SDXL, FLUX.1, FLUX.2) stanno in «Altri», dove si può scegliere a mano per quale modello usarli.
+- **Perché i LoRA non funzionavano con Klein:** l'elenco dei LoRA non mandava all'interfaccia per quali modelli erano fatti, e ogni LoRA di Klein risultava «non compatibile» con Klein; inoltre la richiesta con Klein non portava nessun LoRA e le azioni rapide accendevano LoRA di Qwen. Ora la richiesta porta la pila del modello scelto; Klein veloce e Klein Base usano la stessa. Cambiando modello la pila dell'altro scaffale resta lì, ma non parte.
+- Le azioni rapide, Camera e gli avvisi «LoRA consigliato» accendono solo LoRA che vanno col modello scelto (sono LoRA di Qwen: con Klein si va col modello da solo). Una rete di sicurezza nel motore toglie dalla richiesta i LoRA dell'altro scaffale.
+- Non ancora provato con la GPU: il risultato di un LoRA vero su Klein (il motore li carica come per Qwen, ComfyUI ha la mappatura dei nomi di Klein).
+
+### Prove
+
+- Nuovi: `test/lora-scaffali.mjs` (importazione nei due scaffali con file safetensors finti, famiglie nell'elenco, note vecchie), `test/box-lora-ui.mjs` (barra dei modelli, sei riquadri e uno dentro l'altro, schede dei LoRA, pannellino di download). Aggiornati i test dei modelli, del catalogo, dello spazio, dei LoRA e dei grafi.
+
 ## 1.2.0 — 2026-10-23
 
 L'app cambia faccia e il motore impara cose nuove: l'**interfaccia Orbita** con il pannello dei controlli a sinistra, un quarto modello veloce (FLUX.2 Klein 4B), più LoRA insieme, l'editor a box, «senza sfondo» ed Estrai con SAM 2. Il motore passa alla versione 9: al primo avvio l'app lo aggiorna da sola (i modelli già scaricati restano dove sono).

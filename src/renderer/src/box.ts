@@ -4,7 +4,8 @@
 import type { BoxRegione } from '@shared/tipi'
 
 export const COLORI_BOX = ['#8a5cff', '#3fe0ff', '#ff3df2', '#ffd54a', '#3ee08f', '#ff7a6b', '#4c8dff', '#b6f23f']
-export const MAX_BOX = 8
+/** quanti riquadri al massimo: lo stesso tetto del motore (`regioniPronte`, 16) */
+export const MAX_BOX = 16
 export type Rect = BoxRegione['rect']
 
 export const TIPI_BOX: { id: BoxRegione['tipo']; nome: string; titolo: string; guida: string }[] = [
@@ -35,6 +36,15 @@ export const DISPOSIZIONI: { id: string; nome: string; box: { rect: Rect; tipo: 
 
 const limita = (n: number, a = 0, b = 1): number => Math.max(a, Math.min(b, n))
 export const MINIMO = 0.04
+
+/** quale riquadro sta sotto un punto (0–1): fra quelli che lo contengono il più piccolo, a pari area il più davanti.
+ *  Serve per scegliere con un clic un riquadro che ne copre un altro, o che sta dentro uno grande. */
+export function riquadroSotto(regioni: BoxRegione[], x: number, y: number): BoxRegione | null {
+  const area = (r: BoxRegione): number => (r.rect[2] - r.rect[0]) * (r.rect[3] - r.rect[1])
+  const dentro = regioni.filter((r) => !r.nascosta && x >= r.rect[0] && x <= r.rect[2] && y >= r.rect[1] && y <= r.rect[3])
+  dentro.sort((a, b) => area(a) - area(b) || b.ordine - a.ordine)
+  return dentro[0] ?? null
+}
 
 export const idBox = (): string => 'b' + Math.random().toString(36).slice(2, 8)
 

@@ -18,6 +18,7 @@ import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { encoderKleinFile, fileKlein } from './klein'
 import { cambioDiModello, faseScarico, occupaImmagine, occupaTesto, scriveCol4B, type Occupa } from './spazio'
 import { elencoLora } from '../lora'
+import { vaBeneCon } from '@shared/loraBase'
 import { scaricaVoce, statoModelli } from '../installa/installatore'
 
 const lavori: Lavoro[] = []
@@ -58,8 +59,26 @@ function conParoleLora(q: Richiesta): Richiesta {
   return extra.length ? { ...q, prompt: `${extra.join(', ')}, ${q.prompt}` } : q
 }
 
+/** rete di sicurezza: un LoRA fatto per l'altro modello (un Qwen con Klein o al contrario) farebbe fermare il motore, quindi non parte.
+ *  L'interfaccia non li manda (pile separate per Qwen e per Flux), ma una ricetta o una foto vecchia della galleria possono riportarli. */
+function soloLoraDelModello(q: Richiesta): Richiesta {
+  if (q.modalita === 'descrivi' || !q.lora?.length) return q
+  let info
+  try {
+    info = elencoLora()
+  } catch {
+    return q
+  }
+  const fam = q.famiglia ?? impostazioni().famiglia ?? 'qwen'
+  const buoni = q.lora.filter((a) => {
+    const l = info.find((x) => x.file === a.file)
+    return !l || vaBeneCon(l, fam) !== 'no'
+  })
+  return buoni.length === q.lora.length ? q : { ...q, lora: buoni }
+}
+
 export function accodaRichiesta(q0: Richiesta): Lavoro[] {
-  const q = conParoleLora(adattaRichiesta(q0))
+  const q = conParoleLora(soloLoraDelModello(adattaRichiesta(q0)))
   const quante = Math.max(1, Math.min(16, q.quante || 1))
   const base = q.seed >= 0 ? q.seed : -1
   const nuovi: Lavoro[] = []
@@ -320,7 +339,7 @@ async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: 
   // il testo che l'upsampler vede: con foto, la richiesta di modifica; da zero, la richiesta e la forma della tela (TARGET CANVAS)
   const mcd = (a: number, b: number): number => (b ? mcd(b, a % b) : a)
   const g0 = mcd(q.larghezza || 1, q.altezza || 1)
-  // il Klein 4B capisce solo i prompt di sistema brevi (con quello lungo ricopia le regole): con lui si usano quelli, e la richiesta da foto va nuda
+  // il Qwen3-VL 4B (l'encoder di Klein) capisce solo i prompt di sistema brevi (con quello lungo ricopia le regole): con lui si usano quelli, e la richiesta da foto va nuda
   // (con «Reference images follow… Output the caption» risponde «user»)
   const encoderKlein = fam !== 'qwen' && !!imp.kleinEncoder
   const richiesta = p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)
@@ -500,7 +519,7 @@ async function esegui(l: Lavoro): Promise<void> {
           sampler: q.sampler,
           scheduler: q.scheduler,
           lora: q.lora,
-          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : fam === 'klein4b' ? 'FLUX.2 Klein 4B · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
+          modello: usaKlein ? (fam === 'klein-base' ? 'FLUX 3 Klein Base · ' : 'FLUX 3 Klein · ') + impLavoro.kleinModello : imp.modello,
           forza: q.forza,
           trasparente: q.trasparente,
           origine: q.origine,

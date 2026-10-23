@@ -15,4 +15,7 @@ assert.equal(compatibilitaLora({ compatibile: 'si' }, 'klein'), 'no', 'il vecchi
 assert.equal(compatibilitaLora({ compatibile: '?', famiglie: ['klein', 'klein-base'] }, 'klein'), 'si')
 assert.equal(compatibilitaLora({ compatibile: 'si', famiglie: ['qwen'] }, 'klein'), 'no')
 assert.equal(compatibilitaLora({ compatibile: '?', famiglie: [] }, 'klein'), '?')
+assert.equal(compatibilitaLora({ compatibile: 'si', famiglie: ['klein', 'klein-base'] }, 'klein-base'), 'si', 'un LoRA di Klein vale con Klein Base')
+assert.equal(compatibilitaLora({ compatibile: '?', famiglie: [], gruppo: 'flux' }, 'klein'), 'si', 'lo scaffale scelto a mano conta')
+assert.equal(compatibilitaLora({ compatibile: '?', famiglie: [], gruppo: 'flux' }, 'qwen'), 'no')
 console.log('OK: pila LoRA (ordine immutabile, forza, compatibilità esplicita)')

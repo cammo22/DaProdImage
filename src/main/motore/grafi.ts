@@ -91,11 +91,11 @@ function applicaLora(g: Grafo, model: Rif, lora: LoraAttiva[], salta?: string): 
   return m
 }
 
-/** FLUX 3 Klein e FLUX.2 Klein 4B: UNETLoader (i pesi INT8/FP8/BF16 li riconosce da soli ComfyUI), LoRA, text encoder (Qwen3-VL 4B di tipo flux3; Qwen3 4B di tipo flux2 per la 4B), VAE di FLUX.2. Niente cache KV. */
+/** FLUX 3 Klein: UNETLoader (i pesi INT8/BF16 li riconosce da soli ComfyUI), LoRA, text encoder (Qwen3-VL 4B di tipo flux3), VAE di FLUX.2. Niente cache KV. */
 function baseKlein(g: Grafo, imp: Impostazioni, fam: Famiglia, lora: LoraAttiva[]): { model: Rif; clip: Rif; vae: Rif } {
   const file = fam === 'klein-base' ? imp.kleinBase : imp.kleinModello
   const model = applicaLora(g, r(g.add('UNETLoader', { unet_name: file, weight_dtype: 'default' }, 'Carico il modello')), lora)
-  const clip = r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: fam === 'klein4b' ? 'flux2' : 'flux3', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+  const clip = r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: 'flux3', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
   const vae = r(g.add('VAELoader', { vae_name: imp.kleinVae }, 'Carico il VAE'))
   return { model, clip, vae }
 }
@@ -188,22 +188,6 @@ function latenteVuota(g: Grafo, fam: Famiglia, w: number, h: number): Rif {
 }
 
 function campiona(g: Grafo, q: Richiesta, fam: Famiglia, model: Rif, c: Condizioni, latente: Rif, passi: number, denoise = 1, dim?: { w: number; h: number }): Rif {
-  if (fam === 'klein4b') {
-    // FLUX.2 Klein 4B (distillato): come il workflow ufficiale di ComfyUI, scaletta Flux2Scheduler (dipende dalla grandezza) + CFGGuider 1 + euler.
-    // Con denoise < 1 la scaletta è più lunga e se ne prende la coda (SplitSigmasDenoise): si fanno `passi` passi veri.
-    const w = dim?.w ?? q.larghezza
-    const h = dim?.h ?? q.altezza
-    const totali = denoise < 0.999 ? Math.max(passi, Math.round(passi / Math.max(0.05, denoise))) : passi
-    const scaletta = g.add('Flux2Scheduler', { steps: totali, width: w, height: h })
-    const sigme: Rif = denoise < 0.999 ? r(g.add('SplitSigmasDenoise', { sigmas: r(scaletta), denoise }), 1) : r(scaletta)
-    const guida = g.add('CFGGuider', { model, positive: c.pos, negative: c.neg, cfg: 1 })
-    const out = g.add(
-      'SamplerCustomAdvanced',
-      { noise: r(g.add('RandomNoise', { noise_seed: q.seed })), guider: r(guida), sampler: r(g.add('KSamplerSelect', { sampler_name: 'euler' })), sigmas: sigme, latent_image: latente },
-      'Disegno'
-    )
-    return r(out, 0)
-  }
   // Klein veloce è distillato (8 passi, senza CFG); Klein Base vuole CFG 3,5; sampler e scheduler sono quelli del riferimento (euler, e la scaletta del modello)
   const cfg = fam === 'qwen' ? q.cfg : fam === 'klein' ? 1 : q.cfg > 1 ? q.cfg : 3.5
   return r(

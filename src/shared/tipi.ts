@@ -75,8 +75,8 @@ export interface Riquadro {
   h: number
 }
 
-/** il modello che disegna: Qwen-Image 2.1, FLUX 3 Klein (veloce, distillato), FLUX 3 Klein Base (50 passi con CFG) o FLUX.2 Klein 4B (Apache-2.0, 4 passi) */
-export type Famiglia = 'qwen' | 'klein' | 'klein-base' | 'klein4b'
+/** il modello che disegna: Qwen-Image 2.1, FLUX 3 Klein (veloce, distillato) o FLUX 3 Klein Base (50 passi con CFG) */
+export type Famiglia = 'qwen' | 'klein' | 'klein-base'
 
 /** quello che distingue i modelli: passi per qualità, CFG e cosa sanno fare. Nomi e passi «alti» vengono da `modelli.ts`
  *  (la mappa unica); «turbo» resta solo per le qualità salvate prima della 1.1 e vale come «alta» (`senzaTurbo`). */
@@ -87,8 +87,7 @@ const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string
 export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
   qwen: famiglia('qwen-base', 20, 50),
   klein: famiglia('klein', 8, 16),
-  'klein-base': famiglia('klein-base', 25, 64),
-  klein4b: famiglia('klein4b', 4, 8)
+  'klein-base': famiglia('klein-base', 25, 64)
 }
 
 /** Quello che l'interfaccia chiede: il principale lo trasforma nel grafo di ComfyUI. */
@@ -229,6 +228,9 @@ export interface FiltroGalleria {
   modalita?: 'tutte' | 'create' | 'modificate' | 'preferite'
 }
 
+/** i due scaffali dei LoRA: quelli per Qwen-Image 2.1 e quelli per FLUX 3 Klein (Klein veloce e Klein Base hanno gli stessi) */
+export type GruppoLora = 'qwen' | 'flux'
+
 export interface InfoLora {
   file: string
   nome: string
@@ -243,6 +245,8 @@ export interface InfoLora {
   base?: string
   /** per quali modelli è fatto (da `analizza`: dai nomi dei tensori); vuoto = non si capisce */
   famiglie?: Famiglia[]
+  /** lo scaffale scelto da chi l'ha caricato, per i LoRA di cui i nomi dei tensori non dicono il modello (non conta se `famiglie` è piena) */
+  gruppo?: GruppoLora
   aggiunta: number
 }
 

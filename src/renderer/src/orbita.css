@@ -197,7 +197,15 @@
 .box-regione { position: absolute; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); border-radius: 4px; cursor: move; box-sizing: border-box; animation: nasce 180ms var(--molla); }
 .box-regione.sel { border-style: dashed; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 22px color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 24%, transparent); }
 .box-regione.nascosta { opacity: 0.25; }
-.box-regione .numero { position: absolute; left: -2px; top: -2px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 4px 0 8px 0; background: var(--c); color: #0a0716; font-weight: 800; font-size: 13px; display: grid; place-items: center; pointer-events: none; }
+.box-regione .numero { position: absolute; left: -2px; top: -2px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 4px 0 8px 0; background: var(--c); color: #0a0716; font-weight: 800; font-size: 13px; display: grid; place-items: center; cursor: move; z-index: 2; }
+/* strumento «Disegna»: il corpo dei riquadri lascia passare il mouse, così si disegna anche dentro uno grande; restano afferrabili il numero e le maniglie */
+.box-cornice.disegna .box-regione { pointer-events: none; cursor: crosshair; }
+.box-cornice.disegna .box-regione .numero, .box-cornice.disegna .box-regione .maniglia { pointer-events: auto; }
+.box-strumenti { display: inline-flex; gap: 2px; padding: 2px; border-radius: 12px; background: var(--vetro); border: 1px solid var(--bordo-vetro); }
+.box-strumenti button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--tenue); font-size: 13px; font-weight: 700; cursor: pointer; }
+.box-strumenti button svg { width: 16px; height: 16px; }
+.box-strumenti button:hover { color: var(--testo); background: var(--pannello2); }
+.box-strumenti button.su { color: #fff; background: linear-gradient(var(--pannello2), var(--pannello2)) padding-box, var(--aurora) border-box; border: 1px solid transparent; }
 .box-regione .testo-box { position: absolute; left: 4px; right: 4px; top: 26px; bottom: 4px; overflow: hidden; color: #fff; font-size: 13px; font-weight: 600; line-height: 1.2; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; }
 .box-regione .maniglia { position: absolute; width: 11px; height: 11px; background: #fff; border: 2px solid var(--c); border-radius: 3px; }
 .box-regione .maniglia.nw { left: -6px; top: -6px; cursor: nwse-resize; } .box-regione .maniglia.ne { right: -6px; top: -6px; cursor: nesw-resize; }

@@ -1,7 +1,8 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
-import { FAMIGLIE, type BoxRegione, type Download, type Famiglia, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
+import { FAMIGLIE, type BoxRegione, type Download, type Famiglia, type GruppoLora, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
 import { senzaTurbo } from '@shared/modelli'
+import { gruppoDa, gruppoDiFamiglia } from '@shared/loraBase'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
 
@@ -114,7 +115,10 @@ interface Stato {
   motore: InfoMotore
   lavori: Lavoro[]
   lore: InfoLora[]
+  /** i LoRA accesi del modello scelto (la pila del suo scaffale: Qwen, oppure Flux per Klein) */
   loraAttive: LoraAttiva[]
+  /** le due pile, una per scaffale: cambiando modello non si perdono e non si mischiano (un LoRA di Qwen non parte con Klein) */
+  loraPile: Record<GruppoLora, LoraAttiva[]>
   crea: StatoCrea
   modifica: StatoModifica
   /** l'Editor box (modo Box dello Studio) */
@@ -138,8 +142,12 @@ interface Stato {
   setCrea(m: Partial<StatoCrea>): void
   setModifica(m: Partial<StatoModifica>): void
   setBox(m: Partial<StatoBox>): void
+  /** la pila del modello scelto */
   setLoraAttive(l: LoraAttiva[]): void
   toggleLora(file: string, forza?: number): void
+  /** la pila di uno scaffale (la pagina LoRA li mostra tutti e due, qualunque sia il modello scelto) */
+  setLoraPila(g: GruppoLora, l: LoraAttiva[]): void
+  toggleLoraPer(g: GruppoLora, file: string, forza?: number): void
   avvisa(testo: string, tipo?: Avviso['tipo']): void
   apriVisore(o: Opera | null): void
 }
@@ -162,6 +170,18 @@ const leggiLista = <T,>(k: string): T[] => {
     return []
   }
 }
+
+/** le pile dei LoRA: dalla 1.2.1 sono due (Qwen e Flux). La lista unica di prima valeva solo per Qwen */
+function leggiPile(): Record<GruppoLora, LoraAttiva[]> {
+  try {
+    const j = JSON.parse(localStorage.getItem('dpi-lora-pile') || 'null')
+    if (j && typeof j === 'object') return { qwen: Array.isArray(j.qwen) ? j.qwen : [], flux: Array.isArray(j.flux) ? j.flux : [] }
+  } catch {
+    /* si riparte da quella vecchia */
+  }
+  return { qwen: leggiLista<LoraAttiva>('dpi-lora'), flux: [] }
+}
+const PILE0 = leggiPile()
 
 const CREA0: StatoCrea = {
   prompt: '', formato: '1:1', ris: 1024, mpLavoro: 0, quante: 1, seed: 0, casuale: true, trasparente: false,
@@ -200,7 +220,8 @@ export const usaStato = create<Stato>((set, get) => ({
   motore: { stato: 'spento', porta: 0 },
   lavori: [],
   lore: [],
-  loraAttive: leggiLista<LoraAttiva>('dpi-lora'),
+  loraAttive: PILE0.qwen,
+  loraPile: PILE0,
   crea: { ...daVecchio(leggiLocale('dpi-crea', CREA0)), riferimenti: [] },
   modifica: daVecchioMod({ ...leggiLocale('dpi-modifica', MOD0), base: null, versioni: [], riferimenti: [], esempio: null }),
   box: { ...BOX0, ...leggiLocale<Partial<StatoBox>>('dpi-box', {}), selezionata: null },
@@ -213,7 +234,7 @@ export const usaStato = create<Stato>((set, get) => ({
   selettore: null,
   vai: (pagina) => set({ pagina }),
   vaiOpzioni: (schedaOpzioni) => (schedaOpzioni === 'lora' ? set({ pagina: 'lora' }) : set({ pagina: 'impostazioni', schedaOpzioni })),
-  setImp: (imp) => set({ imp }),
+  setImp: (imp) => set((s) => ({ imp, loraAttive: s.loraPile[gruppoDiFamiglia(imp.famiglia)] })),
   setCrea: (m) => {
     const crea = { ...get().crea, ...m }
     set({ crea })
@@ -244,20 +265,22 @@ export const usaStato = create<Stato>((set, get) => ({
       /* niente */
     }
   },
-  setLoraAttive: (loraAttive) => {
-    set({ loraAttive })
+  setLoraPila: (g, l) => {
+    const loraPile = { ...get().loraPile, [g]: l }
+    set({ loraPile, loraAttive: loraPile[gruppoDiFamiglia(get().imp?.famiglia)] })
     try {
-      localStorage.setItem('dpi-lora', JSON.stringify(loraAttive))
+      localStorage.setItem('dpi-lora-pile', JSON.stringify(loraPile))
     } catch {
       /* niente */
     }
   },
-  toggleLora: (file, forza) => {
-    const att = get().loraAttive
-    const c = att.find((l) => l.file === file)
-    if (c) get().setLoraAttive(att.filter((l) => l.file !== file))
-    else get().setLoraAttive([...att, { file, forza: forza ?? get().lore.find((l) => l.file === file)?.forza ?? 1 }])
+  setLoraAttive: (l) => get().setLoraPila(gruppoDiFamiglia(get().imp?.famiglia), l),
+  toggleLoraPer: (g, file, forza) => {
+    const att = get().loraPile[g]
+    if (att.some((l) => l.file === file)) get().setLoraPila(g, att.filter((l) => l.file !== file))
+    else get().setLoraPila(g, [...att, { file, forza: forza ?? get().lore.find((l) => l.file === file)?.forza ?? 1 }])
   },
+  toggleLora: (file, forza) => get().toggleLoraPer(gruppoDiFamiglia(get().imp?.famiglia), file, forza),
   avvisa: (testo, tipo = 'info') => {
     const id = ++idAvviso
     set({ avvisi: [...get().avvisi, { id, testo, tipo }] })
@@ -327,9 +350,15 @@ export async function collegaEventi(): Promise<void> {
 
 export const ricaricaLore = async (): Promise<void> => {
   const lore = await api.lora.elenco()
-  const att = usaStato.getState().loraAttive.filter((a) => lore.some((l) => l.file === a.file))
   usaStato.setState({ lore })
-  usaStato.getState().setLoraAttive(att)
+  // in ogni pila restano i file che ci sono ancora e che non sono di sicuro dell'altro scaffale
+  for (const g of ['qwen', 'flux'] as GruppoLora[]) {
+    const att = usaStato.getState().loraPile[g].filter((a) => {
+      const l = lore.find((x) => x.file === a.file)
+      return !!l && (gruppoDa(l) ?? g) === g
+    })
+    usaStato.getState().setLoraPila(g, att)
+  }
 }
 
 export const ricaricaImp = async (): Promise<void> => {

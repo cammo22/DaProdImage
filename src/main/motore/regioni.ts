@@ -5,7 +5,7 @@
 //   {"id", "bbox": [y_min, x_min, y_max, x_max], "desc"} su una tela 0–1000 (origine in alto a sinistra) e la didascalia che cita ogni <id>
 //   (formato di black-forest-labs/flux-3-image-klein, src/flux3/bbox.py). Per le modifiche una riga è {"id", "from": "target", "src_bbox": null, "tgt_bbox", "desc"}.
 //   I riquadri sono una guida morbida: l'elemento può uscire un po' dal rettangolo, e non protegge i pixel fuori (per quello c'è la zona con la maschera).
-// - Qwen-Image 2.1 e FLUX.2 Klein 4B non hanno i riquadri: la posizione si dice a parole («at the top left, a small …»).
+// - Qwen-Image 2.1 non ha i riquadri: la posizione si dice a parole («at the top left, a small …»).
 import type { Box01, Regione } from '../../shared/tipi'
 
 export interface RegionePronta {
@@ -69,7 +69,7 @@ export function dove(b: Box01): string {
   return grande + posto
 }
 
-/** il prompt per Qwen-Image 2.1 e FLUX.2 Klein 4B: la posizione di ogni elemento a parole */
+/** il prompt per Qwen-Image 2.1: la posizione di ogni elemento a parole */
 export function promptConPosizioni(scena: string, regioni: RegionePronta[], modifica = false): string {
   if (!regioni.length) return scena
   const testi = regioni.map((r) => (modifica ? `${maiuscola(senzaPunto(r.prompt))} — ${dove(r.box)}.` : `${maiuscola(dove(r.box))}: ${senzaPunto(r.prompt)}.`))

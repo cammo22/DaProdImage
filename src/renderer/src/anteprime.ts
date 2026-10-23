@@ -43,9 +43,10 @@ export function chiaveRicetta(idWorkflow: string): ChiaveAsset | undefined {
 }
 
 /** la copertina generica di un LoRA senza anteprima: «Qwen» o «Klein» dalla famiglia; se serve a più famiglie o non si capisce → niente (resta la sigla colorata) */
-export function chiaveLora(l: { famiglie?: string[]; compatibile?: string }): ChiaveAsset | undefined {
+export function chiaveLora(l: { famiglie?: string[]; compatibile?: string; gruppo?: string }): ChiaveAsset | undefined {
   const f = new Set((l.famiglie || []).map((x) => (x === 'qwen' ? 'qwen' : 'klein')))
   if (f.size === 1) return `lora/${[...f][0]}`
+  if (!f.size && l.gruppo) return l.gruppo === 'qwen' ? 'lora/qwen' : 'lora/klein'
   return !f.size && l.compatibile === 'si' ? 'lora/qwen' : undefined
 }
 

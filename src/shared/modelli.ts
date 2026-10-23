@@ -2,14 +2,14 @@
 //   qwen-base  = Qwen-Image 2.1 pieno, 40 passi, coi LoRA: la qualità piena di Qwen.
 //   klein      = FLUX 3 Klein distillato, 8 passi senza CFG: il modello veloce.
 //   klein-base = FLUX 3 Klein Base, 50 passi con CFG 3,5: la qualità piena di Klein.
-// Niente Qwen veloce col LoRA Turbo8: a Cammo non piace.
+// Niente Qwen veloce col LoRA Turbo8: a Cammo non piace. Dalla 1.2.1 niente FLUX.2 Klein 4B: sono rimasti Qwen e FLUX 3 Klein.
 //
 // Il motore continua a ragionare per `Famiglia` (+ `turbo`, che resta nella Richiesta solo per i PNG e le ricette vecchie):
 // questa è l'unica mappa fra le due cose. È pura (niente Electron, niente React), così `test/modelli.mjs` la prova con Node.
 // I grafi di Qwen non cambiano: qwen-base manda la stessa richiesta di prima con la qualità «Alta».
 import type { Famiglia } from './tipi'
 
-export type IdModello = 'qwen-base' | 'klein' | 'klein-base' | 'klein4b'
+export type IdModello = 'qwen-base' | 'klein' | 'klein-base'
 
 export interface InfoModello {
   id: IdModello
@@ -31,21 +31,20 @@ export interface InfoModello {
 export const MODELLI: Record<IdModello, InfoModello> = {
   'qwen-base': { id: 'qwen-base', famiglia: 'qwen', turbo: false, passi: 40, cfg: null, nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA', lora: true, veloce: false },
   klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 8, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '8 passi · senza CFG · il più veloce', lora: true, veloce: true },
-  'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: true, veloce: false },
-  klein4b: { id: 'klein4b', famiglia: 'klein4b', turbo: false, passi: 4, cfg: 1, nome: 'FLUX.2 Klein 4B', corto: 'Klein 4B', sotto: '4 passi · Apache-2.0 · uso commerciale libero', lora: true, veloce: true }
+  'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: true, veloce: false }
 }
 
 /** l'ordine delle pillole nell'interfaccia */
-export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'klein', 'klein-base', 'klein4b']
+export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'klein', 'klein-base']
 export const MODELLO_PREDEFINITO: IdModello = 'qwen-base'
 
 export const eModello = (x: unknown): x is IdModello => typeof x === 'string' && Object.prototype.hasOwnProperty.call(MODELLI, x)
 
-/** dalla famiglia (e dal vecchio Turbo) al modello: il Turbo di Qwen diventa Qwen base, tutto quello che non si riconosce pure */
+/** dalla famiglia (e dal vecchio Turbo) al modello: il Turbo di Qwen diventa Qwen base, tutto quello che non si riconosce pure
+ *  (FLUX.2 Klein 4B, tolto nella 1.2.1, compreso) */
 export function modelloDa(famiglia?: unknown, _turbo?: boolean): IdModello {
   if (famiglia === 'klein') return 'klein'
   if (famiglia === 'klein-base') return 'klein-base'
-  if (famiglia === 'klein4b') return 'klein4b'
   return 'qwen-base'
 }
 
@@ -71,7 +70,6 @@ export function allineaScelta(modifiche: { modelloScelto?: unknown; famiglia?: u
  *  «FLUX 3 Klein Base · file», «FLUX 3 Klein · file» o il file del denoiser di Qwen (Turbo compreso, che ora vale Qwen base) */
 export function modelloDaOpera(o: { modello?: string | null } | null | undefined): IdModello {
   const m = (o?.modello || '').trim()
-  if (/^FLUX\.2 Klein 4B\b/i.test(m)) return 'klein4b'
   if (/^FLUX 3 Klein Base\b/i.test(m)) return 'klein-base'
   if (/^FLUX 3 Klein\b/i.test(m)) return 'klein'
   return 'qwen-base'

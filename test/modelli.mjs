@@ -22,8 +22,8 @@ function uguale(nome, avuto, atteso) {
 }
 
 // la mappa
-uguale('quattro modelli, in ordine', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base', 'klein4b'])
-uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'klein4b', 'qwen-base'])
+uguale('tre modelli, in ordine (niente Klein 4B dalla 1.2.1)', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base'])
+uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'qwen-base'])
 uguale('qwen-base', [M.MODELLI['qwen-base'].famiglia, M.MODELLI['qwen-base'].passi, M.MODELLI['qwen-base'].turbo, M.MODELLI['qwen-base'].lora], ['qwen', 40, false, true])
 uguale('klein', [M.MODELLI.klein.famiglia, M.MODELLI.klein.passi, M.MODELLI.klein.cfg, M.MODELLI.klein.veloce], ['klein', 8, 1, true])
 uguale('klein-base', [M.MODELLI['klein-base'].famiglia, M.MODELLI['klein-base'].passi, M.MODELLI['klein-base'].cfg], ['klein-base', 50, 3.5])
@@ -37,6 +37,9 @@ uguale('qwen + turbo → qwen-base', M.modelloDa('qwen', true), 'qwen-base')
 uguale('klein → klein', M.modelloDa('klein'), 'klein')
 uguale('klein-base → klein-base', M.modelloDa('klein-base'), 'klein-base')
 uguale('sconosciuta → qwen-base', M.modelloDa('sdxl'), 'qwen-base')
+uguale('klein4b (tolto) → qwen-base', M.modelloDa('klein4b'), 'qwen-base')
+uguale('impostazioni con klein4b salvato → qwen-base', M.modelloDaImpostazioni({ modelloScelto: 'klein4b', famiglia: 'klein4b' }), 'qwen-base')
+uguale('un\'opera fatta con Klein 4B → qwen-base', M.modelloDaOpera({ modello: 'FLUX.2 Klein 4B · flux-2-klein-4b-fp8.safetensors' }), 'qwen-base')
 uguale('niente → qwen-base', M.modelloDa(undefined), 'qwen-base')
 
 // migrazione delle impostazioni (file vecchi, senza modelloScelto)

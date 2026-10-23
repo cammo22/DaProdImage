@@ -1,7 +1,7 @@
 {
   "name": "daprod-image",
   "productName": "DaProd Image",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "DaProd Image: crea e modifica foto con Qwen-Image-2.1 sul tuo PC (CUDA, da 6 GB di VRAM). Turbo a 8 passi, preset per poster e infografiche, zone con anteprima dal vivo, LoRA con un clic, galleria.",
   "author": "DaProd",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "test": "node test/modelli.mjs && node test/catalogo.mjs && node test/spazio.mjs && node test/lora.mjs && node test/regioni.mjs && node test/adatta.mjs && node test/grafi_v2.mjs && node test/confronta_grafi.mjs && node test/asset.mjs",
+    "test": "node test/modelli.mjs && node test/catalogo.mjs && node test/spazio.mjs && node test/lora.mjs && node test/lora-scaffali.mjs && node test/regioni.mjs && node test/adatta.mjs && node test/grafi_v2.mjs && node test/confronta_grafi.mjs && node test/asset.mjs",
     "prendi-uv": "node scripts/prendi-uv.mjs",
     "dist": "npm run prendi-uv && npm run build && electron-builder --win --x64",
     "prova": "node test/prove.mjs",

@@ -23,8 +23,11 @@ await provaBrowser(async (pg) => {
   }
   await pg.click('[data-modo="modifica"]')
   if (caso === 'modello') {
-    assert.equal(await pannello.locator('[data-id="modello-klein4b"]').count(), 1, 'Modifica deve permettere di cambiare modello')
-    assert.match(await pg.locator('.pillola-motore').first().innerText(), /Klein/, 'fixture usa Klein')
+    // dalla 1.2.1 il modello si sceglie solo dalla barra in alto: Qwen e Klein 3 (veloce e Base), niente Klein 4B, niente selettore nel pannello
+    const barra = pg.locator('.barra-titolo [data-selettore-modello] [data-modello]')
+    assert.deepEqual(await barra.evaluateAll((b) => b.map((x) => x.getAttribute('data-modello'))), ['qwen-base', 'klein', 'klein-base'], 'la barra in alto ha tre modelli')
+    assert.equal(await pannello.locator('[data-id^="modello-"]').count(), 0, 'nel pannello non c\'è più il selettore del modello')
+    assert.match(await pg.locator('.barra-titolo [data-modello][aria-checked="true"]').innerText(), /Klein/, 'fixture usa Klein')
     assert.equal(await pg.locator('.strip-modi button[title^="La pila"]').count(), 1, 'LoRA accessibili anche con Klein')
     return
   }

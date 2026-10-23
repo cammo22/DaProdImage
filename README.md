@@ -36,6 +36,12 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 <img src="risorse/crea.png" width="860" alt="Crea: il preset Foto a sinistra, i tre modelli in alto, la Vespa a Positano">
 </div>
 
+## Novità della 1.2.1
+
+- **I modelli si scelgono dalla barra in alto** (sempre visibile, da qualsiasi pagina): **Qwen**, **Klein 3** e **Klein 3 Base**. **FLUX.2 Klein 4B** non c'è più.
+- **Editor box**: si possono fare fino a **16 riquadri** e un riquadro anche **dentro un altro** (prima uno grande si prendeva il mouse). Con **Disegna** si trascina ovunque, il numero del riquadro lo sposta e le maniglie lo ridimensionano; con **Sposta** si afferra dal corpo. Un clic su un punto sceglie il riquadro più piccolo che c'è lì sotto.
+- **LoRA divisi in due scaffali**, **Qwen** e **Flux (Klein 3)**, ognuno con la sua pila: carichi i file (o un link) nella scheda giusta, e l'app li mette nello scaffale giusto anche se sbagli scheda. I LoRA di Flux ora funzionano con Klein veloce e Klein Base.
+
 ## Novità della 1.2.0: l'interfaccia Orbita
 
 - **Un solo Studio** con quattro modi: **Crea**, **Modifica**, **Box** e **Ricette**. I controlli stanno nel **pannello a sinistra**, il pulsante CREA è fisso in fondo e la risoluzione finale si legge sempre.
@@ -43,7 +49,7 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 - **Editor a box**: un riquadro per ogni cosa, con il suo prompt (regional prompting).
 - **Senza sfondo** (BiRefNet) ed **Estrai con SAM 2**: ritagli dai pixel della tua foto, senza ridisegnarla.
 - **LoRA multipli** in fila, con la forza di ciascuno, su Qwen e su Klein.
-- **FLUX.2 Klein 4B** (4 passi) come quarto modello: a caldo è circa il 15 % più veloce di Klein veloce a 8 passi (Crea 5,4 s contro 6,4 s sulla RTX 4060).
+- ~~FLUX.2 Klein 4B~~ (tolto nella 1.2.1).
 - **Modelli uncensored** scaricabili solo se accendi l'interruttore in Opzioni e accetti l'avviso; ogni voce è marcata.
 
 ## Installare
@@ -117,7 +123,7 @@ Nella barra in alto scegli **chi disegna**: **Qwen base** (Qwen-Image 2.1, 40 pa
 Il Turbo di Qwen non c'è più: Klein veloce è il modo rapido.
 
 Anche la scrittura dei testi (Migliora prompt, Foto → prompt, Idee, Estrai, Unisci foto, Come l'esempio) usa il **Qwen3-VL 4B** di Klein, con Klein e con Qwen: scrive a 46 token al secondo sulla RTX 4060,
-contro 3,3 dell'encoder 8B int8 e 0,55 dell'8B GGUF. «Migliora prompt + Crea» con Qwen passa da 186 a 134 secondi. In Opzioni puoi tornare all'encoder di Qwen. Klein non usa i LoRA: l'app li nasconde.
+contro 3,3 dell'encoder 8B int8 e 0,55 dell'8B GGUF. «Migliora prompt + Crea» con Qwen passa da 186 a 134 secondi. In Opzioni puoi tornare all'encoder di Qwen. I LoRA hanno due scaffali, uno per Qwen e uno per Klein: ognuno si vede solo col suo modello.
 
 ## Estrai
 
@@ -142,8 +148,7 @@ Klein ha i suoi file (versioni int8 o bf16, più l'encoder Qwen3-VL 4B e il VAE 
   **Riusa**, **Varia**, **Rifinisci 2K**, **Ingrandisci 2×/4×**. Le impostazioni stanno dentro ogni PNG: trascini
   un'immagine fatta con DaProd Image e torna con prompt, seed e LoRA.
 - **Ogni foto entra come PNG**: JPG, WEBP, AVIF, HEIC, TIFF, i RAW delle fotocamere, girata per il verso giusto.
-- **LoRA con un clic** (in Opzioni): trascini i `.safetensors` o incolli un link Hugging Face / Civitai, l'app controlla che
-  siano davvero per Qwen-Image 2.1, aggiunge le parole chiave al prompt.
+- **LoRA con un clic** (pagina LoRA): due schede, **Qwen** e **Flux (Klein 3)**. Trascini i `.safetensors` o incolli un link Hugging Face / Civitai, l'app guarda per quale modello sono fatti, li mette nello scaffale giusto e aggiunge le parole chiave al prompt.
 - **La barra in alto** dice sempre quanta RAM e VRAM stai usando e quanto lavora la scheda video.
 
 ## Requisiti

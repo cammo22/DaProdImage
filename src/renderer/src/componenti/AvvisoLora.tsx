@@ -38,10 +38,12 @@ export function AvvisoLora(p: { id: string; perche: string }): JSX.Element | nul
   const [voce, setVoce] = useState<StatoVoce | null>(null)
   const dl = usaScarichi((s) => s.dl)
   usaStato((s) => s.lore)
+  // sono LoRA di Qwen: con Klein non si accendono e non servono
+  const qwen = usaStato((s) => (s.imp?.famiglia || 'qwen') === 'qwen')
   useEffect(() => {
     void api.modelli.stato().then((l) => setVoce(l.find((x) => x.id === p.id) || null)).catch(() => undefined)
   }, [p.id, dl[voce?.nome ?? '']?.stato])
-  if (!voce || voce.presente) return null
+  if (!qwen || !voce || voce.presente) return null
   const d = dl[voce.nome]
   const va = d?.stato === 'in corso' || d?.stato === 'verifica'
   return (

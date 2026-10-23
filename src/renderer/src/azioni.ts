@@ -1,6 +1,7 @@
 // Le azioni che servono a più pagine: costruire le richieste, aprire una foto in Modifica, rifinire, variare.
 import { inQualitaPiena, modelloDaOpera, parametriModello, senzaTurbo, type IdModello } from '@shared/modelli'
-import type { Opera, Richiesta } from '@shared/tipi'
+import { vaBeneCon } from '@shared/loraBase'
+import type { Famiglia, LoraAttiva, Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
 import { passiDi, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
@@ -23,6 +24,15 @@ export const SISTEMA_MIGLIORA_MODIFICA =
 export const SISTEMA_DESCRIVI =
   'Describe this image as a prompt for a text-to-image model: one English paragraph of 100-150 words covering subject, details, setting, composition, lighting, colors, style and mood. Output only the paragraph.'
 
+/** i LoRA di una lista che vanno bene con quel modello: quelli dell'altro scaffale (Qwen con Klein o al contrario) restano fuori */
+export function loraDelModello(lista: LoraAttiva[] | undefined, famiglia: Famiglia): LoraAttiva[] {
+  const { lore } = usaStato.getState()
+  return (lista || []).filter((a) => {
+    const l = lore.find((x) => x.file === a.file)
+    return !!l && vaBeneCon(l, famiglia) !== 'no'
+  })
+}
+
 export function richiestaBase(): Richiesta {
   const { imp, loraAttive } = usaStato.getState()
   const d = imp?.predefiniti || { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }
@@ -41,10 +51,17 @@ export function richiestaBase(): Richiesta {
     altezza: 1024,
     megapixel: d.megapixel,
     immagini: [],
-    // i LoRA sono fatti per Qwen: con Klein non valgono
-    lora: famiglia === 'qwen' ? loraAttive.filter((l) => l.forza !== 0) : [],
+    // la pila del modello scelto: Qwen e Flux hanno ognuno la sua (`loraPile`), quindi qui ci sono solo LoRA fatti per questo modello
+    lora: loraAttive.filter((l) => l.forza !== 0),
     quante: 1
   }
+}
+
+/** i LoRA con cui rifinire o variare un'opera: quelli suoi che vanno col modello scelto; se non ce n'è, la pila accesa adesso */
+const loraDellOpera = (o: Opera): LoraAttiva[] => {
+  const b = richiestaBase()
+  const suoi = loraDelModello(o.lora, b.famiglia ?? 'qwen')
+  return suoi.length ? suoi : b.lora
 }
 
 /** passi per una qualità. Il Turbo di Qwen non c'è più (D1 del piano): una qualità «turbo» salvata vale «alta» e non accende il LoRA */
@@ -96,7 +113,7 @@ export function rifinisci(o: Opera, fattore?: number, forza?: number): Promise<v
       prompt: o.prompt,
       negativo: o.negativo,
       seed: o.seed,
-      lora: o.lora.length ? o.lora : richiestaBase().lora,
+      lora: loraDellOpera(o),
       immagini: [o.file],
       fattore: f,
       forza: forza ?? (bozza ? 0.55 : 0.35),
@@ -116,7 +133,7 @@ export function varia(o: Opera, forza = 0.6, quante = 2): Promise<void> {
       modalita: 'varia',
       prompt: o.prompt,
       negativo: o.negativo,
-      lora: o.lora.length ? o.lora : richiestaBase().lora,
+      lora: loraDellOpera(o),
       immagini: [o.file],
       forza,
       quante,
@@ -168,8 +185,8 @@ export function rifaiCon(o: Opera, id: IdModello): Promise<void> {
       immagini: [],
       trasparente: o.trasparente,
       ...parametriModello(id),
-      // i LoRA sono fatti per Qwen: con Klein Base non valgono
-      lora: stessaFamiglia ? [] : richiestaBase().lora,
+      // i LoRA dell'opera che vanno bene col modello nuovo (da Klein a Klein Base restano; da Klein a Qwen no)
+      lora: loraDelModello(o.lora, parametriModello(id).famiglia),
       origine: o.id,
       etichetta: stessaFamiglia ? 'Qualità piena' : 'Con Qwen'
     },
@@ -181,7 +198,7 @@ export function rifaiCon(o: Opera, id: IdModello): Promise<void> {
 export function riusa(o: Opera): void {
   const s = usaStato.getState()
   s.setCrea({ prompt: o.prompt, seed: o.seed, casuale: false, trasparente: !!o.trasparente })
-  if (o.lora?.length) s.setLoraAttive(o.lora.filter((l) => s.lore.some((x) => x.file === l.file)))
+  if (o.lora?.length) s.setLoraAttive(loraDelModello(o.lora, s.imp?.famiglia ?? 'qwen'))
   s.apriVisore(null)
   s.vai('crea')
   s.avvisa('Impostazioni rimesse in Crea (seed fisso)', 'ok')
@@ -192,18 +209,22 @@ const FILE_LORA: Record<Exclude<ChiaveLora, 'camera'>, string> = {
   vestiti: 'qwen-image-2.1-outfit-swap.safetensors'
 }
 
-/** il file del LoRA delle angolazioni (akhaliq, "Multiple Angles"), se è fra i LoRA */
+/** il file del LoRA delle angolazioni (akhaliq, "Multiple Angles"), se è fra i LoRA e va col modello scelto (è un LoRA di Qwen: con Klein no, e Camera va a parole) */
 export function fileLoraCamera(): string | undefined {
-  return usaStato.getState().lore.find((l) => /multiple-angles/i.test(l.fonte || '') || /multiple.?angles|(^|[-_.])mva([-_.]|$)/i.test(l.file))?.file
+  const { lore, imp } = usaStato.getState()
+  return lore.find((l) => (/multiple-angles/i.test(l.fonte || '') || /multiple.?angles|(^|[-_.])mva([-_.]|$)/i.test(l.file)) && vaBeneCon(l, imp?.famiglia ?? 'qwen') !== 'no')?.file
 }
 
-/** i LoRA che un'azione rapida accende da sola, se ci sono nella cartella (se no si va col modello da solo) */
+/** i LoRA che un'azione rapida accende da sola, se ci sono nella cartella e vanno col modello scelto (questi sono LoRA di Qwen:
+ *  con Klein non partono e si va col modello da solo, come quando mancano) */
 export function loraPer(chiavi: ChiaveLora[] | undefined): { file: string; forza: number }[] {
-  const { lore } = usaStato.getState()
+  const { lore, imp } = usaStato.getState()
+  const famiglia = imp?.famiglia ?? 'qwen'
   const out: { file: string; forza: number }[] = []
   for (const k of chiavi || []) {
     const file = k === 'camera' ? fileLoraCamera() : FILE_LORA[k]
-    if (file && lore.some((l) => l.file === file) && !out.some((o) => o.file === file)) out.push({ file, forza: k === 'camera' ? 0.9 : 1 })
+    const info = file ? lore.find((l) => l.file === file) : undefined
+    if (file && info && vaBeneCon(info, famiglia) !== 'no' && !out.some((o) => o.file === file)) out.push({ file, forza: k === 'camera' ? 0.9 : 1 })
   }
   return out
 }

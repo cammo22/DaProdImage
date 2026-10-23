@@ -7,10 +7,10 @@ import type { Famiglia } from '../../shared/tipi'
  *  - `testo:4b` / `testo:8b`: l'LLM che scrive (il Qwen3-VL 4B di Klein o l'8B di Qwen);
  *  - `cpu`: il traduttore dedicato, che sta sul processore;
  *  - `leggero`: l'ingranditore (pochi MB): non chiede spazio e non cambia quello che c'è. */
-export type Occupa = 'immagine:qwen' | 'immagine:klein' | 'immagine:klein-base' | 'immagine:klein4b' | 'testo:4b' | 'testo:8b' | 'cpu' | 'leggero'
+export type Occupa = 'immagine:qwen' | 'immagine:klein' | 'immagine:klein-base' | 'testo:4b' | 'testo:8b' | 'cpu' | 'leggero'
 
 /** la chiave di un lavoro che disegna */
-export const occupaImmagine = (fam: Famiglia): Occupa => (fam === 'klein' ? 'immagine:klein' : fam === 'klein4b' ? 'immagine:klein4b' : fam === 'klein-base' ? 'immagine:klein-base' : 'immagine:qwen')
+export const occupaImmagine = (fam: Famiglia): Occupa => (fam === 'klein' ? 'immagine:klein' : fam === 'klein-base' ? 'immagine:klein-base' : 'immagine:qwen')
 
 /** la chiave di un lavoro che scrive: col 4B di Klein (`encoderKlein`) o con l'8B di Qwen */
 export const occupaTesto = (encoderKlein?: boolean): Occupa => (encoderKlein ? 'testo:4b' : 'testo:8b')
@@ -40,8 +40,6 @@ export function faseScarico(prima: Occupa | null): string {
       return 'Scarico FLUX 3 Klein'
     case 'immagine:klein-base':
       return 'Scarico FLUX 3 Klein Base'
-    case 'immagine:klein4b':
-      return 'Scarico FLUX.2 Klein 4B'
     case 'testo:4b':
     case 'testo:8b':
       return 'Scarico l\'LLM'
