@@ -9,7 +9,7 @@
 
 # DaProd Image
 
-**Qwen-Image 2.1 e FLUX 3 Klein sul tuo PC. Scrivi, segna, fatto.**
+**Qwen-Image 2.1 e FLUX.2 Klein sul tuo PC. Scrivi, segna, fatto.**
 
 Crei immagini dal testo, anche **poster, infografiche, loghi e fumetti** con i testi scritti giusti.
 Modifichi le foto con una frase, o **solo la zona che segni col pennello**: il resto resta identico al pixel.
@@ -35,6 +35,16 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 <div align="center">
 <img src="risorse/crea.png" width="860" alt="Crea: il preset Foto a sinistra, i tre modelli in alto, la Vespa a Positano">
 </div>
+
+## Novità della 1.2.0: l'interfaccia Orbita
+
+- **Un solo Studio** con quattro modi: **Crea**, **Modifica**, **Box** e **Ricette**. I controlli stanno nel **pannello a sinistra**, il pulsante CREA è fisso in fondo e la risoluzione finale si legge sempre.
+- **28 stili** con anteprima, in quattro scaffali, e tessere con immagini per generi, luoghi, meteo, stagioni, costumi ed espressioni.
+- **Editor a box**: un riquadro per ogni cosa, con il suo prompt (regional prompting).
+- **Senza sfondo** (BiRefNet) ed **Estrai con SAM 2**: ritagli dai pixel della tua foto, senza ridisegnarla.
+- **LoRA multipli** in fila, con la forza di ciascuno, su Qwen e su Klein.
+- **FLUX.2 Klein 4B** (4 passi) come quarto modello: a caldo è circa il 15 % più veloce di Klein veloce a 8 passi (Crea 5,4 s contro 6,4 s sulla RTX 4060).
+- **Modelli uncensored** scaricabili solo se accendi l'interruttore in Opzioni e accetti l'avviso; ogni voce è marcata.
 
 ## Installare
 
