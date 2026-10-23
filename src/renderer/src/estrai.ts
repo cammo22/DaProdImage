@@ -267,3 +267,20 @@ ascoltatoriLavoro.push((uno) => {
     })
   } else if (uno.stato === 'errore' || uno.stato === 'annullato') attesiEstrai.delete(uno.id)
 })
+
+// ---------------------------------------------------------------------------------------------------------------
+// il ritaglio fedele (SAM 2): due clic, i pixel sono quelli della foto
+// ---------------------------------------------------------------------------------------------------------------
+/** ritaglia la cosa scelta dalla foto: nessuna ricreazione, il PNG ha lo sfondo trasparente (contratto engine §2.3: `modalita: 'segmenta'`) */
+export function richiestaRitaglio(foto: FotoBase, el: Elemento, ritaglia: boolean): Richiesta {
+  const nome = el.nome ? el.nome.split(/[,.;]/)[0].slice(0, 30) : el.tipo === 'persona' ? 'Persona' : 'Cosa'
+  return {
+    ...richiestaBase(),
+    modalita: 'segmenta',
+    prompt: '',
+    immagini: [foto.percorso],
+    segmenta: el.punto ? { punti: [{ x: el.punto.x, y: el.punto.y, positivo: true }], ritaglia } : { box: el.box, ritaglia },
+    quante: 1,
+    etichetta: `Estrai · ${nome} (ritaglio)`
+  }
+}

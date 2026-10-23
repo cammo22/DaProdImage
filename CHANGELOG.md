@@ -12,6 +12,18 @@ Il motore impara cose nuove (la versione dell'app non cambia qui: la alza chi pu
 - Correzioni: Klein 4B ha la sua chiave VRAM nella regola «una cosa alla volta»; le parole chiave dei LoRA entrano nel prompt anche con Klein.
 - Prove: `npm test` (modelli, catalogo, spazio, lora, regioni, adatta, grafi v2, grafi Qwen identici).
 
+## Non rilasciato — interfaccia v2 «Orbita»
+
+L'interfaccia nuova (spec in `docs/gui-v2-spec.md`) sopra l'engine v2, più gli asset grafici.
+
+- **Studio**: Crea e Modifica nella stessa schermata, pannello dei controlli a sinistra, pulsante CREA fisso in fondo, risoluzione finale sempre visibile (HUD).
+- **Crea a pulsanti** (tessere al posto dei menu a tendina) e **28 stili** con icona in 4 scaffali.
+- **Editor box** con un prompt per riquadro (va al motore come regioni), **Estrai in due clic** (SAM 2), opzione **senza sfondo**.
+- **Gestore LoRA**: pila con ordine e pesi. **Sei ricette** (Foglio, Mondi, Mix, Set, Formati, Rinnova) al posto del catalogo lungo.
+- **Modelli uncensored**: interruttore spento di serie, avviso da accettare, etichetta sulle voci.
+- **Asset** in `resources/gui` (111 WebP, con manifest: prompt, seed, modello). 60 sono scontornati per colore, da rifare con BiRefNet.
+- Non ancora provati con la GPU: qualità di SAM 2 e BiRefNet, riquadri dal vivo, LoRA su Klein.
+
 ## 1.1.0 — 2026-10-21
 
 Un'app più semplice da usare: tre modelli al posto delle «qualità», una sola scheda per scrivere cosa cambiare (tutta la foto o solo una zona), le ricette dentro Modifica e il testo scritto dal Qwen3-VL 4B anche con Qwen. Il motore passa a ComfyUI 0.42.3.

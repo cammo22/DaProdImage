@@ -16,7 +16,7 @@ import { apriInModifica, fotoDaOpera } from '../azioni'
 import { durata, stimaSecondi } from '../util'
 import {
   FORMATI_ESTRAI, INQUADRATURE, misuraEstrai, POSE_ESTRAI, SFONDI_ESTRAI, VISTE_OGGETTO, attesiEstrai, dimensioniEstrai, impostaEstrai, proporzioniEstrai, richiestaEstrai,
-  trovaElementi, usaEstrai, type Elemento
+  richiestaRitaglio, trovaElementi, usaEstrai, type Elemento
 } from '../estrai'
 
 const corto = (e: Elemento, i: number): string => (e.nome ? e.nome.split(/[,.;]/)[0].slice(0, 28) : e.tipo === 'persona' ? `Persona ${i + 1}` : `Oggetto ${i + 1}`)
@@ -63,7 +63,12 @@ function FotoElementi(p: { foto: FotoBase }): JSX.Element {
       // un clic sceglie la cosa più piccola lì sotto; cliccando ancora si passa a quella più grande che la contiene, e poi si toglie la scelta
       const l = sotto(punto(e))
       const i = l.findIndex((x) => x.id === scelto)
-      impostaEstrai({ scelto: !l.length ? null : i < 0 ? l[0].id : i + 1 < l.length ? l[i + 1].id : null })
+      if (!l.length) {
+        // un clic nel vuoto: SAM 2 trova la cosa da quel punto (un solo punto alla volta; si vede un segno attorno)
+        const q = punto(e)
+        const n: Elemento = { id: 'p-' + crypto.randomUUID().slice(0, 6), box: [Math.max(0, q.x - 0.05), Math.max(0, q.y - 0.05), Math.min(1, q.x + 0.05), Math.min(1, q.y + 0.05)], nome: '', tipo: 'oggetto', manuale: true, punto: q }
+        impostaEstrai({ elementi: [...usaEstrai.getState().elementi.filter((x) => !x.punto), n], scelto: n.id })
+      } else impostaEstrai({ scelto: i < 0 ? l[0].id : i + 1 < l.length ? l[i + 1].id : null })
     }
     setBozza(null)
   }
@@ -105,7 +110,7 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
       <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
         <div className="vuoto">
           <div className="grosso">ESTRAI <b>DA UNA FOTO</b></div>
-          <p>Dai una foto e premi <b className="oro">Trova persone e oggetti</b>: clicchi quello che vuoi e lo ottieni da solo, su sfondo pulito.</p>
+          <p>Dai una foto, <b className="oro">clicca la cosa che vuoi</b> e premi <b className="oro">Ritaglia</b>: la ottieni su sfondo trasparente, con i pixel della foto (due clic). Con «Trova persone e oggetti» il modello le riquadra per te.</p>
           <p className="piccolo">Una persona a figura intera (T-pose, A-pose, una posa disegnata), un busto o un volto; un oggetto intero, da davanti, di lato o dall'alto.</p>
           <div className="riga" style={{ justifyContent: 'center', marginTop: 14 }}>
             <button className="btn primario" onClick={p.daGalleria}><I.galleria /> Dalla galleria</button>
@@ -127,7 +132,7 @@ export function PalcoEstrai(p: { base: FotoBase | null; daGalleria: () => void; 
           {inAttesa > 0 && <span className="piccolo oro">{inCorso ? `si sta creando${percentuale(inCorso) !== null ? ` · ${percentuale(inCorso)}%` : ''}` : 'in coda'}{inAttesa > 1 ? ` · +${inAttesa - 1}` : ''}</span>}
         </div>
         {!ris.length && !inAttesa ? (
-          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Scegli una persona o un oggetto sulla foto e premi <b>Estrai</b>: compare qui, e finisce anche in Galleria.</div>
+          <div className="spento piccolo" style={{ padding: '10px 16px' }}>Clicca una cosa sulla foto e premi <b>Ritaglia</b> (o <b>Ricrea</b>): compare qui, e finisce anche in Galleria.</div>
         ) : (
           <div className="pers-ris-corpo">
             <div className="pers-grande">
@@ -167,6 +172,20 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
   const dim = dimensioniEstrai(m.mp, r)
   const fin = misuraEstrai(s.lato, dim)
   const persona = el?.tipo === 'persona'
+  const [stretto, setStretto] = useState(true)
+  const dalPunto = !!el?.punto
+  const trovati = s.elementi.filter((x) => !x.punto).length
+
+  /** il ritaglio fedele: i pixel sono quelli della foto, lo sfondo diventa trasparente (SAM 2) */
+  const ritaglio = async (): Promise<void> => {
+    if (!p.base || !el) return
+    try {
+      const [id] = await api.lavori.accoda(richiestaRitaglio(p.base, el, stretto))
+      attesiEstrai.set(id, { etichetta: `Ritaglio · ${corto(el, s.elementi.indexOf(el))}` })
+    } catch (e) {
+      avvisa((e as Error).message, 'errore')
+    }
+  }
 
   const estrai = async (): Promise<void> => {
     if (!p.base || !el) return
@@ -189,7 +208,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
     <div className="colonna destra">
       <div className="scorri">
         <div className="sezione">
-          <h3><span className="num-passo">1</span> Cosa estrarre <span className="dx">{s.elementi.length ? `${s.elementi.length} trovati` : ''}</span></h3>
+          <h3><span className="num-passo">1</span> Cosa estrarre <span className="dx">{trovati ? `${trovati} trovati` : ''}</span></h3>
           {el ? (
             <div className="est-scelta">
               <span className="ic">{persona ? <I.ritratto /> : <I.prodotto />}</span>
@@ -197,7 +216,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
               <button className="btn fantasma piccolo icona" title="Toglie questa scelta" onClick={() => impostaEstrai({ scelto: null })}><I.x /></button>
             </div>
           ) : (
-            <div className="piccolo spento">{s.cercando ? 'Il modello sta guardando la foto…' : !p.base ? 'Prima scegli una foto.' : s.elementi.length ? 'Clicca sulla foto la persona o l\'oggetto che vuoi (cliccando ancora nello stesso punto passi a quello più grande che lo contiene).' : 'Premi il pulsante: il modello trova le persone e gli oggetti nella foto. Puoi anche riquadrare a mano trascinando.'}</div>
+            <div className="piccolo spento">{s.cercando ? 'Il modello sta guardando la foto…' : !p.base ? 'Prima scegli una foto.' : s.elementi.length ? 'Clicca sulla foto la persona o l\'oggetto che vuoi (cliccando ancora nello stesso punto passi a quello più grande che lo contiene).' : 'Clicca sulla foto la cosa da ritagliare (SAM 2 la trova da solo), oppure premi il pulsante: il modello trova persone e oggetti. Puoi anche riquadrare a mano trascinando.'}</div>
           )}
           {el && (
             <div className="riga" style={{ gap: 8, marginTop: 8 }}>
@@ -208,12 +227,12 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
               </div>
             </div>
           )}
-          <button className={`btn ${s.elementi.length ? 'piccolo fantasma' : 'primario'}`} style={{ marginTop: 8, width: s.elementi.length ? undefined : '100%' }} disabled={!p.base || s.cercando} onClick={() => p.base && void trovaElementi(p.base)}>
-            <I.occhio /> {s.cercando ? 'Cerco…' : s.elementi.length ? 'Cerca di nuovo' : 'Trova persone e oggetti'}
+          <button className={`btn ${trovati ? 'piccolo fantasma' : 'primario'}`} style={{ marginTop: 8, width: trovati ? undefined : '100%' }} disabled={!p.base || s.cercando} onClick={() => p.base && void trovaElementi(p.base)}>
+            <I.occhio /> {s.cercando ? 'Cerco…' : trovati ? 'Cerca di nuovo' : 'Trova persone e oggetti'}
           </button>
         </div>
 
-        {el && (
+        {el && !dalPunto && (
           <div className="sezione">
             <h3><span className="num-passo">2</span> Come lo vuoi</h3>
             {persona ? (
@@ -252,7 +271,7 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
           </div>
         )}
 
-        <div className="sezione">
+        <div className="sezione" style={dalPunto ? { display: 'none' } : undefined}>
           <h3><span className="num-passo">{el ? 3 : 2}</span> Dimensioni e qualità</h3>
           <span className="piccolo tenue">Proporzioni</span>
           <div className="riga a-capo" style={{ gap: 6, marginTop: 4 }}>
@@ -283,10 +302,14 @@ export function ControlliEstrai(p: { base: FotoBase | null }): JSX.Element {
         </div>
       </div>
       <div className="sezione" style={{ borderTop: '1px solid #1d1636' }}>
-        <button className="btn primario grande" style={{ width: '100%' }} disabled={!p.base || !el} onClick={() => void estrai()}>
-          {persona ? <I.ritratto /> : <I.prodotto />} {el ? `Estrai ${persona ? 'la persona' : 'l\'oggetto'}` : 'Scegli cosa estrarre'}
+        <button className="btn primario grande" style={{ width: '100%' }} disabled={!p.base || !el} onClick={() => void ritaglio()} title="Taglia la cosa dalla foto con SAM 2: i pixel restano quelli della foto, lo sfondo diventa trasparente">
+          {persona ? <I.ritratto /> : <I.prodotto />} {el ? 'Ritaglia (fedele, sfondo trasparente)' : 'Clicca cosa ritagliare sulla foto'}
         </button>
-        <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6 }}>{fin.w} × {fin.h} px · ~{durata(stima)}</div>
+        <div style={{ marginTop: 8 }}><Interruttore acceso={stretto} cambia={setStretto}>Ritaglio stretto attorno alla cosa</Interruttore></div>
+        <button className="btn grande" style={{ width: '100%', marginTop: 8 }} disabled={!p.base || !el || dalPunto} onClick={() => void estrai()} title={dalPunto ? 'Per ricreare riquadra la cosa (trascina) o usa «Trova persone e oggetti»' : 'Ridisegna la cosa su sfondo pulito, con la posa e la vista che hai scelto'}>
+          <I.bacchetta /> {dalPunto ? 'Ricrea: riquadra la cosa' : `Ricrea ${persona ? 'la persona' : 'l\'oggetto'} in studio`}
+        </button>
+        <div className="piccolo spento" style={{ textAlign: 'center', marginTop: 6, display: dalPunto ? 'none' : undefined }}>{fin.w} × {fin.h} px · ~{durata(stima)}</div>
       </div>
     </div>
   )

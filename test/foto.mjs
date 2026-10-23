@@ -48,7 +48,7 @@ for (const [n, nome] of [['11-modifica', 'Modifica'], ['12-galleria', 'Galleria'
 }
 
 if (genera) {
-  await win.click('.rotaia button:has-text("Crea")')
+  await win.click('.strip-modi button[data-modo="crea"]')
   await win.fill('textarea', 'Una tazzina di caffè espresso su un tavolino di marmo in un bar di Napoli, mattina, luce morbida dalla vetrina, fotografia realistica, profondità di campo')
   await win.click('.segmenti button:has-text("Bozza")')
   await win.click('.formato:has-text("3:2")')
