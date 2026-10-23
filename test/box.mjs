@@ -49,7 +49,7 @@ await pg.locator('.box-scheda.sel button[data-id="tipo-oggetto"]').click()
 await pg.locator('.box-scheda .testa').first().click()
 await pg.locator('.box-scheda.sel textarea').fill('una ragazza con un cappotto rosso')
 await pg.locator('.box-scheda.sel button[data-id="tipo-persona"]').click()
-await pg.locator('.box-scheda.sel button[data-id="rigidita-blocca"]').click()
+prova('non propone un blocco dei pixel che il motore non supporta', (await pg.locator('[data-id="rigidita-blocca"]:enabled').count()) === 0)
 await pg.fill('.colonna.destra:visible textarea >> nth=0', 'al tramonto, colori caldi')
 await pg.screenshot({ path: `${out}/b1-box.png` })
 

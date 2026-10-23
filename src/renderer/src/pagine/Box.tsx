@@ -1,8 +1,8 @@
 // Box: l'editor regionale. Disegni dei riquadri sulla tela (stesso formato e stessa misura di Crea), ognuno con il suo testo,
-// il suo tipo, la sua foto di riferimento e quanto è rigido. Il motore riceve `box` + `promptScena`; intanto la descrizione a parole
-// (box.ts) finisce anche nel prompt, così il disegno conta con qualunque modello.
+// il suo tipo e il suo testo. Il motore riceve `box` + `promptScena` secondo docs/contratto-engine-gui.md.
+// Le regioni sono guide morbide: niente controlli di blocco o riferimenti che il motore ignorerebbe.
 import { useEffect, useMemo, useRef, useState, type JSX, type PointerEvent as PE } from 'react'
-import { usaStato, scegliFoto } from '../stato'
+import { usaStato } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
 import { Tessera, Tessere, E } from '../componenti/Tessere'
@@ -23,7 +23,7 @@ import { misuraCrea } from '../misura'
 import { promptCrea, sfondoRichiesto } from '../creaPrompt'
 import { stileDa } from '../stili'
 import { richiestaBase } from '../azioni'
-import { DISPOSIZIONI, MAX_BOX, RIGIDITA, TIPI_BOX, coloreBox, nuovaRegione, promptDaBox, rettDaPunti, trasforma, type Maniglia, type Rect } from '../box'
+import { DISPOSIZIONI, MAX_BOX, TIPI_BOX, coloreBox, fraseBox, nuovaRegione, promptDaBox, rettDaPunti, trasforma, type Maniglia, type Rect } from '../box'
 import type { BoxRegione, Opera } from '@shared/tipi'
 
 const MANIGLIE: Maniglia[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
@@ -187,10 +187,6 @@ export function Box(): JSX.Element {
     setBox({ regioni: nuove, selezionata: nuove[0]?.id ?? null })
   }
 
-  const daRif = async (r: BoxRegione): Promise<void> => {
-    const [f] = await scegliFoto(false)
-    if (f) cambia(r.id, { rif: f.percorso })
-  }
 
   // ---- il lancio ----
   async function componi(): Promise<void> {
@@ -201,12 +197,12 @@ export function Box(): JSX.Element {
       avvisa('Disegna almeno un riquadro (o scrivi la scena)', 'errore')
       return
     }
-    if (attive.some((r) => r.tipo !== 'sfondo' && !r.prompt.trim() && !r.rif)) {
-      avvisa('Ogni riquadro ha bisogno di un testo (o di una foto di riferimento)', 'errore')
+    if (attive.some((r) => r.tipo !== 'sfondo' && !r.prompt.trim())) {
+      avvisa('Ogni riquadro ha bisogno di un testo', 'errore')
       return
     }
     const m = misuraCrea(s.crea)
-    const pronti = promptDaBox(s.box.scena, s.box.regioni, nascosti)
+    const pronti = promptDaBox(s.box.scena, s.box.regioni.map((r) => ({ ...r, rif: undefined })), nascosti)
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
@@ -226,8 +222,9 @@ export function Box(): JSX.Element {
       immagini: pronti.immagini,
       trasparente: s.crea.sfondo === 'trasparente',
       sfondo: sfondoRichiesto(s.crea),
-      box: pronti.regioni,
-      promptScena: s.box.scena.trim() || undefined,
+      box: pronti.regioni.map((r) => ({ ...r, prompt: fraseBox(r), rigidita: 'guida' as const })),
+      // L'adattatore sostituisce prompt con promptScena: stile, sfondo e parole LoRA devono esserci anche qui.
+      promptScena: conParoleLora(promptCrea({ ...s.crea, prompt: s.box.scena.trim() || 'Compose the following scene' }, (s.imp?.famiglia || 'qwen') === 'qwen')),
       ...parametriModello(MODELLI[modelloDaImpostazioni(s.imp)].id),
       etichetta: `Box · ${pronti.regioni.length} ${pronti.regioni.length === 1 ? 'riquadro' : 'riquadri'}`
     }
@@ -349,20 +346,7 @@ export function Box(): JSX.Element {
                           senzaCestino
                           placeholder={r.tipo === 'testo' ? 'Il testo da scrivere (fra virgolette resta identico)' : r.tipo === 'sfondo' ? 'Com\'è lo sfondo' : r.tipo === 'persona' ? 'Chi è e cosa fa: «una ragazza con un cappotto rosso»' : 'Cos\'è: «un cane che dorme»'}
                         />
-                        <div className="riga" style={{ gap: 10, alignItems: 'flex-start' }}>
-                          {r.rif ? (
-                            <div className="rif" style={{ gridTemplateColumns: '64px', width: 64 }}>
-                              <div className="r"><img src={urlFile(r.rif)} alt="" /><button className="x" onClick={() => cambia(r.id, { rif: undefined })} title="Togli la foto"><I.x /></button></div>
-                            </div>
-                          ) : (
-                            <button type="button" className="tessera-o" style={{ width: 64, minHeight: 64 }} onClick={() => void daRif(r)} title="Una foto che diventa il riferimento di questo riquadro (persona, oggetto, vestito)"><span className="ic"><I.piu /></span><span className="nome">Foto</span></button>
-                          )}
-                          <div style={{ flex: 1 }}>
-                            <div className="rigidita">
-                              {RIGIDITA.map((g) => <Tessera key={g.id} id={`rigidita-${g.id}`} icona={E(g.id === 'guida' ? '◔' : g.id === 'decisa' ? '◑' : '●')} nome={g.nome} titolo={g.titolo} su={r.rigidita === g.id} onClick={() => cambia(r.id, { rigidita: g.id })} />)}
-                            </div>
-                          </div>
-                        </div>
+                        <p className="piccolo tenue">Il riquadro guida la composizione: non blocca i pixel. Per conservare i pixel fuori da una zona usa Modifica.</p>
                       </>
                     )}
                   </div>

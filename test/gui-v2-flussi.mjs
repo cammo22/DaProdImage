@@ -4,6 +4,23 @@ import { provaBrowser } from './browser-prova.mjs'
 const caso = process.argv[2] || 'controlli'
 await provaBrowser(async (pg) => {
   const pannello = pg.locator('.studio-corpo .colonna.destra:visible')
+  if (caso === 'box') {
+    await pg.click('[data-modo="box"]')
+    await pg.click('[data-disposizione="uno"]')
+    await pannello.locator('textarea').first().fill('una piazza al tramonto')
+    await pg.locator('.box-scheda.sel textarea').fill('CIAO MONDO')
+    await pg.click('[data-id="tipo-testo"]')
+    await pannello.locator('h3.chiudibile').filter({ hasText: 'Stile' }).click()
+    await pannello.locator('[data-id="stile-cyberpunk"]').click()
+    await pg.click('[data-azione="componi"]')
+    await pg.waitForFunction(() => !!window.__ultima)
+    const q = await pg.evaluate(() => window.__ultima)
+    assert.match(q.promptScena, /neon cityscape/i, 'stile conservato dopo adattaRichiesta')
+    assert.match(q.box[0].prompt, /text.*"CIAO MONDO"/, 'il tipo Testo arriva al motore con istruzioni letterali')
+    assert.equal(await pg.locator('[data-id="rigidita-blocca"]:enabled').count(), 0, 'nessun controllo blocca senza implementazione engine')
+    await pg.screenshot({ path: 'test/.out/v2-box-contratto.png' })
+    return
+  }
   await pg.click('[data-modo="modifica"]')
   if (caso === 'modello') {
     assert.equal(await pannello.locator('[data-id="modello-klein4b"]').count(), 1, 'Modifica deve permettere di cambiare modello')
