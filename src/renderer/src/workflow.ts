@@ -69,6 +69,7 @@ export interface Workflow {
 }
 
 export const CATEGORIE_WF: { id: string; nome: string; icona: string; testo: string }[] = [
+  { id: 'ricette', nome: 'Le sei ricette', icona: 'laboratorio', testo: 'Poche, potenti e unite: scegli una locandina' },
   { id: 'personaggio', nome: 'Personaggio', icona: 'ritratto', testo: 'Una foto, tutte le pose, le espressioni, le età' },
   { id: 'look', nome: 'Vestiti e look', icona: 'vestiti', testo: 'Armadio, acconciature, ruoli e costumi' },
   { id: 'camera', nome: 'Camera e angoli', icona: 'camera', testo: 'Giri attorno al soggetto, inquadrature, viste' },
@@ -84,6 +85,7 @@ export const CATEGORIE_WF: { id: string; nome: string; icona: string; testo: str
 
 export { WORKFLOW_BASE } from './ricetteBase'
 import { E, righe, WORKFLOW_BASE } from './ricetteBase'
+import { WORKFLOW_V2 } from './ricetteV2'
 
 /** il passo che nasce dal comando Camera di una ricetta (la posizione che hai scelto muovendo i cerchi) */
 export const VISTA_TUA = 'La tua vista'
@@ -139,10 +141,10 @@ export function inUtente(w: Workflow, id = 'u-' + crypto.randomUUID().slice(0, 8
 /** tutte le ricette che si vedono: quelle di serie (meno le nascoste) e le tue */
 export function elencoWorkflow(): Workflow[] {
   const { utente, nascoste } = usaRicette.getState()
-  return [...WORKFLOW_BASE.filter((w) => !nascoste.includes(w.id)), ...utente.map(daUtente)]
+  return [...WORKFLOW_V2.filter((w) => !nascoste.includes(w.id)), ...utente.map(daUtente)]
 }
 
-export const workflowDa = (id: string): Workflow | undefined => elencoWorkflow().find((w) => w.id === id) || WORKFLOW_BASE.find((w) => w.id === id)
+export const workflowDa = (id: string): Workflow | undefined => elencoWorkflow().find((w) => w.id === id) || WORKFLOW_V2.find((w) => w.id === id) || WORKFLOW_BASE.find((w) => w.id === id)
 
 /** il valore di partenza di ogni campo (gli esempi si scrivono da soli, si ritoccano) */
 export function valoriIniziali(w: Workflow): Record<string, string> {
@@ -278,7 +280,7 @@ async function richiestaPasso(run: Run, i: number, baseCorrente: FotoBase | null
     const d = dimensioniRis(passo.crea.formato, Math.round((passo.crea.ris || 1024) * Math.sqrt(run.opzioni.mp)))
     return {
       ...comune, modalita: 'crea', prompt, larghezza: d.w, altezza: d.h, megapixel: (d.w * d.h) / 1048576,
-      immagini, seed: wf.id === 'formati' ? run.seed : -1
+      immagini, seed: wf.id === 'formati' || wf.id === 'r-formati' ? run.seed : -1
     }
   }
   return {

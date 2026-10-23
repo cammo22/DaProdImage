@@ -11,6 +11,8 @@ export interface Elemento {
   nome: string
   tipo: TipoElemento
   manuale?: boolean
+  /** un clic sulla foto (frazioni 0–1): la cosa la trova SAM 2 da quel punto (il riquadro è solo un segno per l'occhio) */
+  punto?: { x: number; y: number }
 }
 
 const PAROLE_PERSONA = /\b(person|people|man|men|woman|women|boy|girl|child|children|kid|baby|toddler|guy|lady|human|player|dancer|bride|groom)\b/i

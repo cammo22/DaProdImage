@@ -1,35 +1,30 @@
 // Impostazioni: modelli, prestazioni, cartelle, motore.
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato, ricaricaImp } from '../stato'
-import { Lora } from './Lora'
 import { api, type FileModelli } from '../api'
 import { I } from '../componenti/Icone'
 import { Interruttore, Segmenti } from '../componenti/Controlli'
 import { byte } from '../util'
 import type { Download, Impostazioni as Imp, StatoVoce } from '@shared/tipi'
 import type { FileInutile } from '../api'
+import { LaboratorioUncensored } from '../componenti/LaboratorioUncensored'
 
 const GRUPPI_MODELLI: [StatoVoce['tipo'], string][] = [
   ['diffusione', 'Modello di diffusione (denoiser)'], ['encoder', 'Text encoder (l\'LLM)'], ['klein', 'FLUX 3 Klein · modelli'], ['klein-te', 'FLUX 3 Klein · text encoder'], ['klein-vae', 'FLUX 3 Klein · VAE'], ['traduttore', 'Traduttore'], ['vae', 'VAE'], ['upscaler', 'Ingrandimento'], ['anteprima', 'Anteprime dal vivo']
 ]
 
-/** Opzioni: due schede, le impostazioni di sempre e i LoRA (prima avevano una voce a sinistra, nella rotaia). */
+/** Opzioni: le impostazioni di sempre (i LoRA hanno la pagina loro, nella rotaia). */
 export function Impostazioni(): JSX.Element {
-  const scheda = usaStato((s) => s.schedaOpzioni)
   return (
     <div className="pagina opzioni-schede">
-      <div className="schede-opzioni">
-        <button className={scheda === 'generali' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'generali' })}>Impostazioni</button>
-        <button className={scheda === 'lora' ? 'su' : ''} onClick={() => usaStato.setState({ schedaOpzioni: 'lora' })}>LoRA</button>
-      </div>
-      <div className="corpo-opzioni">{scheda === 'lora' ? <Lora /> : <OpzioniGenerali />}</div>
+      <div className="corpo-opzioni"><OpzioniGenerali /></div>
     </div>
   )
 }
 
 function OpzioniGenerali(): JSX.Element {
   const { imp, motore, avvisa, agg } = usaStato()
-  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [] })
+  const [file, setFile] = useState<FileModelli>({ diffusione: [], encoder: [], vae: [], upscaler: [], klein: [], kleinTe: [], kleinVae: [], klein4b: [], klein4bTe: [] })
   const [catalogo, setCatalogo] = useState<StatoVoce[]>([])
   const [download, setDownload] = useState<Record<string, Download>>({})
   const [log, setLog] = useState<string[]>([])
@@ -110,6 +105,7 @@ function OpzioniGenerali(): JSX.Element {
   return (
     <div className="pagina">
       <div className="impostazioni">
+        <LaboratorioUncensored imp={imp} catalogo={catalogo} download={download} salva={salva} scarica={scarica} />
         <div className="gruppo">
           <h2 className="chiudibile" onClick={() => alterna('MODELLI IN USO')}>{chiusi['MODELLI IN USO'] ? '▸' : '▾'} MODELLI IN USO</h2>
           <div className="pannello" style={chiusi['MODELLI IN USO'] ? { display: 'none' } : undefined}>
@@ -136,7 +132,7 @@ function OpzioniGenerali(): JSX.Element {
           <h2 className="chiudibile" onClick={() => alterna('SCARICA ALTRI MODELLI')}>{chiusi['SCARICA ALTRI MODELLI'] ? '▸' : '▾'} SCARICA ALTRI MODELLI</h2>
           <div className="pannello" style={chiusi['SCARICA ALTRI MODELLI'] ? { display: 'none' } : undefined}>
             {GRUPPI_MODELLI.map(([tipo, titolo]) => {
-              const voci = catalogo.filter((v) => v.tipo === tipo)
+              const voci = catalogo.filter((v) => v.tipo === tipo && !v.uncensored)
               if (!voci.length) return null
               return (
                 <details key={tipo} className="tipo-modelli" open={tipo === 'traduttore'}>

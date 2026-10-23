@@ -1,10 +1,11 @@
 // I LoRA: i file stanno in models/loras, le note (nome, parole chiave, forza, anteprima) in lora.json.
 // Si importano trascinandoli, si scaricano da un link (Hugging Face, Civitai o diretto),
-// e dall'intestazione safetensors si capisce se sono per Qwen-Image 2.1.
+// e dall'intestazione safetensors si capisce per quale modello sono (Qwen-Image 2.1, FLUX 3 Klein, FLUX.2 Klein 4B: `shared/loraBase.ts`).
 import { shell } from 'electron'
 import { copyFileSync, existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, relative, resolve, sep } from 'node:path'
-import type { InfoLora } from '@shared/tipi'
+import type { Famiglia, InfoLora } from '@shared/tipi'
+import { analizzaChiavi } from '@shared/loraBase'
 import { DATI, assicura, scriviAtomico } from './percorsi'
 import { impostazioni } from './impostazioni'
 import { scarica } from './installa/scarica'
@@ -48,27 +49,15 @@ function intestazione(percorso: string): Record<string, unknown> | null {
 }
 
 /** Qwen-Image 2.1 è a flusso singolo (solo img_mlp); Qwen-Image 1.x ha txt_mlp/add_q_proj; SD/SDXL/Flux hanno altri nomi */
-function analizza(percorso: string): { compatibile: InfoLora['compatibile']; base?: string; parole?: string; nome?: string } {
+function analizza(percorso: string): { compatibile: InfoLora['compatibile']; base?: string; famiglie?: Famiglia[]; parole?: string; nome?: string } {
   const h = intestazione(percorso)
   if (!h) return { compatibile: '?' }
   const chiavi = Object.keys(h).filter((k) => k !== '__metadata__')
   const meta = (h.__metadata__ || {}) as Record<string, string>
-  const tutte = chiavi.join('\n')
-  let compatibile: InfoLora['compatibile'] = '?'
-  let base: string | undefined
-  if (/txt_mlp|add_q_proj|txt_mod|img_mod\./.test(tutte)) {
-    compatibile = 'no'
-    base = 'Qwen-Image 1.x'
-  } else if (/lora_unet_|down_blocks|input_blocks|lora_te/.test(tutte)) {
-    compatibile = 'no'
-    base = 'Stable Diffusion / SDXL'
-  } else if (/double_blocks|single_blocks/.test(tutte)) {
-    compatibile = 'no'
-    base = 'Flux'
-  } else if (/transformer_blocks\.\d+\.(attn\.to_q|img_mlp)/.test(tutte)) {
-    compatibile = 'si'
-    base = 'Qwen-Image 2.1'
-  }
+  const forme: Record<string, number[] | undefined> = {}
+  for (const k of chiavi) forme[k] = (h[k] as { shape?: number[] } | undefined)?.shape
+  const { compatibile, famiglie, base: baseRiconosciuta } = analizzaChiavi(chiavi, forme)
+  let base = baseRiconosciuta
   const archi = meta['modelspec.architecture'] || meta.ss_base_model_version || ''
   if (archi) base = base ? `${base} (${archi})` : archi
   let parole = meta['modelspec.trigger_phrase'] || ''
@@ -86,7 +75,7 @@ function analizza(percorso: string): { compatibile: InfoLora['compatibile']; bas
       /* niente */
     }
   }
-  return { compatibile, base, parole, nome: meta['modelspec.title'] || meta.ss_output_name }
+  return { compatibile, base, famiglie, parole, nome: meta['modelspec.title'] || meta.ss_output_name }
 }
 
 export function elencoLora(): InfoLora[] {
@@ -112,10 +101,10 @@ export function elencoLora(): InfoLora[] {
       // ComfyUI vuole il nome relativo alla cartella loras, con le barre di Windows
       const file = relative(c, p)
       let nota = n[file]
-      if (!nota || nota.compatibile === undefined) {
+      if (!nota || nota.compatibile === undefined || nota.famiglie === undefined) {
         const a = analizza(p)
         const delCatalogo = CATALOGO.find((x) => x.tipo === 'lora' && x.file === v)
-        nota = { nome: delCatalogo?.nome || a.nome || basename(v, extname(v)), parole: a.parole || '', forza: 1, aggiunta: st.mtimeMs, ...nota, compatibile: a.compatibile, base: a.base }
+        nota = { nome: delCatalogo?.nome || a.nome || basename(v, extname(v)), parole: a.parole || '', forza: 1, aggiunta: st.mtimeMs, ...nota, compatibile: a.compatibile, base: a.base, famiglie: a.famiglie }
         n[file] = nota
         cambiate = true
       }

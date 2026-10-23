@@ -1,0 +1,57 @@
+{
+ "repo": "facebook/sam2.1-hiera-small",
+ "revisione": "ee5bba1d82bb8749febdf90f45e84b687142ba03",
+ "file": [
+  {
+   "type": "file",
+   "path": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "type": "file",
+   "path": "README.md",
+   "size": 19974
+  },
+  {
+   "type": "file",
+   "path": "config.json",
+   "size": 5698
+  },
+  {
+   "type": "file",
+   "path": "model.safetensors",
+   "size": 184305280,
+   "lfs": {
+    "size": 184305280
+   }
+  },
+  {
+   "type": "file",
+   "path": "preprocessor_config.json",
+   "size": 683
+  },
+  {
+   "type": "file",
+   "path": "processor_config.json",
+   "size": 95
+  },
+  {
+   "type": "file",
+   "path": "sam2.1_hiera_s.yaml",
+   "size": 3761
+  },
+  {
+   "type": "file",
+   "path": "sam2.1_hiera_small.pt",
+   "size": 184416285,
+   "lfs": {
+    "size": 184416285
+   }
+  },
+  {
+   "type": "file",
+   "path": "video_preprocessor_config.json",
+   "size": 705
+  }
+ ]
+}

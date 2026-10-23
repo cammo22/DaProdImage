@@ -6,19 +6,19 @@ import { componiCamera, conLora } from './componenti/Camera'
 import { POSA_TUA, VISTA_TUA, leggiCamera, type Ctx, type Ingresso, type PassoWf, type Workflow } from './workflow'
 
 export const E = (etichetta: string, prompt: string, extra: Partial<PassoWf> = {}): PassoWf => ({ etichetta, prompt, ...extra })
-const FOTO = 'the photo <image1>'
+export const FOTO = 'the photo <image1>'
 /** il comando Camera dentro la ricetta: muovi i cerchi e ottieni il passo "La tua vista" */
-const CAMERA_TUA: Ingresso = { id: 'vista', tipo: 'camera', nome: 'Muovi la camera: una vista tua, oltre a quelle della ricetta' }
+export const CAMERA_TUA: Ingresso = { id: 'vista', tipo: 'camera', nome: 'Muovi la camera: una vista tua, oltre a quelle della ricetta' }
 /** il passo della camera scelta (se l'hai mossa); `intorno` è quello che resta uguale in ogni vista della ricetta */
-const vistaTua = (c: Ctx, intorno: string): PassoWf[] => {
+export const vistaTua = (c: Ctx, intorno: string): PassoWf[] => {
   const pos = leggiCamera(c.v.vista)
   const cam = pos && componiCamera(pos, c.camera)
   if (!pos || !cam) return []
   return [E(VISTA_TUA, `${cam} ${intorno}`, { lora: c.camera && conLora(pos) ? ['camera'] : [] })]
 }
 /** l'omino dentro la ricetta: lo muovi e ottieni il passo "La tua posa" (la posa è un'immagine in più, `{posa}` nel prompt) */
-const POSA_TUA_IN: Ingresso = { id: 'posa', tipo: 'posa', nome: 'Muovi l\'omino: una posa tua (anche mani e dita), oltre a quelle della ricetta' }
-const posaTua = (c: Ctx, intorno: string): PassoWf[] => {
+export const POSA_TUA_IN: Ingresso = { id: 'posa', tipo: 'posa', nome: 'Muovi l\'omino: una posa tua (anche mani e dita), oltre a quelle della ricetta' }
+export const posaTua = (c: Ctx, intorno: string): PassoWf[] => {
   const po = leggiPosa(c.v.posa)
   if (!po) return []
   // il manichino di posa è la prima immagine ({posa}), la foto del personaggio la seconda ({foto}): vedi richiestaPasso
@@ -38,7 +38,7 @@ export const righe = (s: string | undefined): string[] => (s || '').split('\n').
 // ---------------------------------------------------------------------------------------------------------------
 // i workflow fatti a mano
 // ---------------------------------------------------------------------------------------------------------------
-const POSE: [string, string][] = [
+export const POSE: [string, string][] = [
   ['In piedi', 'standing straight with arms crossed, confident'],
   ['Seduto', 'sitting on a chair, relaxed'],
   ['Cammina', 'walking forward, mid-step'],
@@ -49,11 +49,11 @@ const POSE: [string, string][] = [
   ['Guarda indietro', 'seen from behind, looking back over the shoulder'],
   ['Appoggiato', 'leaning casually against a wall']
 ]
-const ESPRESSIONI: [string, string][] = [
+export const ESPRESSIONI: [string, string][] = [
   ['Felice', 'a warm genuine smile'], ['Ride', 'laughing out loud'], ['Triste', 'a sad, teary look'], ['Arrabbiato', 'an angry frown'],
   ['Sorpreso', 'a surprised look with wide eyes and open mouth'], ['Spaventato', 'a frightened look'], ['Pensieroso', 'a thoughtful, pensive look'], ['Occhiolino', 'a playful wink']
 ]
-const ARMADIO: [string, string][] = [
+export const ARMADIO: [string, string][] = [
   ['Elegante', 'a tailored dark suit with a crisp white shirt'], ['Casual', 'jeans, a white t-shirt and sneakers'], ['Sportivo', 'a modern athletic tracksuit'],
   ['Invernale', 'a warm winter coat, scarf and wool hat'], ['Estate', 'light summer clothes: linen shirt and shorts'], ['Serata', 'an elegant evening outfit'],
   ['Business', 'a smart business outfit'], ['Halloween', 'a spooky Halloween costume']
@@ -72,15 +72,15 @@ const INQUADRATURE: [string, string][] = [
   ['Primo piano', 'Re-frame as a tight close-up on the face'], ['Mezzo busto', 'Re-frame as a medium shot from the waist up'], ['Figura intera', 'Re-frame as a full-body shot showing the whole figure'],
   ['Grandangolo', 'Re-shoot with a wide-angle lens showing a lot of the surroundings'], ['Dall\'alto', 'Re-shoot from a high angle looking down'], ['Dal basso', 'Re-shoot from a low angle looking up']
 ]
-const GIORNO: [string, string][] = [
+export const GIORNO: [string, string][] = [
   ['Alba', 'at dawn with soft pink and orange light on the horizon'], ['Mattino', 'in the bright clear morning'], ['Mezzogiorno', 'at noon under harsh overhead sun'],
   ['Tramonto', 'at sunset with a glowing golden-red sky'], ['Ora blu', 'at blue hour just after sunset, deep blue sky with warm lights'], ['Notte', 'at night with a dark sky and artificial lights']
 ]
-const STAGIONI: [string, string][] = [
+export const STAGIONI: [string, string][] = [
   ['Primavera', 'in spring: blooming flowers and fresh green leaves'], ['Estate', 'in summer: lush green, strong warm sunlight'],
   ['Autunno', 'in autumn: orange and red leaves, soft golden light'], ['Inverno', 'in winter: covered with snow, cold blue light']
 ]
-const METEO: [string, string][] = [
+export const METEO: [string, string][] = [
   ['Sole', 'on a perfect sunny day'], ['Nuvoloso', 'under a heavy overcast sky'], ['Pioggia', 'in steady rain with wet surfaces and reflections'],
   ['Neve', 'in falling snow'], ['Nebbia', 'in thick atmospheric fog'], ['Temporale', 'during a dramatic thunderstorm with dark clouds and lightning']
 ]
@@ -88,18 +88,18 @@ const LUCI: [string, string][] = [
   ['Studio morbido', 'soft professional studio lighting'], ['Rembrandt', 'Rembrandt lighting with a triangle of light on the cheek'], ['Controluce', 'strong backlight with a glowing rim light'],
   ['Neon', 'colorful magenta and cyan neon lights'], ['Candela', 'warm flickering candlelight in a dark room'], ['Drammatica', 'dramatic low-key lighting with deep shadows']
 ]
-const EPOCHE: [string, string][] = [
+export const EPOCHE: [string, string][] = [
   ['Anni \'20', 'the 1920s: art deco style, period clothes and cars, sepia tones'], ['Anni \'50', 'the 1950s: retro diner era, period clothes, pastel colors'],
   ['Anni \'80', 'the 1980s: neon, big hair, retro tech and film grain'], ['Medioevo', 'the Middle Ages: stone buildings, period clothes, torch light'],
   ['Antica Roma', 'ancient Rome: marble columns, togas, Mediterranean sun'], ['Western', 'the Wild West: dusty frontier town, cowboy clothes'],
   ['Steampunk', 'a steampunk world: brass gears, airships, Victorian clothes'], ['Futuro lontano', 'a far future: sleek technology, holograms, silver architecture']
 ]
-const MONDI: [string, string][] = [
+export const MONDI: [string, string][] = [
   ['Sott\'acqua', 'underwater with light rays, bubbles and coral'], ['Nello spazio', 'in outer space with planets and a nebula'], ['Deserto', 'in a vast desert with dunes at golden hour'],
   ['Giungla', 'in a dense tropical jungle with mist'], ['Cyberpunk', 'in a rainy cyberpunk city full of neon signs'], ['Post-apocalisse', 'in a ruined post-apocalyptic world overgrown with plants'],
   ['Nel ghiaccio', 'in a frozen arctic landscape with ice and aurora'], ['Fantasy', 'in an epic high-fantasy world with floating islands']
 ]
-const STILI: [string, string][] = [
+export const STILI: [string, string][] = [
   ['Anime', 'a high quality anime illustration'], ['Acquerello', 'a delicate watercolor painting'], ['Olio', 'a classical oil painting with visible brush strokes'],
   ['3D cartoon', 'a 3D animated movie render'], ['LEGO', 'a scene built of LEGO bricks and minifigures'], ['Creta', 'a stop-motion claymation scene made of modeling clay'],
   ['Pixel art', 'detailed 32-bit pixel art'], ['Matita', 'a detailed pencil sketch on paper'], ['Fumetto', 'a comic book illustration with bold ink and halftone shading'],
@@ -120,12 +120,12 @@ const PRODOTTO: [string, string][] = [
   ['Lifestyle', 'in a cozy lifestyle scene on a wooden table with warm morning light and props'], ['Marmo', 'on a white marble slab with soft reflections, luxury look'],
   ['In mano', 'held in a hand, natural light, shallow depth of field'], ['Flat lay', 'in a top-down flat lay with complementary props on a textured surface']
 ]
-const MOCKUP: [string, string][] = [
+export const MOCKUP: [string, string][] = [
   ['Maglietta', 'printed on the chest of a white cotton t-shirt, worn by a model, studio photo'], ['Tazza', 'printed on a white ceramic mug on a wooden table, soft light'],
   ['Borsa', 'printed on a natural canvas tote bag hanging on a hook'], ['Poster', 'as a framed poster on a bright living room wall'],
   ['Cartellone', 'on a large city billboard at dusk'], ['Custodia', 'printed on a phone case held in a hand']
 ]
-const FORMATI_SOCIAL: [string, string, number][] = [['1:1 Post', '1:1', 1080], ['4:5 Instagram', '4:5', 1080], ['9:16 Storia', '9:16', 1080], ['16:9 Video', '16:9', 1080], ['2:3 Pinterest', '2:3', 1080]]
+export const FORMATI_SOCIAL: [string, string, number][] = [['1:1 Post', '1:1', 1080], ['4:5 Instagram', '4:5', 1080], ['9:16 Storia', '9:16', 1080], ['16:9 Video', '16:9', 1080], ['2:3 Pinterest', '2:3', 1080]]
 const STILI_TESTO: [string, string][] = [
   ['Titolo in alto', 'as a huge bold sans-serif headline across the top'], ['Neon', 'as a glowing neon sign effect'], ['Lettere 3D', 'as big 3D chrome letters'],
   ['Calligrafia', 'in elegant hand-drawn brush calligraphy'], ['Giornale', 'as a newspaper headline'], ['Adesivo', 'as a cute handwritten sticker label']
@@ -351,18 +351,18 @@ export const WORKFLOW_BASE: Workflow[] = [
 
 
 // ---- sticker e icone di qualsiasi cosa (non solo persone)
-const STILI_STICKER: [string, string][] = [
+export const STILI_STICKER: [string, string][] = [
   ['Kawaii', 'a cute kawaii chibi style with big shiny eyes and soft pastel colors'], ['Fumetto', 'a bold cartoon style with thick black outlines and flat bright colors'],
   ['Vettoriale', 'a clean flat vector illustration with simple geometric shapes'], ['Acquerello', 'a delicate watercolor style with soft bleeding colors'],
   ['Pixel art', 'a detailed 32-bit pixel art style'], ['Creta 3D', 'a cute 3D clay render with soft lighting'],
   ['Retro anni \'70', 'a retro 1970s style with warm earthy colors and rounded shapes'], ['Neon', 'a glowing neon line style on dark colors']
 ]
-const AZIONI_STICKER: [string, string][] = [
+export const AZIONI_STICKER: [string, string][] = [
   ['Saluta', 'waving hello with a big smile'], ['Dorme', 'sleeping peacefully with little "z" bubbles'], ['Festeggia', 'celebrating with confetti and a party hat'],
   ['Corre', 'running fast with motion lines'], ['Mangia', 'happily eating a snack'], ['Cuore', 'holding a big red heart'],
   ['Occhiali da sole', 'wearing cool sunglasses, looking confident'], ['Arrabbiato', 'looking grumpy and angry with a little storm cloud']
 ]
-const E2 = (etichetta: string, prompt: string): PassoWf => E(etichetta, prompt, { crea: { formato: '1:1', ris: 1024 }, trasparente: true })
+export const E2 = (etichetta: string, prompt: string): PassoWf => E(etichetta, prompt, { crea: { formato: '1:1', ris: 1024 }, trasparente: true })
 WORKFLOW_BASE.push(
   {
     id: 'sticker-tutto', nome: 'Sticker di qualsiasi cosa', categoria: 'sticker', icona: 'sticker', modo: 'serie', foto: false, rif: 'si', rifNome: 'una foto di riferimento (facoltativa)',

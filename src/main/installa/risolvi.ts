@@ -1,11 +1,12 @@
-// I modelli di terzi (Turbo di AtomicChat, encoder GGUF) hanno nomi di file che non conosciamo in anticipo:
-// si chiede a Hugging Face l'elenco del repo e si sceglie il file giusto (Q4 / Q6 / Q8) con le espressioni del catalogo.
+// I modelli di terzi (Turbo di AtomicChat, encoder GGUF, Klein, segmentatori) hanno nomi di file che non conosciamo in anticipo:
+// si chiede a Hugging Face l'elenco del repo (alla revisione fissata nel catalogo, se c'è) e si sceglie il file giusto con le espressioni del catalogo.
 // La scelta si ricorda in `risolti.json`, così si sa cosa c'è sul disco anche senza rete.
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoceCatalogo } from '@shared/tipi'
 import { DATI, scriviAtomico } from '../percorsi'
 import { impostazioni } from '../impostazioni'
+import { TIPI_SAFETENSORS, scegli, tronco, type VoceHF } from './scegli'
 
 export interface FileRisolto {
   file: string
@@ -17,7 +18,7 @@ export interface FileRisolto {
 export interface Risolto extends FileRisolto {
   /** l'mmproj del Qwen3-VL (serve alla vista): sta nella stessa cartella, col nome che il nodo GGUF si aspetta */
   mmproj?: FileRisolto
-  /** gli altri file accanto (config e tokenizer del traduttore) */
+  /** gli altri file accanto (config e tokenizer del traduttore, config del segmentatore) */
   altri?: FileRisolto[]
 }
 
@@ -43,38 +44,18 @@ export function senzaQuant(nome: string): string {
   return base.replace(/[-_]?(?:ud-)?i?q[0-9]_[a-z0-9_-]{1,8}$/i, '')
 }
 
-interface VoceHF {
-  type: string
-  path: string
-  size?: number
-  lfs?: { oid?: string; size?: number }
-}
-
-const tronco = (p: string): string => p.split('/').pop() || p
-
-async function elenco(repo: string): Promise<VoceHF[]> {
+async function elenco(repo: string, revisione?: string): Promise<VoceHF[]> {
   const imp = impostazioni()
   const intestazioni: Record<string, string> = {}
   if (imp.tokenHF) intestazioni.Authorization = 'Bearer ' + imp.tokenHF
-  const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/main?recursive=true`, { headers: intestazioni })
+  const r = await fetch(`https://huggingface.co/api/models/${repo}/tree/${revisione || 'main'}?recursive=true`, { headers: intestazioni })
   if (!r.ok) throw new Error(`Hugging Face non risponde per ${repo} (${r.status})`)
   return ((await r.json()) as VoceHF[]).filter((f) => f.type === 'file')
 }
 
-function scegli(files: VoceHF[], cerca: string[], escludiMmproj: boolean, ext = /\.gguf$/i): VoceHF | undefined {
-  const candidati = files.filter((f) => ext.test(f.path) && (/mmproj/i.test(f.path) ? !escludiMmproj : escludiMmproj))
-  for (const re of cerca) {
-    const r = new RegExp(re, 'i')
-    // si prova col nome del file e poi col percorso intero (alcuni repo mettono il tipo nella cartella: int8/…)
-    const trovato = candidati.find((f) => r.test(tronco(f.path))) || candidati.find((f) => r.test(f.path))
-    if (trovato) return trovato
-  }
-  return undefined
-}
-
-const aFile = (repo: string, f: VoceHF, nome: string): FileRisolto => ({
+const aFile = (repo: string, f: VoceHF, nome: string, revisione?: string): FileRisolto => ({
   file: nome,
-  url: `https://huggingface.co/${repo}/resolve/main/${f.path}`,
+  url: `https://huggingface.co/${repo}/resolve/${revisione || 'main'}/${f.path}`,
   byte: f.lfs?.size ?? f.size ?? 0,
   sha256: f.lfs?.oid
 })
@@ -82,16 +63,16 @@ const aFile = (repo: string, f: VoceHF, nome: string): FileRisolto => ({
 /** sceglie i file di una voce del catalogo (con `repo`) e se li ricorda; serve la rete */
 export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
   if (!v.repo || !v.cerca) throw new Error(`${v.nome}: non è una voce da cercare`)
-  const files = await elenco(v.repo)
-  // i pesi sono un .gguf (denoiser, encoder) o, per il traduttore, un .safetensors / .bin
-  const pesi = v.tipo === 'traduttore' || v.tipo === 'klein' || v.tipo === 'klein-te' || v.tipo === 'klein-vae' ? /\.(safetensors|bin)$/i : /\.gguf$/i
+  const files = await elenco(v.repo, v.revisione)
+  // i pesi sono un .gguf (denoiser, encoder) o, per il traduttore, Klein, il segmentatore…, un .safetensors / .bin
+  const pesi = TIPI_SAFETENSORS.has(v.tipo) ? /\.(safetensors|bin)$/i : /\.gguf$/i
   const principale = scegli(files, v.cerca, true, pesi)
   if (!principale) {
     const elencoFile = files.filter((f) => pesi.test(f.path)).map((f) => f.path).slice(0, 40).join(', ')
     throw new Error(`Nel repo ${v.repo} non trovo il file giusto per «${v.nome}». File del repo: ${elencoFile || '(nessuno)'}`)
   }
   const nome = tronco(principale.path)
-  const r: Risolto = aFile(v.repo, principale, nome)
+  const r: Risolto = aFile(v.repo, principale, nome, v.revisione)
   if (v.cercaMmproj) {
     const m = scegli(await elenco(v.mmprojRepo || v.repo), v.cercaMmproj, false)
     if (!m) throw new Error(`Nel repo ${v.mmprojRepo || v.repo} non trovo l'mmproj (la parte che fa guardare le foto)`)
@@ -102,7 +83,7 @@ export async function risolviVoce(v: VoceCatalogo): Promise<Risolto> {
   if (v.accanto) {
     r.altri = v.accanto.flatMap((re) => {
       const f = files.find((x) => new RegExp(re, 'i').test(tronco(x.path)))
-      return f ? [aFile(v.repo!, f, tronco(f.path))] : []
+      return f ? [aFile(v.repo!, f, tronco(f.path), v.revisione)] : []
     })
   }
   ricorda(v.id, r)

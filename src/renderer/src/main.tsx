@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import './stile.css'
+import './orbita.css'
 import { App } from './App'
 import { Component, type ReactNode } from 'react'
 import { usaStato } from './stato'
