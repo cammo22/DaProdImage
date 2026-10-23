@@ -3,6 +3,7 @@ import { type JSX } from 'react'
 import { usaStato, type ModoModifica } from '../../stato'
 import { I } from '../../componenti/Icone'
 import { Tessera } from '../../componenti/Tessere'
+import { chiaveModoModifica } from '../../anteprime'
 
 const MODI: { id: ModoModifica; nome: string; icona: () => JSX.Element; titolo: string }[] = [
   { id: 'scrivi', nome: 'Scrivi', icona: I.modifica, titolo: 'Scrivi cosa cambiare: se segni una zona col pennello cambia solo lì, se no tutta la foto' },
@@ -15,7 +16,7 @@ export function SelettoreModo(): JSX.Element {
   return (
     <div className="modi-modifica" role="radiogroup" aria-label="Cosa fai con la foto">
       {MODI.map((x) => (
-        <Tessera key={x.id} id={`modo-${x.id}`} icona={<x.icona />} nome={x.nome} titolo={x.titolo} su={m.modo === x.id} onClick={() => setModifica({ modo: x.id })} />
+        <Tessera key={x.id} id={`modo-${x.id}`} icona={<x.icona />} asset={chiaveModoModifica(x.id)} nome={x.nome} titolo={x.titolo} su={m.modo === x.id} onClick={() => setModifica({ modo: x.id })} />
       ))}
     </div>
   )

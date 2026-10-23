@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type JSX } from 'react'
 import { usaStato } from '../stato'
 import { urlFile } from '../api'
 import { I } from './Icone'
+import { ImgAsset } from './Tessere'
+import { chiaveLora } from '../anteprime'
 import type { InfoLora } from '@shared/tipi'
 
 export function coloreDa(nome: string): string {
@@ -19,11 +21,14 @@ export const sigla = (nome: string): string => {
 }
 
 export function Copertina({ l, grande }: { l: InfoLora; grande?: boolean }): JSX.Element {
+  // senza anteprima: la copertina generica della famiglia (asset), e se non c'è la sigla colorata di prima
+  const generica = l.anteprima ? undefined : chiaveLora(l)
   return l.anteprima ? (
     <img src={urlFile(l.anteprima)} alt="" />
   ) : (
-    <div style={{ background: coloreDa(l.nome), width: '100%', height: '100%', display: 'grid', placeItems: 'center' }}>
-      <span className={grande ? 'sigla' : ''}>{sigla(l.nome)}</span>
+    <div style={{ background: coloreDa(l.nome), width: '100%', height: '100%', display: 'grid', placeItems: 'center', position: 'relative' }}>
+      <ImgAsset chiave={generica} stile={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <span className={grande ? 'sigla' : ''} style={generica ? { position: 'relative', textShadow: '0 2px 10px rgba(0,0,0,.7)' } : undefined}>{sigla(l.nome)}</span>
     </div>
   )
 }

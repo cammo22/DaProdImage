@@ -8,6 +8,7 @@ import { usaStato } from '../stato'
 import { I } from './Icone'
 import { Casella } from './Casella'
 import { Tessera, Tessere } from './Tessere'
+import { chiaveGenere, GENERI_TESSERA } from '../anteprime'
 import { PRESET, campiCon, componiPreset, presetDa } from '../preset'
 
 const icona = (nome: string): JSX.Element => {
@@ -16,7 +17,7 @@ const icona = (nome: string): JSX.Element => {
 }
 
 /** i generi che hanno la tessera, nell'ordine della spec */
-const GENERI = ['foto', 'ritratto', 'prodotto', 'poster', 'infografica', 'logo', 'social', 'miniatura', 'fumetto', 'invito', 'menu']
+const GENERI = GENERI_TESSERA
 
 /** sceglie un genere (o «Libero» con '') */
 export function scegliGenere(id: string, prima: (prompt: string) => void): void {
@@ -43,9 +44,9 @@ export function GrigliaGeneri({ prima }: { prima: (prompt: string) => void }): J
     <Tessere colonne={4}>
       {GENERI.map((id) => {
         const p = presetDa(id)!
-        return <Tessera key={id} id={`genere-${id}`} icona={icona(p.icona)} nome={p.nome === 'Post social' ? 'Social' : p.nome} titolo={`${p.nome}: ${p.descrizione}`} su={crea.preset === id} onClick={() => scegliGenere(id, prima)} />
+        return <Tessera key={id} id={`genere-${id}`} icona={icona(p.icona)} asset={chiaveGenere(id)} nome={p.nome === 'Post social' ? 'Social' : p.nome} titolo={`${p.nome}: ${p.descrizione}`} su={crea.preset === id} onClick={() => scegliGenere(id, prima)} />
       })}
-      <Tessera id="genere-libero" icona={icona('libero')} nome="Libero" titolo="Scrivi tu il prompt, senza genere" su={!crea.preset || nascosto} onClick={() => scegliGenere('', prima)} />
+      <Tessera id="genere-libero" icona={icona('libero')} asset={chiaveGenere('')} nome="Libero" titolo="Scrivi tu il prompt, senza genere" su={!crea.preset || nascosto} onClick={() => scegliGenere('', prima)} />
     </Tessere>
   )
 }

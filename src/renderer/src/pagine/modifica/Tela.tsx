@@ -4,6 +4,8 @@ import { type JSX, type RefObject } from 'react'
 import { usaStato, scegliFoto, type FotoBase } from '../../stato'
 import { api, urlFile } from '../../api'
 import { I } from '../../componenti/Icone'
+import { ImgAsset } from '../../componenti/Tessere'
+import { MASCOTTE } from '../../anteprime'
 import { Cursore } from '../../componenti/Controlli'
 import { TelaMaschera, type AnteprimaTela, type ComandiTela, type Strumento } from '../../componenti/TelaMaschera'
 import { Fusion } from '../../componenti/Fusion'
@@ -118,6 +120,7 @@ export function TelaModifica(p: Props): JSX.Element {
       {griglia || estraiMode ? null : !base ? (
         <div className="tela" style={{ display: 'grid', placeItems: 'center', cursor: 'default' }}>
           <div className="vuoto">
+            <ImgAsset chiave={MASCOTTE.vuoto} className="mascotte-vuoto" />
             <div className="grosso">MODIFICA UNA <b>FOTO</b></div>
             <p>Trascina qui una foto, incollala con <kbd>Ctrl</kbd>+<kbd>V</kbd>, o scegline una.</p>
             <p className="piccolo">Scrivi cosa cambiare, o scegli un'idea: cambia tutta la foto. Se prima segni col pennello una zona, cambia solo quella e il resto resta identico al pixel.</p>

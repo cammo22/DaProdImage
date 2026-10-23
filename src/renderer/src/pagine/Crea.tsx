@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { usaStato } from '../stato'
 import { api, urlFile } from '../api'
 import { I } from '../componenti/Icone'
+import { ImgAsset } from '../componenti/Tessere'
+import { MASCOTTE, SFONDI } from '../anteprime'
 import { AdattaFoto } from '../componenti/AdattaFoto'
 import { SezioneChiudibile } from '../componenti/Controlli'
 import { conParoleLora } from '../componenti/SceltaLora'
@@ -198,6 +200,8 @@ export function Crea(): JSX.Element {
             <VistaZoom src={urlFile(op.file)} scacchi={op.trasparente} />
           ) : (
             <div className="vuoto">
+              <ImgAsset chiave={SFONDI.eroe} className="hero-pianeta" />
+              <ImgAsset chiave={MASCOTTE.vuoto} className="mascotte-vuoto" />
               <div className="grosso">COSA COSTRUIAMO <b>OGGI?</b></div>
               <p>Scegli a sinistra un genere e uno stile, scrivi cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
               <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>

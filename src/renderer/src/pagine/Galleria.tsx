@@ -238,7 +238,7 @@ export function Galleria(): JSX.Element {
         </div>
         <div className="griglia" ref={griglia} onClick={(e) => { if (scelte.size && !(e.target as HTMLElement).closest('.tessera')) setScelte(new Set()) }}>
           {opere.length === 0 && (
-            <div className="vuoto" style={{ gridColumn: '1 / -1', margin: '80px auto' }}>
+            <div className="vuoto caldo" style={{ gridColumn: '1 / -1', margin: '80px auto' }}>
               <div className="grosso">LA GALLERIA È <b>VUOTA</b></div>
               <p>Tutto quello che crei o modifichi finisce qui (e nella cartella Immagini\DaProd Image).</p>
               <p className="piccolo">Trascina qui delle foto per portarle dentro (diventano PNG); i PNG fatti con DaProd Image tornano con le loro impostazioni.</p>

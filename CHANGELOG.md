@@ -22,6 +22,7 @@ L'interfaccia nuova (spec in `docs/gui-v2-spec.md`) sopra l'engine v2, più gli 
 - **Gestore LoRA**: pila con ordine e pesi. **Sei ricette** (Foglio, Mondi, Mix, Set, Formati, Rinnova) al posto del catalogo lungo.
 - **Modelli uncensored**: interruttore spento di serie, avviso da accettare, etichetta sulle voci.
 - **Asset** in `resources/gui` (111 WebP, con manifest: prompt, seed, modello). 60 sono scontornati per colore, da rifare con BiRefNet.
+- **Asset nelle tessere**: le 111 immagini ora si vedono. Anteprime degli stili (28), generi, categorie di Modifica, luoghi, meteo e stagioni, costumi, animali, espressioni, locandine delle ricette, copertine dei LoRA senza anteprima, modi dello Studio, mascotte e sfondi (nebulosa, pianeta, aurora). Passano da Vite (`src/renderer/src/asset.ts`) e finiscono nell'installer dentro `app.asar`. Se un file manca o non si carica la tessera resta con l'icona. Prove: `test/asset.mjs` (in `npm test`) e `test/asset-ui.mjs`.
 - Non ancora provati con la GPU: qualità di SAM 2 e BiRefNet, riquadri dal vivo, LoRA su Klein.
 
 ## 1.1.0 — 2026-10-21

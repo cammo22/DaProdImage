@@ -105,6 +105,7 @@ function OpzioniGenerali(): JSX.Element {
   return (
     <div className="pagina">
       <div className="impostazioni">
+        <div className="banner-aurora" aria-hidden />
         <LaboratorioUncensored imp={imp} catalogo={catalogo} download={download} salva={salva} scarica={scarica} />
         <div className="gruppo">
           <h2 className="chiudibile" onClick={() => alterna('MODELLI IN USO')}>{chiusi['MODELLI IN USO'] ? '▸' : '▾'} MODELLI IN USO</h2>
