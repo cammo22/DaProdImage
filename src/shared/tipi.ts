@@ -86,7 +86,7 @@ const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string
 }
 export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
   qwen: famiglia('qwen-base', 20, 50),
-  klein: famiglia('klein', 8, 16),
+  klein: famiglia('klein', 8, 24),
   'klein-base': famiglia('klein-base', 25, 64)
 }
 

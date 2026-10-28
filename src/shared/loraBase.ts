@@ -2,6 +2,7 @@
 //   Qwen-Image 2.1     transformer_blocks.N.attn.to_q / img_mlp (flusso singolo)
 //   Qwen-Image 1.x     txt_mlp, add_q_proj… (due flussi)
 //   FLUX 3 Klein       single_blocks.N.(qkv|q_proj|attn_out|mlp_in|mlp_out), content_mode_blocks, txt_mode_blocks (ComfyUI li mappa: comfy/lora.py, ramo Flux3)
+//                      e il formato Diffusers/SimpleTuner `transformer.mode_blocks…` (`formato: 'diffusers'`: si converte importandolo, `loraConverti.ts`)
 //   FLUX.1 / FLUX.2 (Klein 4B compreso, tolto dall'app nella 1.2.1) / SD / SDXL: non compatibili con nessuno dei modelli dell'app
 import type { Famiglia, GruppoLora, InfoLora } from './tipi'
 
@@ -10,15 +11,24 @@ export interface AnalisiLora {
   base?: string
   /** per quali famiglie dell'app è buono (vuoto = nessuna / non si capisce) */
   famiglie: Famiglia[]
+  /** 'diffusers' = nomi dei tensori alla Diffusers/SimpleTuner (`transformer.mode_blocks…`): ComfyUI non li conosce, l'app li converte quando li importa */
+  formato?: 'diffusers'
 }
 
 const SEP = '[._]'
 const blocco = (nome: string, resto: string): RegExp => new RegExp(`${nome}${SEP}\\d+${SEP}(?:${resto})`)
 
+/** un LoRA di FLUX 3 Klein salvato da Diffusers o SimpleTuner: `transformer.mode_blocks.image.N.attn.to_q`, `transformer.txt_mode_blocks`,
+ *  `transformer.single_transformer_blocks.N.ff.linear_in` (FLUX.2 ha invece `to_qkv_mlp_proj` nei blocchi singoli e `transformer_blocks`) */
+export const eKleinDiffusers = (tutte: string): boolean =>
+  /(?:^|\n)transformer\.(?:mode_blocks\.|txt_mode_blocks\.)/.test(tutte) ||
+  (/(?:^|\n)transformer\.single_transformer_blocks\.\d+\.(?:attn\.to_[qkv]\.|ff\.linear_(?:in|out)\.)/.test(tutte) && !/to_qkv_mlp_proj|transformer_blocks\.\d+\.ff_context/.test(tutte))
+
 /** `chiavi`: i nomi dei tensori; `forme`: (facoltativo, oggi non serve più: serviva a distinguere FLUX.2 4B da 9B) */
 export function analizzaChiavi(chiavi: string[], _forme?: Record<string, number[] | undefined>): AnalisiLora {
   const tutte = chiavi.join('\n')
   if (!chiavi.length) return { compatibile: '?', famiglie: [] }
+  if (eKleinDiffusers(tutte)) return { compatibile: 'si', base: 'FLUX 3 Klein (Diffusers)', famiglie: ['klein', 'klein-base'], formato: 'diffusers' }
   if (/txt_mlp|add_q_proj|txt_mod|img_mod\./.test(tutte) && !/double_blocks/.test(tutte)) return { compatibile: 'no', base: 'Qwen-Image 1.x', famiglie: [] }
   // FLUX 3 Klein: i blocchi «modali» sono solo suoi; `single_blocks` con qkv/attn_out/mlp_in/mlp_out pure (FLUX.1 e FLUX.2 usano linear1/linear2)
   if (/(content_mode_blocks|txt_mode_blocks)/.test(tutte) || blocco('single_blocks', 'qkv|q_proj|k_proj|v_proj|attn_out|mlp_in|mlp_out').test(tutte)) {
@@ -31,7 +41,7 @@ export function analizzaChiavi(chiavi: string[], _forme?: Record<string, number[
     return { compatibile: 'no', base: maxDoppio >= 0 && maxDoppio <= 4 ? 'FLUX.2' : 'FLUX.1 / FLUX.2 grande', famiglie: [] }
   }
   if (/lora_unet_|down_blocks|input_blocks|lora_te/.test(tutte)) return { compatibile: 'no', base: 'Stable Diffusion / SDXL', famiglie: [] }
-  if (/transformer_blocks\.\d+\.(attn\.to_q|img_mlp)/.test(tutte)) return { compatibile: 'si', base: 'Qwen-Image 2.1', famiglie: ['qwen'] }
+  if (/(?:^|[^a-z_])transformer_blocks\.\d+\.(attn\.to_q|img_mlp)/.test(tutte)) return { compatibile: 'si', base: 'Qwen-Image 2.1', famiglie: ['qwen'] }
   return { compatibile: '?', famiglie: [] }
 }
 

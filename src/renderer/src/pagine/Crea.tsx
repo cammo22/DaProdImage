@@ -202,7 +202,7 @@ export function Crea(): JSX.Element {
               <ImgAsset chiave={SFONDI.eroe} className="hero-pianeta" />
               <ImgAsset chiave={MASCOTTE.vuoto} className="mascotte-vuoto" />
               <div className="grosso">COSA COSTRUIAMO <b>OGGI?</b></div>
-              <p>Scegli a sinistra un genere e uno stile, scrivi cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
+              <p>Scrivi a sinistra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
               <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
               {recenti.length > 0 && (
                 <div className="recenti-crea">
@@ -259,16 +259,10 @@ export function Crea(): JSX.Element {
 
       <div className="colonna destra">
         <div className="scorri">
-          <div className="sezione">
-            <h3>Cosa <span className="dx">{preset ? preset.nome : 'libero'}</span></h3>
-            <GrigliaGeneri prima={setPrecedente} />
-            {preset && <div style={{ marginTop: 10 }}><CampiGenere /></div>}
-          </div>
-
-          {preset && preset.stili.length > 1 && (
+          {preset && (
             <div className="sezione">
-              <h3>Atmosfera</h3>
-              <AtmosferaGenere />
+              <h3>Genere <span className="dx">{preset.nome}</span></h3>
+              <CampiGenere />
             </div>
           )}
 
@@ -280,9 +274,9 @@ export function Crea(): JSX.Element {
             <Casella
               inputRef={prompt}
               valore={crea.prompt}
-              placeholder="Descrivi l'immagine, anche in italiano. Più dettagli dai (luce, stile, inquadratura), meglio è."
+              placeholder="Descrivi l'immagine, anche in italiano."
               cambia={(p) => setCrea({ prompt: p })}
-              minimo={preset ? 110 : 150}
+              minimo={preset ? 90 : 120}
               disabled={scrivendo}
             />
             <div className="riga a-capo" style={{ marginTop: 8 }}>
@@ -303,38 +297,39 @@ export function Crea(): JSX.Element {
             </div>
           </div>
 
-          <SezioneChiudibile id="crea-stile" titolo="Stile" destra={stileAttivo ? stileAttivo.nome : 'nessuno'}>
+          <div className="sezione">
+            <h3>Formato <span className="dx oro">{finale.w} × {finale.h} px</span></h3>
+            <SezFormato />
+            <h4 className="sotto">Misura <span className="dx">lato corto {Math.min(finale.w, finale.h)} px</span></h4>
+            <SezMisura />
+          </div>
+
+          <SezioneChiudibile id="crea-genere" titolo="Genere" aperta={false} destra={preset ? preset.nome : 'libero'}>
+            <GrigliaGeneri prima={setPrecedente} />
+            {preset && preset.stili.length > 1 && (
+              <>
+                <h4 className="sotto">Atmosfera</h4>
+                <AtmosferaGenere />
+              </>
+            )}
+          </SezioneChiudibile>
+
+          <SezioneChiudibile id="crea-stile" titolo="Stile" aperta={false} destra={stileAttivo ? stileAttivo.nome : 'nessuno'}>
             <ScaffaliStili valore={crea.stileId} scegli={(stileId) => setCrea({ stileId })} />
             {stileAttivo && <IntensitaStile valore={crea.intensita} cambia={(intensita) => setCrea({ intensita })} />}
           </SezioneChiudibile>
 
-          <div className="sezione">
-            <h3>Formato <span className="dx oro">{finale.w} × {finale.h} px</span></h3>
-            <SezFormato />
-          </div>
-
-          <div className="sezione">
-            <h3>Misura <span className="dx">lato corto {Math.min(finale.w, finale.h)} px</span></h3>
-            <SezMisura />
-          </div>
-
-          <div className="sezione">
-            <h3>Sfondo</h3>
+          <SezioneChiudibile id="crea-altro" titolo="Altro" aperta={false} destra={[crea.sfondo !== 'scena' && 'sfondo', crea.riferimenti.length > 0 && `${crea.riferimenti.length} foto`, quante > 1 && `${quante} immagini`].filter(Boolean).join(' · ') || 'sfondo, foto, quante'}>
+            <h4 className="sotto">Sfondo</h4>
             <SezSfondo />
-          </div>
-
-          <div className="sezione">
             <Riferimenti
               lista={crea.riferimenti}
               cambia={(riferimenti) => setCrea({ riferimenti })}
               inizio={1}
               inserisci={inserisci}
-              esempio={'Una persona, un vestito, un oggetto, uno stile: "una donna come <image1> su una spiaggia", "la giacca di <image1> addosso a un robot". Fino a 9 foto.'}
+              esempio={'Una persona, un vestito, un oggetto, uno stile: "una donna come <image1> su una spiaggia". Fino a 9 foto.'}
             />
-          </div>
-
-          <div className="sezione">
-            <h3>Quante <span className="dx">{quante > 1 ? `${quante} immagini, una dopo l'altra` : ''}</span></h3>
+            <h4 className="sotto">Quante <span className="dx">{quante > 1 ? `${quante}, una dopo l'altra` : ''}</span></h4>
             <SezQuante />
             {!crea.casuale && (
               <div className="riga" style={{ marginTop: 8 }}>
@@ -342,7 +337,7 @@ export function Crea(): JSX.Element {
                 <input type="number" value={crea.seed} onChange={(e) => setCrea({ seed: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 130 }} />
               </div>
             )}
-          </div>
+          </SezioneChiudibile>
 
           <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
             <SceltaLora />

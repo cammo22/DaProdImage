@@ -1,6 +1,6 @@
 // Modifica: le Idee come griglia di tessere con icona (nessun chip di testo). Le categorie sono tessere; aprendone una compaiono le sue azioni,
 // anch'esse tessere (un'icona e una parola, il nome lungo nel tooltip). Le scelte si sommano e il modello le mescola.
-// «Estrai» è la tessera grande in cima; la categoria Stili ha gli scaffali dei 28 stili con l'intensità; il comando Camera resta in Prospettiva.
+// (Estrai ed Espandi non sono più qui: stanno già nelle schede sopra la tela.) La categoria Stili ha gli scaffali dei 28 stili con l'intensità; il comando Camera resta in Prospettiva.
 import { type JSX } from 'react'
 import { usaStato } from '../../stato'
 import { I } from '../../componenti/Icone'
@@ -42,10 +42,6 @@ export function SchedaIdee({ griglia, zona, categorie, cat, setCategoria, idee, 
   return (
     <div className="sezione">
       <h3>Idee <span className="dx">sommale: il modello le mescola</span></h3>
-      <Tessere colonne={2} stile={{ marginBottom: 8 }}>
-        <Tessera id="cat-estrai" icona={<I.estrai />} asset={chiaveModoModifica('estrai')} nome="Estrai" sotto="persone e oggetti, un clic" titolo="Estrai una persona o un oggetto dalla foto: un clic sulla cosa, poi scegli l'uscita" onClick={() => setModifica({ modo: 'estrai' })} />
-        <Tessera id="cat-espandi" icona={<I.espandi />} asset={chiaveModoModifica('espandi')} nome="Espandi" sotto="allarga oltre i bordi" titolo="Allarga la foto oltre i bordi" onClick={() => setModifica({ modo: 'espandi' })} />
-      </Tessere>
       <Tessere colonne={3}>
         {categorie.map((c) => {
           const Ic = (I as Record<string, () => JSX.Element>)[c.icona] || I.crea

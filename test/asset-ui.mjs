@@ -33,7 +33,9 @@ const aspetta = async (sel, n) => {
   return caricate(sel)
 }
 
-// Crea: 11 generi + Libero con l'icona 3D; lo stato vuoto con la mascotte e il pianeta
+// Crea: 11 generi + Libero con l'icona 3D (dentro «Genere», chiuso di serie dalla 1.3); lo stato vuoto con la mascotte e il pianeta
+await pg.click('.studio-corpo h3.chiudibile:has-text("Genere"):visible')
+await pg.click('.studio-corpo h3.chiudibile:has-text("Stile"):visible')
 let c = await aspetta('.tessera-o .ic-img', 12)
 console.log('Crea, generi:', c)
 assert.ok(c.tot >= 12 && c.ok === c.tot, 'le 12 tessere dei generi hanno l\'immagine')
@@ -44,7 +46,7 @@ assert.equal(c.ok, 1, 'pianeta nello stato vuoto')
 assert.equal((await caricate('.strip-modi .ic-modo')).ok, 4, 'i 4 modi nella strip')
 await pg.screenshot({ path: `${out}/a1-crea.png` })
 
-// le anteprime degli stili in Crea (sezione Stile, aperta di serie): a tutta tessera
+// le anteprime degli stili in Crea (sezione Stile, aperta qui sopra): a tutta tessera
 c = await aspetta('.tessera-o.foto .pieno', 28)
 console.log('Crea, stili:', c)
 assert.equal(c.ok, 28, 'le 28 anteprime degli stili in Crea')
@@ -56,10 +58,11 @@ await pg.click('.strip-modi button[data-modo="modifica"]')
 await pg.click('.attrezzi button:has-text("Dal PC")')
 await pg.waitForTimeout(800)
 c = await aspetta('[data-id^="cat-"] .ic-img', 8)
-console.log('Modifica, categorie + estrai/espandi:', c)
-assert.ok(c.tot >= 10 && c.ok === c.tot, 'le 8 categorie e Estrai/Espandi hanno l\'immagine')
+console.log('Modifica, categorie:', c)
+assert.ok(c.tot >= 8 && c.ok === c.tot, 'le 8 categorie hanno l\'immagine')
 for (const [cat, prefisso, n] of [['persone', 'ctl-animale-', 5], ['persone', 'ctl-espressione-', 6], ['vestiti', 'ctl-costume-', 9], ['situazioni', 'ctl-luogo-', 10], ['situazioni', 'ctl-meteo-', 6], ['situazioni', 'ctl-stagione-', 4]]) {
-  await pg.click(`button[data-id="cat-${cat}"]`)
+  // dalla 1.3 una categoria si apre e si richiude con lo stesso clic: si clicca solo se non è già aperta
+  if (!(await pg.locator(`button[data-id="cat-${cat}"]`).first().evaluate((e) => e.classList.contains('su')))) await pg.click(`button[data-id="cat-${cat}"]`)
   await pg.waitForTimeout(400)
   const k = await aspetta(`[data-id^="${prefisso}"] .ic-img`, n)
   console.log(`  ${prefisso}`, k)
