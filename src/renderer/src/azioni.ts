@@ -3,7 +3,7 @@ import { inQualitaPiena, modelloDaOpera, parametriModello, senzaTurbo, type IdMo
 import { vaBeneCon } from '@shared/loraBase'
 import type { Famiglia, LoraAttiva, Opera, Richiesta } from '@shared/tipi'
 import { api } from './api'
-import { passiDi, usaStato, type FotoBase, type Qualita } from './stato'
+import { modelloCorrente, passiDi, usaStato, type FotoBase, type Qualita } from './stato'
 import { dimensioniRis } from './util'
 import type { ChiaveLora } from './rapide'
 
@@ -64,9 +64,9 @@ const loraDellOpera = (o: Opera): LoraAttiva[] => {
   return suoi.length ? suoi : b.lora
 }
 
-/** passi per una qualità. Il Turbo di Qwen non c'è più (D1 del piano): una qualità «turbo» salvata vale «alta» e non accende il LoRA */
+/** passi per una qualità. Con «Qwen veloce» sono i 4 del LoRA Lightning (e si accende il LoRA); una qualità «turbo» salvata prima della 1.1 vale «alta» */
 export function perQualita(q: Qualita): Pick<Richiesta, 'passi' | 'turbo'> & Partial<Pick<Richiesta, 'cfg' | 'sampler' | 'scheduler'>> {
-  return { passi: passiDi(senzaTurbo(q)), turbo: false }
+  return { passi: passiDi(senzaTurbo(q)), turbo: modelloCorrente() === 'qwen-veloce' }
 }
 
 /** la qualità per i lavori "di servizio" (rifinisci, varia) */
@@ -74,8 +74,18 @@ const qualitaServizio = (): Qualita => 'alta'
 
 export const fotoDaOpera = (o: Opera): FotoBase => ({ percorso: o.file, larghezza: o.larghezza, altezza: o.altezza, operaId: o.id, prompt: o.prompt })
 
-export function apriInModifica(f: FotoBase): void {
+/** Con Klein non c'è una pagina Modifica: la foto diventa la prima «Foto» di Crea (con `aggiungi`, si mette in fondo alle altre: foto trascinate sulla finestra) */
+const conKlein = (): boolean => (usaStato.getState().imp?.famiglia ?? 'qwen') !== 'qwen'
+
+export function apriInModifica(f: FotoBase, aggiungi = false): void {
   const s = usaStato.getState()
+  if (conKlein()) {
+    const altre = s.crea.riferimenti.filter((x) => x.percorso !== f.percorso)
+    s.setCrea({ riferimenti: (aggiungi ? [...altre, f] : [f, ...(s.crea.misuraLibera ? altre : [])]).slice(0, 10), misuraLibera: false })
+    s.apriVisore(null)
+    s.vai('crea')
+    return
+  }
   s.setModifica({ base: f, versioni: [f] })
   s.apriVisore(null)
   s.vai('modifica')
@@ -83,6 +93,7 @@ export function apriInModifica(f: FotoBase): void {
 
 /** apre la foto in Modifica direttamente sul modo Estrai (persone e oggetti) */
 export function apriInEstrai(f: FotoBase): void {
+  if (conKlein()) return apriInModifica(f)
   const s = usaStato.getState()
   s.setModifica({ base: f, versioni: [f], modo: 'estrai' })
   s.apriVisore(null)

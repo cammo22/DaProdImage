@@ -36,6 +36,8 @@ export interface FileModelli {
   klein: string[]
   kleinTe: string[]
   kleinVae: string[]
+  /** il LoRA Lightning (Qwen veloce) è nella cartella dei LoRA */
+  lightning?: boolean
 }
 export interface ModelloTrovato {
   percorso: string

@@ -18,6 +18,7 @@ import { Hud } from '../componenti/Hud'
 import { SceltaLora } from '../componenti/SceltaLora'
 import { Riferimenti } from '../componenti/Riferimenti'
 import { Casella } from '../componenti/Casella'
+import { InterruttoreLLM } from '../componenti/InterruttoreLLM'
 import { durata, normalizza, stimaSecondi, FORMATI } from '../util'
 import { SISTEMA_DESCRIVI, SISTEMA_IDEA, SISTEMA_MIGLIORA, apriInEstrai, apriInModifica, fotoDaOpera, richiestaBase, rifaiCon, rifacibileIn, rifinisci, riusa, varia, ingrandisci } from '../azioni'
 import { presetDa } from '../preset'
@@ -56,6 +57,11 @@ export function Crea(): JSX.Element {
   const preset = presetDa(crea.preset)
   const stima = stimaSecondi(imp?.tempi, (lav.w * lav.h) / 1048576, passi) * quante
   const qwen = (imp?.famiglia || 'qwen') === 'qwen'
+  // Klein ha un'interfaccia più semplice: niente generi, stili, box e ricette. Una sola pagina: scrivi, e se vuoi aggiungi foto
+  // (la prima è quella che cambia, le altre sono riferimenti). Senza foto disegna da zero.
+  const klein = !qwen
+  const conFoto = klein && crea.riferimenti.length > 0
+  const comeLaFoto = conFoto && !crea.misuraLibera
 
   // i lavori di questa pagina (creati, rifiniti, variati)
   const miei = useMemo(() => lavori.filter((l) => ['crea', 'rifinisci', 'varia'].includes(l.richiesta.modalita)), [lavori])
@@ -86,6 +92,9 @@ export function Crea(): JSX.Element {
       avvisa('Scrivi prima cosa vuoi vedere', 'errore')
       return
     }
+    // Klein con foto, misura «come la foto 1»: è una modifica (esce grande come la prima foto, a ~1 MP al massimo)
+    const prima = crea.riferimenti[0]
+    const mpFoto = prima ? Math.round(Math.max(0.3, Math.min(1, (prima.larghezza * prima.altezza) / 1048576)) * 100) / 100 : 1
     const q = {
       ...richiestaBase(),
       modalita: 'crea' as const,
@@ -108,6 +117,7 @@ export function Crea(): JSX.Element {
       trasparente: crea.sfondo === 'trasparente',
       sfondo: sfondoRichiesto(crea),
       ...parametriModello(modello.id),
+      ...(comeLaFoto && prima ? { modalita: 'modifica' as const, megapixel: mpFoto, larghezza: prima.larghezza, altezza: prima.altezza, uscita: undefined } : {}),
       etichetta: preset ? preset.nome : stileDa(crea.stileId)?.nome
     }
     await api.lavori.accoda(q)
@@ -202,8 +212,17 @@ export function Crea(): JSX.Element {
               <ImgAsset chiave={SFONDI.eroe} className="hero-pianeta" />
               <ImgAsset chiave={MASCOTTE.vuoto} className="mascotte-vuoto" />
               <div className="grosso">COSA COSTRUIAMO <b>OGGI?</b></div>
-              <p>Scrivi a sinistra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
-              <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
+              {klein ? (
+                <>
+                  <p>Scrivi a destra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
+                  <p>Per cambiare una foto, o unire persone e cose di più foto, aggiungile sotto il testo: Klein fa tutto da solo.</p>
+                </>
+              ) : (
+                <>
+                  <p>Scrivi a sinistra cosa vuoi vedere e premi <b className="oro">Crea</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>).</p>
+                  <p>Puoi accodare quante immagini vuoi: partono una dopo l'altra.</p>
+                </>
+              )}
               {recenti.length > 0 && (
                 <div className="recenti-crea">
                   <span className="piccolo tenue">Riparti da una delle ultime (rimette prompt e impostazioni)</span>
@@ -218,15 +237,16 @@ export function Crea(): JSX.Element {
               )}
             </div>
           )}
-          <HudCrea />
+          {/* con foto «come la foto 1» la misura la decide la foto: il riquadro con 1024 × 1024 non direbbe il vero */}
+          {!comeLaFoto && <HudCrea />}
         </div>
         {op && !mostraInCorso && (
           <div className="azioni-risultato">
-            <button className="btn" onClick={() => apriInModifica(fotoDaOpera(op))}><I.modifica /> Modifica</button>
-            <button className="btn" onClick={() => apriInEstrai(fotoDaOpera(op))} title="Estrai una persona o un oggetto da questa immagine"><I.estrai /> Estrai</button>
+            <button className="btn" onClick={() => apriInModifica(fotoDaOpera(op))} title={klein ? 'Usa questa immagine come foto da cambiare: scrivi cosa vuoi cambiare' : undefined}><I.modifica /> {klein ? 'Cambia' : 'Modifica'}</button>
+            {!klein && <button className="btn" onClick={() => apriInEstrai(fotoDaOpera(op))} title="Estrai una persona o un oggetto da questa immagine"><I.estrai /> Estrai</button>}
             <button className="btn" onClick={() => varia(op)} title="Due variazioni che tengono la composizione"><I.varia /> Varia</button>
             {rifacibileIn(op).includes('klein-base') && <button className="btn primario" onClick={() => void rifaiCon(op, 'klein-base')} title="Rifà questa foto con Klein Base (50 passi, CFG 3,5): stesso prompt e stesso seed, la stessa famiglia di modelli"><I.crea /> Rifai in qualità piena</button>}
-            {rifacibileIn(op).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(op, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (40 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
+            {rifacibileIn(op).includes('qwen-base') && <button className="btn" onClick={() => void rifaiCon(op, 'qwen-base')} title="Rifà il prompt con Qwen-Image 2.1 (25 passi, coi LoRA): è un altro modello, non esce la stessa immagine"><I.crea /> Rifai con Qwen</button>}
             <button className="btn" onClick={() => rifinisci(op)} title="Ingrandisce fino al 2K e ridisegna i dettagli"><I.ingrandisci /> Rifinisci 2K</button>
             <button className="btn" onClick={() => ingrandisci(op, 2)} title="Ingrandimento veloce 2× (4x-UltraSharp)"><I.ingrandisci /> 2×</button>
             <button className="btn" onClick={() => riusa(op)} title="Rimette prompt e seed"><I.ricicla /> Riusa</button>
@@ -237,6 +257,12 @@ export function Crea(): JSX.Element {
             <button className="btn icona" onClick={() => api.galleria.mostra(op.id)} title="Mostra nella cartella"><I.cartella /></button>
             <span className="piccolo spento" style={{ alignSelf: 'center' }}>{op.larghezza}×{op.altezza} · seed {op.seed} · {durata(op.durata)}</span>
           </div>
+        )}
+        {op && !mostraInCorso && op.promptInglese && (
+          <details className="llm-scritto">
+            <summary>Quello che ha visto il modello (in inglese, scritto dall&apos;LLM o tradotto)</summary>
+            <p>{op.promptInglese}</p>
+          </details>
         )}
         <div className="striscia">
           {miei.filter((l) => l.stato === 'in corso' || l.stato === 'in coda').map((l) => (
@@ -259,6 +285,8 @@ export function Crea(): JSX.Element {
 
       <div className="colonna destra">
         <div className="scorri">
+          {!klein && (
+            <>
           {preset && (
             <div className="sezione">
               <h3>Genere <span className="dx">{preset.nome}</span></h3>
@@ -295,6 +323,7 @@ export function Crea(): JSX.Element {
                 </button>
               )}
             </div>
+            <InterruttoreLLM />
           </div>
 
           <div className="sezione">
@@ -342,6 +371,73 @@ export function Crea(): JSX.Element {
           <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
             <SceltaLora />
           </SezioneChiudibile>
+            </>
+          )}
+
+          {klein && (
+            <>
+              <div className="sezione">
+                <h3>
+                  {conFoto ? 'Cosa cambio?' : 'Cosa vuoi vedere'}
+                  <span className="dx">{crea.prompt.length > 0 && `${crea.prompt.length} car.`}</span>
+                </h3>
+                <Casella
+                  inputRef={prompt}
+                  valore={crea.prompt}
+                  placeholder={conFoto ? 'Es.: metti la persona della foto 2 al posto di quella della foto 1' : "Descrivi l'immagine, anche in italiano."}
+                  cambia={(p) => setCrea({ prompt: p })}
+                  minimo={110}
+                  disabled={scrivendo}
+                />
+                <InterruttoreLLM />
+              </div>
+
+              <div className="sezione">
+                <Riferimenti
+                  titolo="Foto"
+                  lista={crea.riferimenti}
+                  cambia={(riferimenti) => setCrea({ riferimenti })}
+                  inizio={1}
+                  max={10}
+                  inserisci={inserisci}
+                  esempio="Aggiungi una foto per cambiarla; due o più per unire persone, vestiti e oggetti. La prima è quella che cambia, le altre sono riferimenti."
+                />
+              </div>
+
+              {comeLaFoto ? (
+                <div className="sezione">
+                  <h3>Misura <span className="dx oro">come la foto 1</span></h3>
+                  <div className="riga a-capo">
+                    <span className="piccolo tenue">Esce grande come la prima foto.</span>
+                    <button className="btn piccolo fantasma" onClick={() => setCrea({ misuraLibera: true })}>Scelgo io</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="sezione">
+                  <h3>Formato <span className="dx oro">{finale.w} × {finale.h} px</span></h3>
+                  <SezFormato />
+                  <h4 className="sotto">Misura <span className="dx">lato corto {Math.min(finale.w, finale.h)} px</span></h4>
+                  <SezMisura />
+                  {conFoto && <button className="btn piccolo fantasma" style={{ marginTop: 8 }} onClick={() => setCrea({ misuraLibera: false })}>Come la foto 1</button>}
+                </div>
+              )}
+
+              <SezioneChiudibile id="crea-altro-klein" titolo="Altro" aperta={false} destra={quante > 1 ? `${quante} immagini` : 'quante, seed'}>
+                <h4 className="sotto">Quante <span className="dx">{quante > 1 ? `${quante}, una dopo l'altra` : ''}</span></h4>
+                <SezQuante />
+                {!crea.casuale && (
+                  <div className="riga" style={{ marginTop: 8 }}>
+                    <span className="piccolo tenue">Seed</span>
+                    <input type="number" value={crea.seed} onChange={(e) => setCrea({ seed: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 130 }} />
+                  </div>
+                )}
+              </SezioneChiudibile>
+
+              <SezioneChiudibile id="crea-lora" titolo="LoRA" aperta={false} destra={nLora ? `${nLora} accesi` : 'nessuno'}>
+                <SceltaLora />
+              </SezioneChiudibile>
+            </>
+          )}
         </div>
 
         <div className="sezione azione-prima" style={{ borderTop: '1px solid var(--bordo-vetro)' }}>
@@ -353,7 +449,7 @@ export function Crea(): JSX.Element {
               {crea.riferimenti.length > 0 && <button type="button" title={`${crea.riferimenti.length} foto di riferimento`} onClick={() => setCrea({ riferimenti: [] })}><I.immagine /></button>}
               {nLora > 0 && <button type="button" title={`${nLora} LoRA accesi`} onClick={() => usaStato.getState().vai('lora')}><I.pila /></button>}
             </div>
-            <Hud corto d={{ w: finale.w, h: finale.h, rapporto: mis.rapporto, mp: mis.mp, stato: mis.stato, nota: mis.nota }} />
+            {!comeLaFoto && <Hud corto d={{ w: finale.w, h: finale.h, rapporto: mis.rapporto, mp: mis.mp, stato: mis.stato, nota: mis.nota }} />}
           </div>
           <button className="btn primario grande aurora" style={{ width: '100%' }} onClick={vai}>
             <I.crea /> {quante > 1 ? `CREA ${quante} IMMAGINI` : 'CREA'}

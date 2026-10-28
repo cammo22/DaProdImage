@@ -26,14 +26,15 @@
   const asc = {}
   const su = new Proxy({}, { get: (_, k) => (f) => { (asc[k] ||= []).push(f); return () => {} } })
   const emetti = (k, ...a) => (asc[k] || []).forEach((f) => f(...a))
-  const imp = { cartellaModelli: 'C:\\m', cartellaGalleria: 'C:\\g', modello: 'qwen-image-2.1-UC-Q4_K_M.gguf', famiglia: 'qwen', modelloScelto: 'qwen-base', encoder: 'qwen3vl_8b_int8_convrot.safetensors', vae: 'texture_fix.safetensors', upscaler: '4x-UltraSharp.pth', porta: 8818, cacheKV: 'auto', cacheTipo: 'default', encoderSuCpu: false, anteprimaLive: true, riservaVram: 0, argomentiExtra: '', predefiniti: { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }, installato: true, tokenCivitai: '', tokenHF: '', tempi: { '1.00': 3.1 }, loraTurbo: 'turbo8_lora_step2500.safetensors', memoria: 'auto', vramMB: 6144, veloce: false }
+  const imp = { cartellaModelli: 'C:\\m', cartellaGalleria: 'C:\\g', modello: 'qwen-image-2.1-UC-Q4_K_M.gguf', famiglia: 'qwen', modelloScelto: 'qwen-base', encoder: 'qwen3vl_8b_int8_convrot.safetensors', vae: 'texture_fix.safetensors', upscaler: '4x-UltraSharp.pth', porta: 8818, cacheKV: 'auto', cacheTipo: 'int4', encoderSuCpu: false, anteprimaLive: true, riservaVram: 0, argomentiExtra: '', predefiniti: { passi: 25, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 }, installato: true, tokenCivitai: '', tokenHF: '', tempi: { '1.00': 3.1 }, loraTurbo: 'qwen-image-2.1-lightning-4step.safetensors', potenziaKlein: true, potenziaQwen: false, memoria: 'auto', vramMB: 6144, veloce: false }
   let n = 0
   const v = (x) => async () => x
   window.daprod = {
-    impostazioni: { leggi: v(imp), salva: async (m) => Object.assign(imp, m) },
+    // leggi() dà una copia: con lo stesso oggetto lo store non si accorge del cambio (come nel vero main, che ogni volta manda JSON nuovo)
+    impostazioni: { leggi: async () => ({ ...imp }), salva: async (m) => Object.assign(imp, m, m.modelloScelto ? { famiglia: m.modelloScelto === 'klein' || m.modelloScelto === 'klein-base' ? m.modelloScelto : 'qwen' } : {}) },
     sistema: { controllo: v({}) },
     setup: { cerca: v([]), stato: v({ installato: true, motore: true, modelli: [] }), avvia: v(true), annulla: v() },
-    modelli: { stato: v([]), segmentatori: v([]), inutilizzati: v([]), elimina: v(), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler], klein: ['flux3_image_klein_sd_int8_convrot.safetensors', 'flux3_image_klein_base_int8_convrot.safetensors'], kleinTe: ['qwen3vl_4b_int8_convrot.safetensors'], kleinVae: ['flux2-vae.safetensors'] }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
+    modelli: { stato: v([]), segmentatori: v([]), inutilizzati: v([]), elimina: v(), file: v({ diffusione: [imp.modello], encoder: [imp.encoder], vae: [imp.vae], upscaler: [imp.upscaler], klein: ['flux3_image_klein_sd_int8_convrot.safetensors', 'flux3_image_klein_base_int8_convrot.safetensors'], kleinTe: ['qwen3vl_4b_int8_convrot.safetensors'], kleinVae: ['flux2-vae.safetensors'], lightning: true }), scarica: v({ stato: 'errore', errore: 'finto' }), annulla: v() },
     motore: { info: v({ stato: 'pronto', porta: 8818, vramTotale: 6442450944, vramLibera: 1500000000, gpu: 'NVIDIA GeForce RTX 3060 Laptop GPU', versione: '0.39.0' }), avvia: v(), riavvia: v(), ferma: v(), log: v(['motore pronto']), libera: v(), apriComfy: v() },
     lavori: {
       elenco: v([]), annulla: v(), svuota: v(), pulisci: v(),

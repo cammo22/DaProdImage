@@ -1,21 +1,21 @@
-// I modelli che si scelgono nell'interfaccia: due famiglie, tre voci (D1 del piano, rivista da Cammo il 21/10/2026).
-//   qwen-base  = Qwen-Image 2.1 pieno, 40 passi, coi LoRA: la qualità piena di Qwen.
-//   klein      = FLUX 3 Klein distillato, 16 passi senza CFG (quelli indicati da BFL; fino alla 1.2.1 erano 8): il modello veloce.
-//   klein-base = FLUX 3 Klein Base, 50 passi con CFG 3,5: la qualità piena di Klein.
-// Niente Qwen veloce col LoRA Turbo8: a Cammo non piace. Dalla 1.2.1 niente FLUX.2 Klein 4B: sono rimasti Qwen e FLUX 3 Klein.
+// I modelli che si scelgono nell'interfaccia: due famiglie, quattro voci.
+//   qwen-base   = Qwen-Image 2.1 pieno, 25 passi (quelli dei workflow ufficiali di ComfyUI; fino alla 1.3 erano 40), coi LoRA.
+//   qwen-veloce = Qwen-Image 2.1 col LoRA Lightning di LightX2V (distillato a 4 passi, CFG 1): misurato sulla 4060, 1 MP in 15 s invece di 73.
+//   klein       = FLUX 3 Klein distillato, 16 passi senza CFG (quelli indicati da BFL): il modello veloce di Klein.
+//   klein-base  = FLUX 3 Klein Base, 50 passi con CFG 3,5: la qualità piena di Klein.
+// (Il vecchio Turbo8 a 8 passi non c'è più; dalla 1.2.1 niente FLUX.2 Klein 4B.)
 //
-// Il motore continua a ragionare per `Famiglia` (+ `turbo`, che resta nella Richiesta solo per i PNG e le ricette vecchie):
-// questa è l'unica mappa fra le due cose. È pura (niente Electron, niente React), così `test/modelli.mjs` la prova con Node.
-// I grafi di Qwen non cambiano: qwen-base manda la stessa richiesta di prima con la qualità «Alta».
+// Il motore ragiona per `Famiglia` + `turbo` (= il LoRA Lightning acceso, `Impostazioni.loraTurbo`): questa è l'unica mappa fra le due cose.
+// È pura (niente Electron, niente React), così `test/modelli.mjs` la prova con Node.
 import type { Famiglia } from './tipi'
 
-export type IdModello = 'qwen-base' | 'klein' | 'klein-base'
+export type IdModello = 'qwen-base' | 'qwen-veloce' | 'klein' | 'klein-base'
 
 export interface InfoModello {
   id: IdModello
   famiglia: Famiglia
-  /** sempre false: il Turbo di Qwen non c'è più (il campo c'è per dirlo chiaro a chi costruisce la richiesta) */
-  turbo: false
+  /** acceso il LoRA Lightning (4 passi): solo `qwen-veloce` */
+  turbo: boolean
   passi: number
   /** il CFG che vuole il modello (null = quello delle impostazioni, 1 per Qwen) */
   cfg: number | null
@@ -29,13 +29,14 @@ export interface InfoModello {
 }
 
 export const MODELLI: Record<IdModello, InfoModello> = {
-  'qwen-base': { id: 'qwen-base', famiglia: 'qwen', turbo: false, passi: 40, cfg: null, nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA', lora: true, veloce: false },
+  'qwen-base': { id: 'qwen-base', famiglia: 'qwen', turbo: false, passi: 25, cfg: null, nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '25 passi · LoRA', lora: true, veloce: false },
+  'qwen-veloce': { id: 'qwen-veloce', famiglia: 'qwen', turbo: true, passi: 4, cfg: null, nome: 'Qwen-Image 2.1 Lightning', corto: 'Qwen veloce', sotto: '4 passi · LoRA · 5 volte più veloce', lora: true, veloce: true },
   klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 16, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '16 passi · senza CFG · il più veloce', lora: true, veloce: true },
   'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: true, veloce: false }
 }
 
 /** l'ordine delle pillole nell'interfaccia */
-export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'klein', 'klein-base']
+export const ORDINE_MODELLI: IdModello[] = ['qwen-base', 'qwen-veloce', 'klein', 'klein-base']
 export const MODELLO_PREDEFINITO: IdModello = 'qwen-base'
 
 export const eModello = (x: unknown): x is IdModello => typeof x === 'string' && Object.prototype.hasOwnProperty.call(MODELLI, x)
@@ -76,16 +77,27 @@ export function modelloDaOpera(o: { modello?: string | null } | null | undefined
 }
 
 /** quello che il modello mette nella Richiesta: famiglia, passi, niente Turbo (CFG e sampler di Klein li decide il motore) */
-export function parametriModello(id: IdModello): { famiglia: Famiglia; passi: number; turbo: false } {
+export function parametriModello(id: IdModello): { famiglia: Famiglia; passi: number; turbo: boolean } {
   const m = MODELLI[id]
-  return { famiglia: m.famiglia, passi: m.passi, turbo: false }
+  return { famiglia: m.famiglia, passi: m.passi, turbo: m.turbo }
 }
 
-/** «Rifai in qualità piena» (stesso seed, stesso prompt): da Klein veloce si va a Klein Base (il più vicino) o a Qwen base.
+/** «Rifai in qualità piena» (stesso seed, stesso prompt): da Klein veloce si va a Klein Base (il più vicino) o a Qwen base, da Qwen veloce a Qwen base.
  *  I modelli già pieni non hanno niente sopra: lista vuota. */
 export function inQualitaPiena(id: IdModello): IdModello[] {
+  if (id === 'qwen-veloce') return ['qwen-base']
   return MODELLI[id].veloce ? ['klein-base', 'qwen-base'] : []
 }
+
+/** il LoRA Lightning (4 passi) di LightX2V: il file e quanto vale lo spostamento della scaletta del rumore (max_shift, come nella scheda del modello) */
+export const LIGHTNING_FILE = 'qwen-image-2.1-lightning-4step.safetensors'
+export const SHIFT_LIGHTNING = 0.9
+/** il vecchio Turbo8 (8 passi) usava 0,6935: resta per i PNG e le ricette vecchie */
+export const SHIFT_TURBO8 = 0.6935
+export const shiftDi = (file: string): number => (/turbo8/i.test(file) ? SHIFT_TURBO8 : SHIFT_LIGHTNING)
+
+/** «L'LLM legge il prompt prima di disegnare» (`potenziaKlein` / `potenziaQwen` nelle impostazioni): ognuno dei due modelli ha il suo interruttore */
+export const potenziaPer = (imp: { potenziaKlein?: boolean; potenziaQwen?: boolean }, fam: Famiglia): boolean => (fam === 'qwen' ? !!imp.potenziaQwen : imp.potenziaKlein ?? true)
 
 /** le qualità salvate (localStorage, ricette tue, lavori vecchi): «turbo» non c'è più e diventa «alta» */
 export function senzaTurbo<Q extends string>(q: Q | 'turbo'): Exclude<Q, 'turbo'> | 'alta' {

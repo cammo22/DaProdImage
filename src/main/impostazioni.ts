@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, renameSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Impostazioni } from '@shared/tipi'
-import { allineaScelta, denoiserSenzaTurbo, famigliaDi, modelloDaImpostazioni } from '@shared/modelli'
+import { LIGHTNING_FILE, allineaScelta, denoiserSenzaTurbo, famigliaDi, modelloDaImpostazioni } from '@shared/modelli'
 import { DATI, GALLERIA_PREDEFINITA, MODELLI_PREDEFINITI, assicura } from './percorsi'
 
 const FILE = join(DATI, 'impostazioni.json')
@@ -24,18 +24,19 @@ const PREDEFINITE: Impostazioni = {
   scaricaInIdle: true,
   porta: 8818,
   cacheKV: 'auto',
-  cacheTipo: 'default',
+  // Q4: la cache KV di Qwen costa un quarto della memoria e fa le modifiche con foto circa il 12% più veloci (misurato sulla 4060, stessa qualità a occhio)
+  cacheTipo: 'int4',
   encoderSuCpu: false,
   anteprimaLive: true,
   riservaVram: 0,
   argomentiExtra: '',
-  // gli step "standard" della pipeline ufficiale (40, euler, cfg 1): la qualità piena
-  predefiniti: { passi: 40, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 },
+  // gli step dei workflow ufficiali di ComfyUI per Qwen-Image 2.1 (25, euler/simple, cfg 1)
+  predefiniti: { passi: 25, cfg: 1, sampler: 'euler', scheduler: 'simple', megapixel: 1 },
   installato: false,
   tokenCivitai: '',
   tokenHF: '',
   tempi: {},
-  loraTurbo: 'turbo8_lora_step2500.safetensors',
+  loraTurbo: LIGHTNING_FILE,
   memoria: 'auto',
   vramMB: 0,
   veloce: false,
@@ -43,6 +44,8 @@ const PREDEFINITE: Impostazioni = {
   traduttore: 'dedicato',
   unaCosaAllaVolta: true,
   potenziaKlein: true,
+  potenziaQwen: false,
+  migrata: 14,
   testoCon4B: true, // misurato in T12 (docs/misure-1.1.0.md): Migliora prompt + Crea con Qwen passa da 186 s a 134 s (encoder 8B int8) o da 446 s a 150 s (8B GGUF)
   scaricaDopo: 120,
   uncensored: false,
@@ -74,6 +77,17 @@ function migra(letto: Partial<Impostazioni>, imp: Impostazioni): boolean {
   return true
 }
 
+/** 1.4: la cache KV di Qwen passa a Q4 (se era quella piena di serie) e il LoRA di distillazione a Lightning (se era il Turbo8 di serie o vuoto);
+ *  i passi di serie scendono a 25. Una volta sola. */
+function migra14(letto: Partial<Impostazioni>, imp: Impostazioni): boolean {
+  if ((letto.migrata ?? 0) >= 14) return false
+  if (!letto.cacheTipo || letto.cacheTipo === 'default') imp.cacheTipo = 'int4'
+  if (!letto.loraTurbo || /^turbo8/i.test(letto.loraTurbo)) imp.loraTurbo = LIGHTNING_FILE
+  if (!letto.predefiniti || letto.predefiniti.passi === 40) imp.predefiniti = { ...imp.predefiniti, passi: 25 }
+  imp.migrata = 14
+  return true
+}
+
 export function impostazioni(): Impostazioni {
   if (attuali) return attuali
   try {
@@ -83,7 +97,8 @@ export function impostazioni(): Impostazioni {
     imp.modelloScelto = modelloDaImpostazioni(letto)
     imp.famiglia = famigliaDi(imp.modelloScelto)
     attuali = imp
-    if (migra(letto, imp)) {
+    const m14 = migra14(letto, imp)
+    if (migra(letto, imp) || m14) {
       try {
         scrivi(imp)
       } catch {

@@ -29,7 +29,7 @@ export async function provaBrowser(fn, init) {
     await pg.addInitScript(await readFile('test/finto.js', 'utf8'))
     if (init) await pg.addInitScript(init)
     await pg.goto(server.url)
-    await pg.locator('.strip-modi').waitFor()
+    await pg.locator('.studio-corpo').waitFor()
     await fn(pg)
     if (errori.length) throw Error('Errori pagina: ' + errori.join('\n'))
   } finally { await browser?.close(); await server.close() }

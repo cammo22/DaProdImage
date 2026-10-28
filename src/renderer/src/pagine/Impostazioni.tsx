@@ -118,6 +118,7 @@ function OpzioniGenerali(): JSX.Element {
   const comuni = (file.kleinTe?.length ?? 0) > 0 && (file.kleinVae?.length ?? 0) > 0
   const pronti: Record<IdModello, boolean> = {
     'qwen-base': true,
+    'qwen-veloce': !!file.lightning,
     klein: comuni && !!file.klein?.some((n) => !/base/i.test(n)),
     'klein-base': comuni && !!file.klein?.some((n) => /base/i.test(n))
   }
@@ -164,7 +165,8 @@ function OpzioniGenerali(): JSX.Element {
               <Segmenti valore={imp.memoria} cambia={(memoria) => salva({ memoria })} voci={[{ id: 'auto', nome: 'Auto' }, { id: 'bassa', nome: '6 GB' }, { id: 'normale', nome: '8-12 GB' }, { id: 'alta', nome: '16 GB+' }]} />
             </div>
             {voceInterruttore('Traduci in inglese', 'I prompt in italiano si traducono da soli', imp.traduci, (traduci) => salva({ traduci }))}
-            {voceInterruttore('Klein: arricchisci il prompt', 'Klein rende meglio con descrizioni lunghe (circa 5 s in più)', imp.potenziaKlein ?? true, (potenziaKlein) => salva({ potenziaKlein }))}
+            {voceInterruttore("Klein: l'LLM legge il prompt", 'Lo riscrive guardando le foto: Klein ne ha bisogno (BFL lo chiede)', imp.potenziaKlein ?? true, (potenziaKlein) => salva({ potenziaKlein }))}
+            {voceInterruttore("Qwen: l'LLM legge il prompt", 'Aiuta le modifiche difficili; qualche secondo in più', imp.potenziaQwen ?? false, (potenziaQwen) => salva({ potenziaQwen }))}
             {voceInterruttore('Anteprima dal vivo', "Vedi l'immagine nascere", imp.anteprimaLive, (anteprimaLive) => salva({ anteprimaLive }))}
             <div className="voce">
               <div className="et"><b>Libera la scheda video dopo</b><small>Se non fai niente per un po'</small></div>
@@ -323,8 +325,8 @@ function OpzioniGenerali(): JSX.Element {
                 <Segmenti valore={imp.cacheKV} cambia={(cacheKV) => salva({ cacheKV })} voci={[{ id: 'auto', nome: 'Auto' }, { id: 'gpu', nome: 'GPU' }, { id: 'cpu', nome: 'RAM' }, { id: 'off', nome: 'Spenta' }]} />
               </div>
               <div className="voce">
-                <div className="et"><b>Precisione della cache</b><small>int8 dimezza la memoria</small></div>
-                <Segmenti valore={imp.cacheTipo} cambia={(cacheTipo) => salva({ cacheTipo })} voci={[{ id: 'default', nome: 'Piena' }, { id: 'int8', nome: 'int8' }, { id: 'int4', nome: 'int4' }]} />
+                <div className="et"><b>Precisione della cache KV</b><small>Q4 = un quarto della memoria, circa il 10% più veloce, stessa qualità a occhio</small></div>
+                <Segmenti valore={imp.cacheTipo} cambia={(cacheTipo) => salva({ cacheTipo })} voci={[{ id: 'default', nome: 'Piena' }, { id: 'int8', nome: 'Q8' }, { id: 'int4', nome: 'Q4' }]} />
               </div>
               {voceInterruttore('Text encoder sul processore', 'Lascia la VRAM al disegno; il prompt si legge più piano', imp.encoderSuCpu, (encoderSuCpu) => salva({ encoderSuCpu }))}
               <div className="voce">

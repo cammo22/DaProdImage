@@ -123,7 +123,7 @@ export function App(): JSX.Element {
       const foto = percorsi.find((p) => !/\.(safetensors|ckpt|pt|gguf|json|txt|zip)$/i.test(p))
       if (foto) {
         try {
-          apriInModifica(await normalizza(foto))
+          apriInModifica(await normalizza(foto), true)
         } catch (er) {
           avvisa((er as Error).message, 'errore')
         }
@@ -180,6 +180,12 @@ export function App(): JSX.Element {
       setVramNonLiberata(false)
     }
   }, [risorse, lavori, motore, scarico])
+
+  // Klein: una pagina sola. Se si cambia modello mentre si è in Modifica o Box, si torna a Crea
+  const conKlein = !!imp && imp.famiglia !== 'qwen'
+  useEffect(() => {
+    if (conKlein && (pagina === 'modifica' || pagina === 'box')) vai('crea')
+  }, [conKlein, pagina, vai])
 
   const attivi = lavori.filter((l) => l.stato === 'in coda' || l.stato === 'in corso').length
   const statoMotore = motore.stato === 'pronto' ? 'pronto' : motore.stato === 'avvio' ? 'avvio' : motore.stato === 'errore' ? 'errore' : ''
@@ -248,7 +254,8 @@ export function App(): JSX.Element {
           <main className="contenuto">
             {/* le pagine restano montate: la maschera disegnata o il prompt non si perdono cambiando pagina */}
             <div className={PAGINE_STUDIO.includes(pagina) ? 'studio' : 'nascosto'}>
-              <StripModi />
+              {/* con Klein c'è una pagina sola (Crea: scrivi, aggiungi foto se vuoi): niente modi, niente schede */}
+              {!conKlein && <StripModi />}
               <div className="studio-corpo">
                 <div className={pagina === 'crea' ? '' : 'nascosto'}><Crea /></div>
                 <div className={pagina === 'modifica' ? '' : 'nascosto'}><Modifica /></div>
@@ -279,7 +286,7 @@ export function App(): JSX.Element {
       </div>
       {rilascio && (
         <div className="velo-rilascio">
-          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
+          <div>{pagina === 'galleria' ? 'Rilascia: le foto entrano in Galleria (diventano PNG)' : pagina === 'lora' ? 'Rilascia: i .safetensors vanno fra i LoRA' : imp?.famiglia && imp.famiglia !== 'qwen' ? 'Rilascia: la foto si aggiunge alle Foto di Klein (diventa PNG)' : 'Rilascia: la foto si apre in Modifica (diventa PNG)'}</div>
         </div>
       )}
     </div>
