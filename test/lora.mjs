@@ -27,6 +27,11 @@ uguale('Qwen 2.1', ris(['transformer_blocks.3.attn.to_q.lora_A.weight', 'transfo
 uguale('Qwen 1.x', ris(['transformer_blocks.0.txt_mlp.net.0.lora_A.weight']), ['no', 'Qwen-Image 1.x', []])
 uguale('SDXL', ris(['lora_unet_down_blocks_0_attentions_0.lora_down.weight']), ['no', 'Stable Diffusion / SDXL', []])
 uguale('Klein 3 (single_blocks qkv)', ris(['diffusion_model.single_blocks.2.qkv.lora_A.weight']), ['si', 'FLUX 3 Klein', ['klein', 'klein-base']])
+uguale('Klein 3 Diffusers (mode_blocks)', ris(['transformer.mode_blocks.image.0.attn.to_q.lora_A.weight', 'transformer.mode_blocks.image.0.ff.linear_in.lora_B.weight']), ['si', 'FLUX 3 Klein (Diffusers)', ['klein', 'klein-base']])
+uguale('Klein 3 Diffusers: formato', L.analizzaChiavi(['transformer.txt_mode_blocks.1.attn.to_out.0.lora_A.weight']).formato, 'diffusers')
+uguale('Klein 3 AI Toolkit: formato', L.analizzaChiavi(['diffusion_model.single_blocks.2.q_proj.lora_A.weight', 'diffusion_model.content_mode_blocks.image.0.q_proj.lora_A.weight']).formato, undefined)
+uguale('Klein 3 Diffusers solo blocchi singoli', ris(['transformer.single_transformer_blocks.3.attn.to_q.lora_A.weight', 'transformer.single_transformer_blocks.3.ff.linear_in.lora_B.weight']), ['si', 'FLUX 3 Klein (Diffusers)', ['klein', 'klein-base']])
+uguale('FLUX.2 Diffusers (to_qkv_mlp_proj) non è Klein 3', ris(['transformer.single_transformer_blocks.3.attn.to_qkv_mlp_proj.lora_A.weight', 'transformer.transformer_blocks.0.ff.linear_in.lora_A.weight'])[0], '?')
 uguale('Klein 3 (content_mode_blocks)', ris(['diffusion_model.content_mode_blocks.0.attn.lora_A.weight']), ['si', 'FLUX 3 Klein', ['klein', 'klein-base']])
 
 const doppi = (n) => Array.from({ length: n }, (_, i) => `diffusion_model.double_blocks.${i}.img_attn.qkv.lora_A.weight`)

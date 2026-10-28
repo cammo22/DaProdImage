@@ -7,6 +7,7 @@ import { copyFileSync, existsSync, openSync, readFileSync, readSync, closeSync, 
 import { basename, extname, join, relative, resolve, sep } from 'node:path'
 import type { Famiglia, GruppoLora, InfoLora } from '@shared/tipi'
 import { analizzaChiavi, gruppoDa } from '@shared/loraBase'
+import { convertiSulPosto } from './loraConverti'
 import { DATI, assicura, scriviAtomico } from './percorsi'
 import { impostazioni } from './impostazioni'
 import { scarica } from './installa/scarica'
@@ -56,14 +57,14 @@ function intestazione(percorso: string): Record<string, unknown> | null {
 }
 
 /** Qwen-Image 2.1 è a flusso singolo (solo img_mlp); Qwen-Image 1.x ha txt_mlp/add_q_proj; SD/SDXL/Flux hanno altri nomi */
-function analizza(percorso: string): { compatibile: InfoLora['compatibile']; base?: string; famiglie?: Famiglia[]; parole?: string; nome?: string } {
+function analizza(percorso: string): { compatibile: InfoLora['compatibile']; base?: string; famiglie?: Famiglia[]; formato?: 'diffusers'; parole?: string; nome?: string } {
   const h = intestazione(percorso)
   if (!h) return { compatibile: '?' }
   const chiavi = Object.keys(h).filter((k) => k !== '__metadata__')
   const meta = (h.__metadata__ || {}) as Record<string, string>
   const forme: Record<string, number[] | undefined> = {}
   for (const k of chiavi) forme[k] = (h[k] as { shape?: number[] } | undefined)?.shape
-  const { compatibile, famiglie, base: baseRiconosciuta } = analizzaChiavi(chiavi, forme)
+  const { compatibile, famiglie, formato, base: baseRiconosciuta } = analizzaChiavi(chiavi, forme)
   let base = baseRiconosciuta
   const archi = meta['modelspec.architecture'] || meta.ss_base_model_version || ''
   if (archi) base = base ? `${base} (${archi})` : archi
@@ -82,7 +83,7 @@ function analizza(percorso: string): { compatibile: InfoLora['compatibile']; bas
       /* niente */
     }
   }
-  return { compatibile, base, famiglie, parole, nome: meta['modelspec.title'] || meta.ss_output_name }
+  return { compatibile, base, famiglie, formato, parole, nome: meta['modelspec.title'] || meta.ss_output_name }
 }
 
 export function elencoLora(): InfoLora[] {
@@ -110,9 +111,11 @@ export function elencoLora(): InfoLora[] {
       let nota = n[file]
       // (le note di prima della 1.2.1 possono dire 'klein4b', un modello che l'app non ha più: si rianalizzano)
       if (!nota || nota.compatibile === undefined || nota.famiglie === undefined || nota.famiglie.some((f) => !FAMIGLIE_VALIDE.includes(f))) {
+        // un LoRA di Klein alla Diffusers messo a mano nella cartella: si porta ai nomi di ComfyUI prima di leggerlo
+        portaInComfy(p)
         const a = analizza(p)
         const delCatalogo = CATALOGO.find((x) => x.tipo === 'lora' && x.file === v)
-        nota = { nome: delCatalogo?.nome || a.nome || basename(v, extname(v)), parole: a.parole || '', forza: 1, aggiunta: st.mtimeMs, ...nota, compatibile: a.compatibile, base: a.base, famiglie: a.famiglie }
+        nota = { nome: delCatalogo?.nome || a.nome || basename(v, extname(v)), parole: a.parole || '', forza: a.famiglie?.includes('klein') ? 0.75 : 1, aggiunta: st.mtimeMs, ...nota, compatibile: a.compatibile, base: a.base, famiglie: a.famiglie }
         n[file] = nota
         cambiate = true
       }
@@ -154,6 +157,19 @@ function scaffale(percorso: string, scelto?: GruppoLora): { cartella: string; gr
   return { cartella: gruppo ? join(cartellaLora(), gruppo) : cartellaLora(), gruppo, riconosciuto: !!riconosciuto }
 }
 
+/** un LoRA di Klein nel formato Diffusers/SimpleTuner (`transformer.mode_blocks…`) ComfyUI non lo legge: lo si porta ai suoi nomi sul posto
+ *  (l'originale resta accanto come `.diffusers.bak`). Ritorna true se l'ha convertito; se non ce la fa lascia il file com'è e dice perché. */
+function portaInComfy(percorso: string): boolean {
+  try {
+    if (analizza(percorso).formato !== 'diffusers') return false
+    convertiSulPosto(percorso)
+    return true
+  } catch (e) {
+    console.error('conversione del LoRA non riuscita:', percorso, (e as Error).message)
+    return false
+  }
+}
+
 /** `gruppo`: lo scaffale della scheda da cui si carica (Qwen o Flux). Se i nomi dei tensori dicono un altro modello, vince quello. */
 export function importaLora(percorsi: string[], gruppo?: GruppoLora): string[] {
   const c = cartellaLora()
@@ -164,7 +180,10 @@ export function importaLora(percorsi: string[], gruppo?: GruppoLora): string[] {
     const s = scaffale(p, gruppo)
     assicura(s.cartella)
     const dest = join(s.cartella, basename(p))
-    if (!existsSync(dest)) copyFileSync(p, dest)
+    if (!existsSync(dest)) {
+      copyFileSync(p, dest)
+      portaInComfy(dest)
+    }
     const file = relative(c, dest)
     aggiornaLora(file, { aggiunta: Date.now(), ...(s.gruppo && !s.riconosciuto ? { gruppo: s.gruppo } : {}) })
     fatti.push(file)
@@ -253,8 +272,9 @@ export async function scaricaLora(link: string, avanz: (r: number, t: number, v:
   assicura(cartellaLora())
   const dest = join(cartellaLora(), file)
   await scarica({ url: d.url, destinazione: dest, intestazioni: d.intestazioni, segnale, avanzamento: avanz })
-  // arrivato, si guarda di che modello è e lo si mette nel suo scaffale
+  // arrivato, si guarda di che modello è e lo si mette nel suo scaffale (e se è un LoRA di Klein alla Diffusers lo si porta ai nomi di ComfyUI)
   const s = scaffale(dest, gruppo)
+  portaInComfy(dest)
   let finale = dest
   if (s.gruppo) {
     assicura(s.cartella)

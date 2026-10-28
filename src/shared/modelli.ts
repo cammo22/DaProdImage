@@ -1,6 +1,6 @@
 // I modelli che si scelgono nell'interfaccia: due famiglie, tre voci (D1 del piano, rivista da Cammo il 21/10/2026).
 //   qwen-base  = Qwen-Image 2.1 pieno, 40 passi, coi LoRA: la qualità piena di Qwen.
-//   klein      = FLUX 3 Klein distillato, 8 passi senza CFG: il modello veloce.
+//   klein      = FLUX 3 Klein distillato, 16 passi senza CFG (quelli indicati da BFL; fino alla 1.2.1 erano 8): il modello veloce.
 //   klein-base = FLUX 3 Klein Base, 50 passi con CFG 3,5: la qualità piena di Klein.
 // Niente Qwen veloce col LoRA Turbo8: a Cammo non piace. Dalla 1.2.1 niente FLUX.2 Klein 4B: sono rimasti Qwen e FLUX 3 Klein.
 //
@@ -30,7 +30,7 @@ export interface InfoModello {
 
 export const MODELLI: Record<IdModello, InfoModello> = {
   'qwen-base': { id: 'qwen-base', famiglia: 'qwen', turbo: false, passi: 40, cfg: null, nome: 'Qwen-Image 2.1', corto: 'Qwen', sotto: '40 passi · LoRA', lora: true, veloce: false },
-  klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 8, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '8 passi · senza CFG · il più veloce', lora: true, veloce: true },
+  klein: { id: 'klein', famiglia: 'klein', turbo: false, passi: 16, cfg: 1, nome: 'FLUX 3 Klein', corto: 'Klein veloce', sotto: '16 passi · senza CFG · il più veloce', lora: true, veloce: true },
   'klein-base': { id: 'klein-base', famiglia: 'klein-base', turbo: false, passi: 50, cfg: 3.5, nome: 'FLUX 3 Klein Base', corto: 'Klein Base', sotto: '50 passi · CFG 3,5 · la qualità piena', lora: true, veloce: false }
 }
 

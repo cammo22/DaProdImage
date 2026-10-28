@@ -42,7 +42,8 @@ export function Modifica(): JSX.Element {
     setIdee([])
     setCameraRapida(null)
   }
-  const [categoria, setCategoria] = useState('persone')
+  // nessuna categoria di Idee aperta all'inizio: si apre con un clic e si richiude con un altro
+  const [categoria, setCategoria] = useState('')
   const [camera, setCamera] = useState<PosizioneCamera>(CAMERA0)
   const [scrivendo, setScrivendo] = useState(false)
   // Fusion: i risultati (foto nuove) e il lavoro che li sta creando
@@ -83,7 +84,7 @@ export function Modifica(): JSX.Element {
     return zona || mis.tipo === 'originale' ? { w: rif.larghezza, h: rif.altezza } : dimMp(m.mp, rif.larghezza, rif.altezza)
   })()
   const categorie = categoriePer(zona ? 'zona' : 'tutta')
-  const cat = categorie.find((c) => c.id === categoria) || categorie[0]
+  const cat = categorie.find((c) => c.id === categoria)
   const loraCamera = !!fileLoraCamera() && lore.length >= 0
 
   // l'anteprima dal vivo si posa sulla foto (se il lavoro è su questa foto): la zona si vede nascere al suo posto
@@ -130,7 +131,7 @@ export function Modifica(): JSX.Element {
   }, [m.modo])
   // con la zona o senza cambiano le idee che hanno senso
   useEffect(() => {
-    if (!categoriePer(zona ? 'zona' : 'tutta').some((c) => c.id === categoria)) setCategoria(zona ? 'zona-base' : 'persone')
+    if (!categoriePer(zona ? 'zona' : 'tutta').some((c) => c.id === categoria)) setCategoria('')
   }, [zona])
   // Fusion ed Estrai non hanno la tela: la zona disegnata si perde, e con lei il segno
   useEffect(() => {
@@ -516,7 +517,7 @@ export function Modifica(): JSX.Element {
           rapida={rapida}
           categorie={categorie}
           cat={cat}
-          setCategoria={setCategoria}
+          setCategoria={(id) => setCategoria(categoria === id ? '' : id)}
           idee={idee}
           setIdee={setIdee}
           usaRapida={usaRapida}

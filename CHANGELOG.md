@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.0 — 2026-10-28
+
+Un giro di pulizia: i LoRA di Klein funzionano davvero, Klein parte dai 16 passi indicati da Black Forest Labs, Crea si usa subito (scrivi, scegli il formato, premi CREA) e le Opzioni sono corte, con tutto il resto in «Avanzate».
+
+### LoRA di Klein
+
+- **I LoRA FLUX 3 in formato Diffusers/SimpleTuner ora funzionano.** Esistono due formati. Quelli fatti con AI Toolkit usano i nomi di ComfyUI (`diffusion_model.content_mode_blocks…`) e andavano già. Quelli di Diffusers e SimpleTuner (`transformer.mode_blocks…`, `single_transformer_blocks…ff.linear_in`: per esempio il LoRA delle angolazioni di akhaliq) il motore non li conosce: caricava il file senza errori ma scartava tutte le chiavi, e l'app li scambiava per «FLUX.1, non compatibile». Ora l'app li riconosce e, quando li importi o li scarichi, li converte ai nomi di ComfyUI: riscrive solo l'intestazione del `.safetensors`, i pesi non cambiano di un byte, e l'originale resta accanto come `.diffusers.bak`. Se alpha è diverso dal rango aggiunge i tensori `alpha`. Provato sul motore vero con un LoRA reale: prima «0 patches attached», dopo «172 patches attached», nessuna chiave scartata.
+- **Forza di partenza 0,75** per i LoRA di Klein (il valore indicato da BFL; da 0,5 a 1 va bene).
+- Corretto un riconoscimento sbagliato già presente: i LoRA di FLUX.2 in formato Diffusers (`single_transformer_blocks…to_qkv_mlp_proj`) venivano scambiati per LoRA di Qwen 2.1.
+- Prove: `test/lora-converti.mjs` (mappa dei nomi, pesi identici byte per byte, alpha, file che non è un LoRA di Klein) e nuovi casi in `test/lora.mjs`.
+
+### Klein
+
+- **Klein veloce parte da 16 passi** (erano 8): è quello che consiglia BFL. Misurato su RTX 4060, 1024×1024, stesso seme: circa 6 s a 8 passi, 10 s a 16; a 16 volti, mani, tessuti e testi escono più puliti. Le qualità «bozza» (8) e «massima» (24) restano.
+- Non fatto, da valutare: il prompt upsampler ufficiale di BFL (Qwen3.5 9B, 6,7 GB in W4A8, troppo per 8 GB insieme al resto) e i LoRA di distillazione di terzi per Klein Base a 4-8 passi (di due giorni fa).
+
+### Interfaccia
+
+- **Crea si usa subito.** In cima il prompt, poi Formato e Misura; **Genere, Stile e Altro** (sfondo, foto di riferimento, quante immagini, seed) sono sezioni chiuse che si aprono con un clic. Prima, 12 tessere dei generi spingevano il prompt sotto la piega.
+- **Modifica**: tolte le tessere «Estrai» ed «Espandi» che duplicavano le schede sopra la tela; le categorie delle Idee non partono più aperte (un clic apre, un altro chiude).
+- **Opzioni corte.** In cima: Motore, Modelli (pronto o da scaricare), Come lavora (scheda video, traduzione, arricchimento del prompt di Klein, anteprima, libera la scheda dopo), Cartelle, Aggiornamenti. Tutto il resto (file dei modelli, download, file inutilizzati, memoria e velocità, account, log) sta in **Avanzate**, chiuso di serie, con testi di una riga.
+
 ## 1.2.1 — 2026-10-23
 
 Tre correzioni dell'interfaccia Orbita e una semplificazione: i modelli si scelgono dalla barra in alto e sono due (Qwen e Klein 3), l'Editor box non si blocca più dopo qualche riquadro, e i LoRA hanno due scaffali, Qwen e Flux, che ora funzionano anche con Klein.

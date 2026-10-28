@@ -75,7 +75,7 @@ Qwen-Image capisce meglio. I testi fra virgolette, quelli da scrivere nell'immag
   formato e risoluzione giusti, chiede due o tre cose in italiano, ha i suoi stili e scrive il prompt da solo.
 - **Risoluzioni da 256p al massimo**: 256p per un'idea in pochi secondi, poi 480p, 720p, 1K, 1080p, 1440p (per i
   testi piccoli) e MAX, i 4,2 MP del 2K nativo. Formati da 1:1 a 21:9, compresi 4:5 e 9:16.
-- **Il modello lo scegli in alto**: **Klein veloce** (8 passi) per esplorare tante idee, **Klein Base** o **Qwen-Image 2.1** quando conta la qualità.
+- **Il modello lo scegli in alto**: **Klein veloce** (16 passi, quelli indicati da Black Forest Labs) per esplorare tante idee, **Klein Base** o **Qwen-Image 2.1** quando conta la qualità.
   Un risultato di Klein veloce lo rifai con **Rifai in qualità piena** (Klein Base, stesso prompt e stesso seme) o **Rifai con Qwen**.
 - **Migliora** riscrive il prompt in un paragrafo ricco; **Da foto** trasforma una foto in prompt; **Sorprendimi** ne inventa uno.
 - **Altro** (chiuso di serie) tiene seme, megapixel, misura e sfondo, per non riempire la pagina.
@@ -119,7 +119,7 @@ Modifica → Estrai e nelle ricette. Diventa un manichino grigio che il modello 
 
 ## Tre modelli: Qwen e FLUX 3 Klein
 
-Nella barra in alto scegli **chi disegna**: **Qwen base** (Qwen-Image 2.1, 40 passi, con i LoRA), **Klein veloce** (8 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
+Nella barra in alto scegli **chi disegna**: **Qwen base** (Qwen-Image 2.1, 40 passi, con i LoRA), **Klein veloce** (16 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
 Il Turbo di Qwen non c'è più: Klein veloce è il modo rapido.
 
 Anche la scrittura dei testi (Migliora prompt, Foto → prompt, Idee, Estrai, Unisci foto, Come l'esempio) usa il **Qwen3-VL 4B** di Klein, con Klein e con Qwen: scrive a 46 token al secondo sulla RTX 4060,
@@ -172,7 +172,7 @@ se la scheda è da 6 GB, il profilo **6 GB** in Opzioni. L'app ti avvisa da sola
   prima di "rimuovi" e accordano i colori dopo il VAE, così l'incollaggio non si vede.
 - Anteprime dal vivo con **TAEQI 2.1** di madebyollin; traduzione dei prompt con **Opus-MT** (un modello di sola
   traduzione, sul processore, ~300 MB, scaricato da solo); foto convertite con WIC di Windows, come in [DaP Convertitore](https://github.com/cammo22/DaP-Convertitore).
-- Su una RTX 4060 da 8 GB, a 1 MP: Qwen base circa 3 secondi per passo (40 passi in poco meno di 3 minuti a freddo), **Klein veloce 8 passi in circa 7-16 secondi**,
+- Su una RTX 4060 da 8 GB, a 1 MP: Qwen base circa 3 secondi per passo (40 passi in poco meno di 3 minuti a freddo), **Klein veloce in circa 10 secondi a 16 passi (6 a 8 passi)**,
   Klein Base 50 passi in circa un minuto. Le misure complete sono in [docs/misure-1.1.0.md](docs/misure-1.1.0.md).
 
 ## Sviluppare

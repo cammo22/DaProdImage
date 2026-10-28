@@ -25,7 +25,7 @@ function uguale(nome, avuto, atteso) {
 uguale('tre modelli, in ordine (niente Klein 4B dalla 1.2.1)', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base'])
 uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'qwen-base'])
 uguale('qwen-base', [M.MODELLI['qwen-base'].famiglia, M.MODELLI['qwen-base'].passi, M.MODELLI['qwen-base'].turbo, M.MODELLI['qwen-base'].lora], ['qwen', 40, false, true])
-uguale('klein', [M.MODELLI.klein.famiglia, M.MODELLI.klein.passi, M.MODELLI.klein.cfg, M.MODELLI.klein.veloce], ['klein', 8, 1, true])
+uguale('klein', [M.MODELLI.klein.famiglia, M.MODELLI.klein.passi, M.MODELLI.klein.cfg, M.MODELLI.klein.veloce], ['klein', 16, 1, true])
 uguale('klein-base', [M.MODELLI['klein-base'].famiglia, M.MODELLI['klein-base'].passi, M.MODELLI['klein-base'].cfg], ['klein-base', 50, 3.5])
 uguale('nessun modello col Turbo', Object.values(M.MODELLI).some((m) => m.turbo), false)
 for (const id of M.ORDINE_MODELLI) uguale(`id dentro la voce ${id}`, M.MODELLI[id].id, id)
@@ -67,7 +67,7 @@ uguale('opera nulla', M.modelloDaOpera(undefined), 'qwen-base')
 
 // quello che va nella Richiesta
 uguale('parametri qwen-base', M.parametriModello('qwen-base'), { famiglia: 'qwen', passi: 40, turbo: false })
-uguale('parametri klein', M.parametriModello('klein'), { famiglia: 'klein', passi: 8, turbo: false })
+uguale('parametri klein', M.parametriModello('klein'), { famiglia: 'klein', passi: 16, turbo: false })
 uguale('parametri klein-base', M.parametriModello('klein-base'), { famiglia: 'klein-base', passi: 50, turbo: false })
 
 // Rifai in qualità piena
