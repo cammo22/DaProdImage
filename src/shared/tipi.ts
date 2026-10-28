@@ -85,7 +85,7 @@ const famiglia = (id: IdModello, bozza: number, massima: number): { nome: string
   return { nome: m.nome, corto: m.corto, sotto: m.sotto, passi: { turbo: m.passi, bozza, alta: m.passi, massima }, cfg: m.cfg, lora: m.lora }
 }
 export const FAMIGLIE: Record<Famiglia, ReturnType<typeof famiglia>> = {
-  qwen: famiglia('qwen-base', 20, 50),
+  qwen: famiglia('qwen-base', 15, 40),
   klein: famiglia('klein', 8, 24),
   'klein-base': famiglia('klein-base', 25, 64)
 }
@@ -267,7 +267,7 @@ export interface Impostazioni {
   upscaler: string
   /** la famiglia che disegna adesso (va sempre d'accordo con `modelloScelto`: `allineaScelta` in `modelli.ts`) */
   famiglia: Famiglia
-  /** il modello scelto nell'interfaccia (qwen-base / klein / klein-base); `modello` invece è il file del denoiser di Qwen */
+  /** il modello scelto nell'interfaccia (qwen-base / qwen-veloce / klein / klein-base); `modello` invece è il file del denoiser di Qwen */
   modelloScelto: IdModello
   /** i file di FLUX 3 Klein (vuoto = li trova da solo nelle cartelle dei modelli) */
   kleinModello: string
@@ -291,7 +291,7 @@ export interface Impostazioni {
   tokenHF: string
   /** secondi per passo misurati, per megapixel (chiave = mp arrotondati a 0.25) */
   tempi: Record<string, number>
-  /** il LoRA Turbo (8 passi) dentro models/loras */
+  /** il LoRA di distillazione di Qwen dentro models/loras: dalla 1.4 è Lightning (4 passi); prima era il Turbo8 (8 passi) */
   loraTurbo: string
   /** profilo della memoria: auto = dalla VRAM della scheda; bassa = 6 GB; normale = 8-12 GB; alta = 16 GB e più */
   memoria: 'auto' | 'bassa' | 'normale' | 'alta'
@@ -305,8 +305,12 @@ export interface Impostazioni {
   traduttore: 'dedicato' | 'llm'
   /** una cosa alla volta in VRAM: quando passa dal modello immagine all'LLM (o viceversa) scarica quello che non serve */
   unaCosaAllaVolta: boolean
-  /** Klein: espande i prompt brevi in didascalie dettagliate col Qwen3-VL (come l'upsampler ufficiale; +circa mezzo minuto per immagine) */
+  /** Klein: l'LLM legge il prompt e lo riscrive in una didascalia dettagliata guardando anche le foto (come l'upsampler ufficiale di BFL, che chiede di non usare Klein senza) */
   potenziaKlein: boolean
+  /** Qwen: lo stesso, a scelta (di serie spento: Qwen capisce bene anche i prompt brevi) */
+  potenziaQwen: boolean
+  /** versione delle impostazioni: serve a fare una volta sola le correzioni di una nuova versione dell'app (1.4: cache KV Q4, LoRA Lightning) */
+  migrata?: number
   /** i lavori di testo (migliora prompt, descrivi foto, Idee, Estrai, traduzione LLM…) scrivono col Qwen3-VL 4B (veloce, tutto in VRAM) anche con Qwen.
    *  Spento di serie: con Qwen scrive il suo encoder 8B. Con Klein il 4B scrive sempre. */
   testoCon4B: boolean

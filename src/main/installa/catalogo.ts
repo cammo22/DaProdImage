@@ -165,9 +165,17 @@ const GREZZO: VoceCatalogo[] = [
   },
   // --- LoRA consigliati ---
   {
+    // LightX2V: Qwen-Image 2.1 in 4 passi con CFG 1 (distillazione DMD), per testo→immagine e modifiche. Misurato sulla 4060: 1 MP in 15 s invece di 73 a 25 passi
+    id: 'lora-lightning', tipo: 'lora', nome: 'Lightning 4 passi (LightX2V)', uso: 'Qwen veloce',
+    descrizione: 'Fa le immagini di Qwen in 4 passi invece di 25: circa 5 volte più veloce, con qualità quasi uguale. È quello che usa il modello «Qwen veloce».',
+    file: 'qwen-image-2.1-lightning-4step.safetensors', cartella: 'loras',
+    url: 'https://huggingface.co/lightx2v/Qwen-Image-2.1-Lightning/resolve/main/pytorch_lora_weights.safetensors',
+    byte: 67144280, sha256: '53c69320d4163da51032f90275074028cb098556039c72b45f8dce9f0f9e34a3', consigliato: true
+  },
+  {
     // Turbo8 (chriswritescode): distillazione a 8 passi, CFG 1, euler/simple. Niente sha256 pubblicato: basta che ci sia
     id: 'lora-turbo', tipo: 'lora', nome: 'Turbo 8 passi (Turbo8)',
-    descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Dalla 1.1 non serve più: il Turbo di Qwen non esiste più.',
+    descrizione: 'Fa le immagini in 8 passi invece di 40: circa 5 volte più veloce, con poca perdita. Dalla 1.4 non serve più: c\'è Lightning (4 passi), più veloce e più pulito.',
     file: 'turbo8_lora_step2500.safetensors', cartella: 'loras',
     url: 'https://huggingface.co/chriswritescode/Turbo8-LoRA-Qwen-Image-2.1/resolve/main/turbo8_lora_step2500.safetensors',
     // dalla 1.1 il Turbo di Qwen non si usa più (D1 del piano): resta per chi ce l'ha, ma non si scarica da solo

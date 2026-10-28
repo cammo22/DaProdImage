@@ -13,7 +13,7 @@ const lore = [
 await provaBrowser(async (pg) => {
   // ---- 1. il modello si sceglie dalla barra in alto: Qwen, Klein 3 e Klein 3 Base, niente Klein 4B ----
   const pillole = pg.locator('.barra-titolo [data-selettore-modello] [data-modello]')
-  assert.deepEqual(await pillole.evaluateAll((b) => b.map((x) => x.getAttribute('data-modello'))), ['qwen-base', 'klein', 'klein-base'])
+  assert.deepEqual(await pillole.evaluateAll((b) => b.map((x) => x.getAttribute('data-modello'))), ['qwen-base', 'qwen-veloce', 'klein', 'klein-base'])
   assert.equal(await pg.locator('[data-modello="klein4b"], [data-id="modello-klein4b"]').count(), 0, 'niente Klein 4B')
   for (const modo of ['crea', 'modifica', 'box']) {
     await pg.click(`button[data-modo="${modo}"]`)

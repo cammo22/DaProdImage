@@ -36,6 +36,12 @@ Gira su una scheda NVIDIA **da 6-8 GB**, senza cloud e senza abbonamenti.
 <img src="risorse/crea.png" width="860" alt="Crea: il preset Foto a sinistra, i tre modelli in alto, la Vespa a Positano">
 </div>
 
+## Novità della 1.4
+
+- **Qwen veloce**: Qwen-Image 2.1 col LoRA Lightning (4 passi), **15 secondi a 1 MP invece di 73**. È la seconda pillola in alto. Qwen base ora fa 25 passi (erano 40) e la cache KV è a Q4 (modifiche con foto circa il 10% più veloci, stessa qualità a occhio).
+- **Klein ora funziona**: cambi di persona, vestiti, più foto unite. Il problema era che l'LLM che riscrive la richiesta vedeva solo la prima foto; ora le vede tutte. Con Klein l'interfaccia è una pagina sola: scrivi, aggiungi foto se vuoi, CREA.
+- **«L'LLM legge il prompt»**: un interruttore sotto il prompt, per Klein (acceso di serie) e per Qwen (spento di serie).
+
 ## Novità della 1.2.1
 
 - **I modelli si scelgono dalla barra in alto** (sempre visibile, da qualsiasi pagina): **Qwen**, **Klein 3** e **Klein 3 Base**. **FLUX.2 Klein 4B** non c'è più.
@@ -119,8 +125,8 @@ Modifica → Estrai e nelle ricette. Diventa un manichino grigio che il modello 
 
 ## Tre modelli: Qwen e FLUX 3 Klein
 
-Nella barra in alto scegli **chi disegna**: **Qwen base** (Qwen-Image 2.1, 40 passi, con i LoRA), **Klein veloce** (16 passi) o **Klein Base** (la versione normale, 50 passi). I file di Klein si scaricano con un clic dal repository ufficiale di Black Forest Labs.
-Il Turbo di Qwen non c'è più: Klein veloce è il modo rapido.
+Nella barra in alto scegli **chi disegna**: **Qwen** (Qwen-Image 2.1, 25 passi, con i LoRA), **Qwen veloce** (lo stesso col LoRA Lightning, 4 passi: 5 volte più veloce), **Klein 3** (16 passi) o **Klein 3 Base** (la versione normale, 50 passi). I file di Klein e il LoRA Lightning si scaricano con un clic.
+Con Qwen hai Genere, Stile, Modifica (anche solo una zona), Box e Ricette. Con Klein c'è una pagina sola: scrivi e aggiungi foto se vuoi cambiarle o unirle.
 
 Anche la scrittura dei testi (Migliora prompt, Foto → prompt, Idee, Estrai, Unisci foto, Come l'esempio) usa il **Qwen3-VL 4B** di Klein, con Klein e con Qwen: scrive a 46 token al secondo sulla RTX 4060,
 contro 3,3 dell'encoder 8B int8 e 0,55 dell'8B GGUF. «Migliora prompt + Crea» con Qwen passa da 186 a 134 secondi. In Opzioni puoi tornare all'encoder di Qwen. I LoRA hanno due scaffali, uno per Qwen e uno per Klein: ognuno si vede solo col suo modello.
@@ -165,15 +171,15 @@ se la scheda è da 6 GB, il profilo **6 GB** in Opzioni. L'app ti avvisa da sola
 
 - Il motore è **ComfyUI 0.42.3**, a una versione fissata, senza la sua interfaccia, installato con **uv** in
   `%LOCALAPPDATA%\DaProdImage`. Il modello è [Qwen-Image 2.1 Uncensored GGUF](https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-GGUF)
-  (Q4_K_M per 6-8 GB) con i passi della pipeline ufficiale (40, euler, CFG 1). In alternativa **FLUX 3 Klein** (`black-forest-labs/flux-3-image-klein-comfy`), con il suo
+  (Q4_K_M per 6-8 GB) con i passi della pipeline ufficiale (25, euler, CFG 1; 4 col LoRA Lightning). In alternativa **FLUX 3 Klein** (`black-forest-labs/flux-3-image-klein-comfy`), con il suo
   encoder Qwen3-VL 4B e il VAE FLUX.2.
 - **ComfyUI-GGUF** viaggia dentro l'app: il fork di leejet, l'unico che conosce `qwen_image21`, con una nostra
   correzione per ComfyUI 0.39 e successive (`engine/custom_nodes/ComfyUI-GGUF/DAPROD.md`). I **DaProd-Nodi** riempiono la zona
   prima di "rimuovi" e accordano i colori dopo il VAE, così l'incollaggio non si vede.
 - Anteprime dal vivo con **TAEQI 2.1** di madebyollin; traduzione dei prompt con **Opus-MT** (un modello di sola
   traduzione, sul processore, ~300 MB, scaricato da solo); foto convertite con WIC di Windows, come in [DaP Convertitore](https://github.com/cammo22/DaP-Convertitore).
-- Su una RTX 4060 da 8 GB, a 1 MP: Qwen base circa 3 secondi per passo (40 passi in poco meno di 3 minuti a freddo), **Klein veloce in circa 10 secondi a 16 passi (6 a 8 passi)**,
-  Klein Base 50 passi in circa un minuto. Le misure complete sono in [docs/misure-1.1.0.md](docs/misure-1.1.0.md).
+- Su una RTX 4060 da 8 GB, a 1 MP: **Qwen veloce 15 secondi** (4 passi), Qwen base 73 secondi (25 passi, 2,8 s a passo), **Klein 3 in circa 10 secondi** a 16 passi
+  (22 s per modificare una foto, 38 s con due foto). Le misure della 1.4 sono nel [CHANGELOG](CHANGELOG.md), quelle della 1.1 in [docs/misure-1.1.0.md](docs/misure-1.1.0.md).
 
 ## Sviluppare
 

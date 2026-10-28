@@ -21,16 +21,18 @@ await provaBrowser(async (pg) => {
     await pg.screenshot({ path: 'test/.out/v2-box-contratto.png' })
     return
   }
-  await pg.click('[data-modo="modifica"]')
   if (caso === 'modello') {
-    // dalla 1.2.1 il modello si sceglie solo dalla barra in alto: Qwen e Klein 3 (veloce e Base), niente Klein 4B, niente selettore nel pannello
+    // dalla 1.2.1 il modello si sceglie solo dalla barra in alto; dalla 1.4 sono quattro (Qwen, Qwen veloce, Klein 3, Klein 3 Base) e Klein ha una pagina sola
     const barra = pg.locator('.barra-titolo [data-selettore-modello] [data-modello]')
-    assert.deepEqual(await barra.evaluateAll((b) => b.map((x) => x.getAttribute('data-modello'))), ['qwen-base', 'klein', 'klein-base'], 'la barra in alto ha tre modelli')
-    assert.equal(await pannello.locator('[data-id^="modello-"]').count(), 0, 'nel pannello non c\'è più il selettore del modello')
-    assert.match(await pg.locator('.barra-titolo [data-modello][aria-checked="true"]').innerText(), /Klein/, 'fixture usa Klein')
-    assert.equal(await pg.locator('.strip-modi button[title^="La pila"]').count(), 1, 'LoRA accessibili anche con Klein')
+    assert.deepEqual(await barra.evaluateAll((b) => b.map((x) => x.getAttribute('data-modello'))), ['qwen-base', 'qwen-veloce', 'klein', 'klein-base'], 'la barra in alto ha quattro modelli')
+    assert.equal(await pannello.locator('[data-id^="modello-"]').count(), 0, "nel pannello non c'è più il selettore del modello")
+    await pg.click('[data-modello="klein"]')
+    await pg.locator('.strip-modi').waitFor({ state: 'detached' })
+    assert.match(await pg.locator('.barra-titolo [data-modello][aria-checked="true"]').innerText(), /Klein/, 'Klein scelto')
+    assert.equal(await pg.locator('.colonna.destra:visible h3.chiudibile:has-text("LoRA")').count(), 1, 'LoRA accessibili anche con Klein, dentro la pagina')
     return
   }
+  await pg.click('[data-modo="modifica"]')
   await pg.click('.attrezzi button:has-text("Dal PC")')
   await pg.click('[data-id="cat-vestiti"]')
   const capo = pannello.locator('[data-controllo="capo"]')
@@ -51,5 +53,5 @@ await provaBrowser(async (pg) => {
   await titolo.getByRole('textbox').fill('CIAO "MONDO"')
   assert.equal(await titolo.getByRole('textbox').inputValue(), 'CIAO "MONDO"')
   await pg.screenshot({ path: 'test/.out/v2-controlli.png' })
-}, () => { window.daprod.impostazioni.salva({ famiglia: 'klein', modelloScelto: 'klein' }) })
+})
 console.log('OK: regressioni GUI v2 / ' + caso)

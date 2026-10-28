@@ -223,7 +223,9 @@ function registraIpc(): void {
       upscaler: leggi('upscale_models', /\.(pth|safetensors)$/i),
       klein: tutti.filter(isKlein),
       kleinTe: enc.filter(isKleinTe),
-      kleinVae: vae.filter(isKleinVae)
+      kleinVae: vae.filter(isKleinVae),
+      // il LoRA di «Qwen veloce» (Lightning): sta in loras/, col nome che dicono le impostazioni
+      lightning: existsSync(join(c, 'loras', impostazioni().loraTurbo))
     }
   })
   gestisci('modelli:inutilizzati', () => fileInutilizzati())

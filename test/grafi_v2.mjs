@@ -96,5 +96,35 @@ const rq = costruisci({ modalita: 'crea', famiglia: 'qwen', passi: 20, regioni }
 uguale('Qwen + riquadri: a parole', /Compose the image with these elements/.test(testoDi(rq)) && !testoDi(rq).includes('bbox'), true)
 uguale('senza riquadri il prompt è quello', testoDi(costruisci({ modalita: 'crea', famiglia: 'klein', passi: 8 })), base.prompt)
 
+// --- 1.4: Qwen veloce (LoRA Lightning a 4 passi): la scaletta spostata (max_shift 0,9) in TUTTE le modalità, non solo in Crea ---
+const impL = { ...imp, loraTurbo: 'qwen-image-2.1-lightning-4step.safetensors' }
+const turbo = { turbo: true, passi: 4 }
+const shift = (g) => nodi(g, 'ModelSamplingFlux').map((n) => [n.inputs.max_shift, n.inputs.base_shift])
+const conLightning = (q, ing = ing1) => costruisci({ ...base, ...q, ...turbo }, impL, ing)
+uguale('Lightning: il LoRA a forza 1', nodi(conLightning({ modalita: 'crea', famiglia: 'qwen' }), 'LoraLoaderModelOnly').map((n) => [n.inputs.lora_name, n.inputs.strength_model]), [['qwen-image-2.1-lightning-4step.safetensors', 1]])
+uguale('Lightning Crea: shift 0,9', shift(conLightning({ modalita: 'crea', famiglia: 'qwen' })), [[0.9, 0.5]])
+uguale('Lightning Modifica: shift 0,9', shift(conLightning({ modalita: 'modifica', famiglia: 'qwen', immagini: ['a.png'] })), [[0.9, 0.5]])
+uguale('Lightning Varia: shift 0,9', shift(conLightning({ modalita: 'varia', famiglia: 'qwen', immagini: ['a.png'] })), [[0.9, 0.5]])
+uguale('Lightning Zona: shift 0,9', shift(conLightning({ modalita: 'zona', famiglia: 'qwen', immagini: ['a.png'], maschera: 'm.png', riquadro: { x: 10, y: 10, w: 50, h: 50 } }, { ...ing1, maschera: 'm.png' })), [[0.9, 0.5]])
+uguale('senza Turbo niente ModelSamplingFlux', shift(costruisci({ ...base, modalita: 'modifica', famiglia: 'qwen', immagini: ['a.png'] }, impL, ing1)), [])
+uguale('Klein non prende il Lightning', [nodi(costruisci({ ...base, modalita: 'crea', famiglia: 'klein', ...turbo }, impL), 'ModelSamplingFlux').length, nodi(costruisci({ ...base, modalita: 'crea', famiglia: 'klein', ...turbo }, impL), 'LoraLoaderModelOnly').length], [0, 0])
+uguale('la cache KV di Qwen col tipo scelto', nodi(costruisci({ ...base, modalita: 'crea', famiglia: 'qwen' }, { ...imp, cacheTipo: 'int4' }), 'QwenImage21Cache').map((n) => n.inputs.dtype), ['int4'])
+
+// --- 1.4: negativo di Klein = positivo azzerato (come BFL); se lo scrivi tu, quello ---
+const kz = costruisci({ ...base, modalita: 'crea', famiglia: 'klein' })
+uguale('Klein: negativo = ConditioningZeroOut del positivo', [nodi(kz, 'ConditioningZeroOut').length, nodi(kz, 'CLIPTextEncode').length], [1, 1])
+const kn = costruisci({ ...base, modalita: 'crea', famiglia: 'klein-base', negativo: 'blurry' })
+uguale('Klein Base: negativo scritto da te', [nodi(kn, 'ConditioningZeroOut').length, nodi(kn, 'CLIPTextEncode').map((n) => n.inputs.text).sort()], [0, ['a red fox in a forest', 'blurry']])
+
+// --- 1.4: l'LLM che scrive il prompt guarda TUTTE le foto (BatchImagesNode → TextGenerate) ---
+const desc = (immagini) => costruisci({ ...base, modalita: 'descrivi', famiglia: 'klein', encoderKlein: true, prompt: 'x', sistema: 's', maxToken: 100, immagini: [] }, imp, { immagini })
+const foto = (n, l = 1024, a = 1024) => ({ nome: n, larghezza: l, altezza: a })
+const d1 = desc([foto('a.png')])
+uguale('descrivi con una foto: LoadImage diretto, niente lotto', [nodi(d1, 'BatchImagesNode').length, nodi(d1, 'LoadImage').length], [0, 1])
+const d3 = desc([foto('a.png', 1024, 1024), foto('b.png', 800, 1200), foto('c.png', 500, 500)])
+uguale('descrivi con tre foto: un lotto di tre, alla forma della prima', [nodi(d3, 'BatchImagesNode').length, Object.keys(nodi(d3, 'BatchImagesNode')[0].inputs).sort(), nodi(d3, 'ImageScale').every((n) => n.inputs.width === nodi(d3, 'ImageScale')[0].inputs.width && n.inputs.height === nodi(d3, 'ImageScale')[0].inputs.height)], [1, ['images.image0', 'images.image1', 'images.image2'], true])
+uguale('descrivi: il lotto va al TextGenerate', nodi(d3, 'TextGenerate')[0].inputs.image[0], Object.keys(d3.prompt).find((k) => d3.prompt[k].class_type === 'BatchImagesNode'))
+uguale('descrivi senza foto: niente image', 'image' in nodi(desc([]), 'TextGenerate')[0].inputs, false)
+
 console.log(falliti ? `${falliti} FALLITI su ${fatti}` : `TUTTI OK (${fatti} controlli)`)
 process.exit(falliti ? 1 : 0)

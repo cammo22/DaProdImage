@@ -2,9 +2,11 @@
 // Per ogni lavoro: carica le foto, costruisce il grafo, segue avanzamento e anteprime,
 // e alla fine porta l'immagine in galleria con dentro le impostazioni.
 import { nativeImage } from 'electron'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomInt, randomUUID } from 'node:crypto'
 import type { Famiglia, Impostazioni, Lavoro, Richiesta } from '@shared/tipi'
+import { potenziaPer } from '@shared/modelli'
 import { USCITA } from '../percorsi'
 import { impostazioni, profiloMemoria, registraTempo, stimaPasso } from '../impostazioni'
 import { costruisci, type GrafoPronto, type Ingressi } from './grafi'
@@ -14,7 +16,7 @@ import { accoda, caricaImmagine, chiaviRtx, collegato, connetti, interrompi, nod
 import { avviaMotore, infoMotore, aggiornaVram } from './processo'
 import { aggiungi } from '../galleria'
 import { pulisciDidascalia, senzaTitolo } from './didascalia'
-import { PUP_I2I, PUP_I2I_BREVE, PUP_T2I, PUP_T2I_BREVE } from './pup'
+import { PUP_I2I, PUP_QWEN_I2I, PUP_T2I, PUP_T2I_BREVE } from './pup'
 import { encoderKleinFile, fileKlein } from './klein'
 import { cambioDiModello, faseScarico, occupaImmagine, occupaTesto, scriveCol4B, type Occupa } from './spazio'
 import { elencoLora } from '../lora'
@@ -302,6 +304,23 @@ const SEGMENTATORI: Record<string, { id: string; nome: string }> = {
   segmenta: { id: 'seg-sam2', nome: 'SAM 2' }
 }
 
+/** «Qwen veloce» (richiesta con `turbo`) vuole il LoRA Lightning: se non c'è, lo scarica (67 MB) invece di far fallire il lavoro con un errore del motore */
+async function lightningPronto(l: Lavoro, imp: Impostazioni): Promise<void> {
+  const c = join(imp.cartellaModelli, 'loras', imp.loraTurbo)
+  if (existsSync(c)) return
+  l.fase = 'Scarico il LoRA Lightning'
+  avvisa(l)
+  try {
+    await scaricaVoce('lora-lightning', (r, t) => {
+      l.fase = `Scarico il LoRA Lightning${t ? ` · ${Math.round((r / t) * 100)}%` : ''}`
+      avvisa(l, false)
+    })
+  } catch (e) {
+    throw new Error(`Non riesco a scaricare il LoRA Lightning (serve a «Qwen veloce»): ${(e as Error).message}`)
+  }
+  if (!existsSync(c)) throw new Error('Il LoRA Lightning non è sul disco: scegli «Qwen» invece di «Qwen veloce», o scaricalo dalla pagina LoRA.')
+}
+
 /** il segmentatore è sul disco? se manca lo scarica (BiRefNet ~450 MB, SAM 2 ~185 MB); se non ci riesce il lavoro fallisce con un messaggio chiaro */
 async function segmentatorePronto(l: Lavoro, s: { id: string; nome: string }): Promise<void> {
   const stato = (): boolean => !!statoModelli().find((v) => v.id === s.id)?.presente
@@ -322,38 +341,42 @@ async function segmentatorePronto(l: Lavoro, s: { id: string; nome: string }): P
 // le didascalie già scritte (più immagini dallo stesso prompt = un'espansione sola)
 const potenziati = new Map<string, string>()
 
-/** Klein: espande una richiesta breve in una didascalia dettagliata (come l'upsampler ufficiale); in inglese anche se la richiesta era in italiano.
+/** «L'LLM legge il prompt prima di disegnare» (Klein di serie, Qwen a scelta): espande una richiesta breve in una didascalia o in un'istruzione dettagliata,
+ *  GUARDANDO TUTTE LE FOTO (non solo la prima: altrimenti un «sostituisci la donna con l'uomo della seconda foto» non può funzionare); in inglese anche se la richiesta era in italiano.
  *  Se non riesce si ripiega sulla traduzione normale.
- *  `impLavoro` sono le impostazioni del lavoro (con i file di Klein già risolti): l'upsampler usa l'encoder della famiglia,
- *  così con Klein scrive col suo Qwen3-VL 4B, che è molto più scattante del Qwen 8B. */
+ *  `impLavoro` sono le impostazioni del lavoro (con i file di Klein già risolti): scrive il Qwen3-VL 4B (tutto in VRAM, decine di token al secondo) se c'è;
+ *  con Qwen solo se `testoCon4B` è acceso, se no il suo encoder (8B, molto più lento). */
 async function potenzia(l: Lavoro, ing: Ingressi, impLavoro: Impostazioni, fam: Famiglia): Promise<string> {
   const q = l.richiesta
   const p = q.prompt.trim()
   const conFoto = ing.immagini.length > 0
-  const chiave = `${fam}|${conFoto}|${q.larghezza}x${q.altezza}|${p}`
+  const chiave = `${fam}|${ing.immagini.map((i) => i.nome).join(',')}|${q.larghezza}x${q.altezza}|${p}`
   const gia = potenziati.get(chiave)
   if (gia) return gia
-  const imp = impLavoro
-  l.fase = 'Potenzio il prompt'
+  // chi scrive: il 4B (con Qwen solo se è acceso `testoCon4B`) o l'encoder della famiglia
+  const file4B = encoderKleinFile(impLavoro)
+  const encoderKlein = scriveCol4B('descrivi', fam, undefined, !!impLavoro.testoCon4B, !!file4B)
+  const imp = encoderKlein ? { ...impLavoro, kleinEncoder: file4B } : impLavoro
+  l.fase = 'Leggo il prompt'
   avvisa(l)
   // il testo che l'upsampler vede: con foto, la richiesta di modifica; da zero, la richiesta e la forma della tela (TARGET CANVAS)
   const mcd = (a: number, b: number): number => (b ? mcd(b, a % b) : a)
   const g0 = mcd(q.larghezza || 1, q.altezza || 1)
-  // il Qwen3-VL 4B (l'encoder di Klein) capisce solo i prompt di sistema brevi (con quello lungo ricopia le regole): con lui si usano quelli, e la richiesta da foto va nuda
-  // (con «Reference images follow… Output the caption» risponde «user»)
-  const encoderKlein = fam !== 'qwen' && !!imp.kleinEncoder
-  const richiesta = p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)
+  // il 4B vuole la richiesta da foto «nuda» (con «Reference images follow… Output the caption» risponde «user»): le foto le vede dal nodo. Il prompt di sistema ufficiale
+  // (lungo) funziona anche con lui quando vede tutte le foto (misurato in 1.4); da zero il 4B si perde col prompt lungo, per lui c'è la versione breve.
+  // Klein cita le foto a parole («the second image»), Qwen coi tag <image2>: la richiesta si adatta.
+  const richiesta = fam === 'qwen' ? p : p.replace(/<image(\d+)>/g, (_m, n: string) => `the image number ${n}`)
   const utente = conFoto
     ? encoderKlein
       ? richiesta
       : `Reference images follow in order (the first image, the second image, ...).\nUser request: ${richiesta}\nOutput the caption.`
     : `${q.larghezza > 0 && q.modalita === 'crea' ? `TARGET CANVAS: ${Math.round(q.larghezza / g0)}:${Math.round(q.altezza / g0)}\n` : ''}${p}`
-  const sistema = conFoto ? (encoderKlein ? PUP_I2I_BREVE : PUP_I2I) : encoderKlein ? PUP_T2I_BREVE : PUP_T2I
+  const sistema = conFoto ? (fam === 'qwen' ? PUP_QWEN_I2I : PUP_I2I) : encoderKlein ? PUP_T2I_BREVE : PUP_T2I
   const g = costruisci(
     { ...q, modalita: 'descrivi', encoderKlein, prompt: utente, sistema, maxToken: conFoto ? 320 : 600, temperatura: 0.15, presenza: conFoto ? 0 : 1.5, seed: q.seed >= 0 ? q.seed : randomInt(1, 2 ** 31), immagini: [] },
-    imp, { immagini: ing.immagini.slice(0, 1) }, 'pup'
+    imp, { immagini: ing.immagini.slice(0, 10) }, 'pup'
   )
-  g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Potenzio il prompt']))
+  g.fasi = Object.fromEntries(Object.keys(g.fasi).map((k) => [k, 'Leggo il prompt']))
   const u = await lancia(g, occupaTesto(encoderKlein), l, true)
   const t = pulisciDidascalia(u.testo || '').replace(/^["“]+|["”]+$/g, '').replace(/^(caption|instruction)\s*:\s*/i, '')
   if (t.length < 20) throw new Error('didascalia vuota')
@@ -458,6 +481,7 @@ async function esegui(l: Lavoro): Promise<void> {
     }
     if (!collegato()) await connetti()
     if (l.richiesta.modalita in SEGMENTATORI) await segmentatorePronto(l, SEGMENTATORI[l.richiesta.modalita])
+    if (l.richiesta.turbo && (l.richiesta.famiglia ?? imp.famiglia) === 'qwen' && !/turbo/i.test(imp.modello) && l.richiesta.modalita !== 'descrivi' && l.richiesta.modalita !== 'traduci') await lightningPronto(l, imp)
     const ing = await prepara(l.richiesta)
     // FLUX 3 Klein: i suoi file (scelti, scaricati dall'app o messi a mano) e, se serve, il prompt espanso
     const fam = l.richiesta.famiglia ?? imp.famiglia
@@ -472,7 +496,7 @@ async function esegui(l: Lavoro): Promise<void> {
       impLavoro = { ...imp, kleinModello: f.modello, kleinBase: f.modello, kleinEncoder: f.encoder, kleinVae: f.vae }
     }
     let inglese: string
-    if (usaKlein && imp.potenziaKlein && l.richiesta.potenzia && l.richiesta.prompt.trim() && (l.richiesta.modalita === 'crea' || l.richiesta.modalita === 'modifica')) {
+    if ((usaKlein || fam === 'qwen') && potenziaPer(imp, fam) && l.richiesta.potenzia && l.richiesta.prompt.trim() && (l.richiesta.modalita === 'crea' || l.richiesta.modalita === 'modifica')) {
       try {
         inglese = await potenzia(l, ing, impLavoro, fam)
       } catch (e) {

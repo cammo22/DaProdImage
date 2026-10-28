@@ -1,7 +1,8 @@
 // Da una Richiesta al grafo di ComfyUI (formato API). Ogni modalità usa gli stessi pezzi:
 //   modello GGUF → (Turbo) → LoRA → cache KV di Qwen-Image 2.1 · text encoder Qwen3-VL · VAE
-// e i parametri della pipeline ufficiale (euler/simple, cfg 1, 40 passi; 8 col Turbo).
+// e i parametri della pipeline ufficiale (euler/simple, cfg 1, 25 passi; 4 col LoRA Lightning).
 import { modelloTurbo } from '@shared/tipi'
+import { shiftDi } from '@shared/modelli'
 import type { Famiglia, Impostazioni, LoraAttiva, Richiesta, Riquadro } from '@shared/tipi'
 import type { ChiaviRtx } from './cliente'
 import { promptConPosizioni, promptKleinConBox, regioniPronte } from './regioni'
@@ -57,8 +58,15 @@ export function dimensioniPer(mp: number, larghezza: number, altezza: number): {
   return { w: m32(larghezza * s), h: m32(altezza * s) }
 }
 
-/** il Turbo è acceso e il suo LoRA c'è? */
+/** il Turbo (dalla 1.4 il LoRA Lightning a 4 passi) è acceso e il suo LoRA c'è? */
 const conTurbo = (q: Richiesta, imp: Impostazioni): boolean => !!q.turbo && (modelloTurbo(imp.modello) || !!imp.loraTurbo)
+
+/** Lightning (e il vecchio Turbo8) sono allenati con la scaletta del rumore spostata come nel loro workflow, e lo spostamento dipende dalla grandezza
+ *  della latente: `ModelSamplingFlux` davanti al campionatore, in tutte le modalità (nella scheda del modello vale per testo→immagine e per le modifiche) */
+function conShiftTurbo(g: Grafo, q: Richiesta, imp: Impostazioni, model: Rif, w: number, h: number): Rif {
+  if (famigliaDi(q, imp) !== 'qwen' || !conTurbo(q, imp) || modelloTurbo(imp.modello)) return model
+  return r(g.add('ModelSamplingFlux', { model, max_shift: shiftDi(imp.loraTurbo), base_shift: 0.5, width: w, height: h }))
+}
 
 /** il text encoder: safetensors col CLIPLoader, GGUF (Q4/Q6/Q8) col suo loader, che trova da solo l'mmproj accanto */
 function caricaClip(g: Grafo, imp: Impostazioni): Rif {
@@ -75,6 +83,20 @@ function caricaClip(g: Grafo, imp: Impostazioni): Rif {
 function caricaClipPerTesto(g: Grafo, imp: Impostazioni, kleinEncoder: boolean | undefined): Rif {
   if (!kleinEncoder || !imp.kleinEncoder) return caricaClip(g, imp)
   return r(g.add('CLIPLoader', { clip_name: imp.kleinEncoder, type: 'krea2', device: imp.encoderSuCpu ? 'cpu' : 'default' }, 'Carico il text encoder'))
+}
+
+/** le foto che l'LLM guarda mentre scrive. Una sola: com'è (i grafi di prima non cambiano). Più foto (i riferimenti di Klein): vanno tutte a un solo
+ *  lotto, come nel flusso ufficiale (BatchImagesNode → TextGenerate), ognuna a ~0,4 MP e alla forma della prima, così l'upsampler vede chi c'è in ogni foto. */
+function fotoPerTesto(g: Grafo, immagini: Ingressi['immagini']): Rif {
+  if (immagini.length === 1) return r(g.add('LoadImage', { image: immagini[0].nome }, 'Guardo la foto'))
+  const prima = dimensioniPer(0.4, immagini[0].larghezza, immagini[0].altezza)
+  const pronte = immagini.slice(0, 10).map((im, i) => {
+    const caricata = r(g.add('LoadImage', { image: im.nome }, i === 0 ? 'Guardo le foto' : undefined))
+    return r(g.add('ImageScale', { image: caricata, upscale_method: 'lanczos', width: prima.w, height: prima.h, crop: 'disabled' }))
+  })
+  const inputs: Record<string, unknown> = {}
+  pronte.forEach((p, i) => (inputs[`images.image${i}`] = p))
+  return r(g.add('BatchImagesNode', inputs))
 }
 
 /** il modello che disegna questa richiesta */
@@ -159,10 +181,11 @@ function condiziona(
     const enc = g.add('TextEncodeQwenImage21', inputs, o.fase)
     return { pos: r(enc, 0), neg: r(enc, 1), lat: r(enc, 2) }
   }
-  // Klein non ha i tag <imageN>: le foto si citano a parole («the second image»), come fa il suo prompt upsampler. Il negativo è il testo vuoto, o quello scritto
+  // Klein non ha i tag <imageN>: le foto si citano a parole («the second image»), come fa il suo prompt upsampler. Il negativo è quello scritto,
+  // o (come nei workflow ufficiali di BFL) il positivo azzerato: con Klein Base (CFG 3,5) il testo vuoto codificato non è la stessa cosa
   const parole = o.prompt.replace(/<image(\d+)>/g, (_m, n: string) => `the ${ORDINALI[Number(n) - 1] || 'last'} image`)
   let pos = r(g.add('CLIPTextEncode', { clip: ctx.clip, text: parole }, o.fase))
-  let neg = r(g.add('CLIPTextEncode', { clip: ctx.clip, text: o.neg || '' }))
+  let neg = o.neg ? r(g.add('CLIPTextEncode', { clip: ctx.clip, text: o.neg })) : r(g.add('ConditioningZeroOut', { conditioning: pos }))
   o.immagini.slice(0, 10).forEach((im, i) => {
     const pronta =
       i === 0 && o.misuraPrima
@@ -355,7 +378,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
       system_prompt: q.sistema || ''
     }
     if (q.presenza !== undefined) inputs['sampling_mode.presence_penalty'] = q.presenza
-    if (ing.immagini[0]) inputs.image = r(g.add('LoadImage', { image: ing.immagini[0].nome }, 'Guardo la foto'))
+    if (ing.immagini.length) inputs.image = fotoPerTesto(g, ing.immagini)
     const gen = g.add('TextGenerate', inputs, 'Scrivo')
     const uscita = g.add('PreviewAny', { source: r(gen, 0) })
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: 0, passi: q.maxToken || 400 }
@@ -406,11 +429,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico i riferimenti')))
     const cond = condiziona(g, fam, { clip, vae }, { prompt: testo, neg, resolution: 1024, conVae: caricate.length > 0, immagini: caricate, mpRiferimenti: 1, scalaDa: 0, fase: leggo })
     const lat = latenteVuota(g, fam, q.larghezza, q.altezza)
-    // il Turbo è stato allenato con la scaletta del rumore che dipende dalla grandezza (come nel suo workflow)
-    const m = fam === 'qwen' && conTurbo(q, imp) && !modelloTurbo(imp.modello)
-      ? r(g.add('ModelSamplingFlux', { model, max_shift: 0.6935, base_shift: 0.5, width: q.larghezza, height: q.altezza }))
-      : model
-    const ks = campiona(g, q, fam, m, cond, lat, q.passi, 1, { w: q.larghezza, h: q.altezza })
+    const ks = campiona(g, q, fam, conShiftTurbo(g, q, imp, model, q.larghezza, q.altezza), cond, lat, q.passi, 1, { w: q.larghezza, h: q.altezza })
     const mp = (q.larghezza * q.altezza) / 1048576
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), q.larghezza, q.altezza, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi: q.passi }
@@ -423,7 +442,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const caricate = ing.immagini.slice(0, fam === 'qwen' ? 16 : 10).map((im) => r(g.add('LoadImage', { image: im.nome }, 'Carico le foto')))
     const cond = condiziona(g, fam, { clip, vae }, { prompt: conRegioni(q.prompt, q, fam, true), neg, resolution: res, conVae: true, immagini: caricate, misuraPrima: d, fase: leggo })
     const lat = cond.lat ?? latenteVuota(g, fam, d.w, d.h)
-    const ks = campiona(g, q, fam, model, cond, lat, q.passi, 1, d)
+    const ks = campiona(g, q, fam, conShiftTurbo(g, q, imp, model, d.w, d.h), cond, lat, q.passi, 1, d)
     const mp = (d.w * d.h) / 1048576
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), d.w, d.h, rtx), prefisso)
     const area = { x: 0, y: 0, w: ing.immagini[0].larghezza, h: ing.immagini[0].altezza }
@@ -454,7 +473,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
     const lat = codifica(g, img, vae, mp)
     const forza = q.forza ?? (q.modalita === 'rifinisci' ? 0.45 : 0.65)
     const passi = passiPer(q.passi, forza, minimo)
-    const ks = campiona(g, q, fam, model, cond, lat, passi, forza, { w: W, h: H })
+    const ks = campiona(g, q, fam, conShiftTurbo(g, q, imp, model, W, H), cond, lat, passi, forza, { w: W, h: H })
     const uscita = salva(g, allaMisura(g, q, imp, sviluppa(g, q, ks, vae, mp, fam !== 'qwen'), W, H, rtx), prefisso)
     return { prompt: g.nodi, uscita, fasi: g.fasi, megapixel: mp, passi }
   }
@@ -564,7 +583,7 @@ export function costruisci(q: Richiesta, imp: Impostazioni, ing: Ingressi, prefi
   const mp = (box.tw * box.th) / 1048576
   const lat0 = codifica(g, sorgente, vae, mp)
   const lat = r(g.add('SetLatentNoiseMask', { samples: lat0, mask: mLatente }))
-  const dd = r(g.add('DifferentialDiffusion', { model, strength: 1 }))
+  const dd = r(g.add('DifferentialDiffusion', { model: conShiftTurbo(g, q, imp, model, box.tw, box.th), strength: 1 }))
   const forza = q.forza ?? 1
   const passi = passiPer(q.passi, forza, minimo)
   const ks = campiona(g, q, fam, dd, cond, lat, passi, forza, { w: box.tw, h: box.th })

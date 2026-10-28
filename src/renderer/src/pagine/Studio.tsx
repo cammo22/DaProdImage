@@ -22,6 +22,11 @@ export function modoStudio(): ModoStudio | null {
 /** apre un modo dello Studio */
 export function vaiModo(modo: ModoStudio): void {
   const s = usaStato.getState()
+  // con Klein c'è solo Crea
+  if ((s.imp?.famiglia ?? 'qwen') !== 'qwen') {
+    s.vai('crea')
+    return
+  }
   if (modo === 'ricette') {
     s.setModifica({ modo: 'ricette' })
     s.vai('modifica')

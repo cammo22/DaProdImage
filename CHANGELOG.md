@@ -1,5 +1,53 @@
 # Changelog
 
+## 1.4.0 — 2026-10-28
+
+Qwen molto più veloce, e Klein che finalmente fa quello che gli chiedi (cambi di persona, vestiti, unire più foto): era un problema di come gli si parlava, non del modello. Tutto misurato sul tuo PC (RTX 4060 8 GB, 1024×1024).
+
+### Perché Klein «non faceva niente»
+
+- **BFL lo scrive nella scheda del modello: «non usare Klein senza un prompt upsampler»**, cioè un LLM che prima legge la richiesta e la riscrive in una descrizione completa. L'app lo faceva, ma l'LLM **vedeva solo la prima foto**: scriveva «sostituisci la donna con l'uomo della seconda foto» senza sapere com'è l'uomo, e Klein restituiva la seconda foto com'era. Provato: con la frase corta il risultato era l'uomo della foto 2 identico; con tutte le foto in vista all'LLM, l'uomo prende il posto della donna con la sua posa, la tazza «MORNING», il muro e la luce.
+- Ora l'LLM guarda **tutte le foto** (in un lotto solo, come nel flusso ufficiale) e scrive in 3-6 secondi. Con le foto usa il prompt di sistema ufficiale di BFL.
+- Il negativo di Klein è il positivo azzerato (come nei flussi di BFL), non più il testo vuoto: conta con Klein Base (CFG 3,5).
+- Provato anche: la cache KV di FLUX (`FluxKVCache`) su Klein 3 non fa niente (stesso tempo), quindi non c'è.
+
+### Klein: una pagina sola
+
+- Scegli **Klein 3** o **Klein 3 Base** in alto e l'interfaccia diventa semplice: **scrivi** cosa vuoi; se vuoi, **aggiungi foto** (fino a 10: la prima è quella che cambia, le altre sono riferimenti). Con foto è una modifica e l'immagine esce grande come la foto 1; con «Scelgo io» scegli formato e misura e ne esce una nuova con quei riferimenti. Niente Genere, Stile, Box, Ricette né schede: Klein fa tutto da solo. Restano **Quante**, **Seed** e **LoRA** (dentro «Altro» e «LoRA», chiusi).
+- Le foto trascinate sulla finestra, e «Cambia» sotto un risultato, vanno nelle Foto di Klein.
+- Sotto il risultato puoi aprire **«Quello che ha visto il modello»**: il testo che l'LLM ha scritto.
+
+### L'LLM che legge il prompt: a scelta, per tutti e due i modelli
+
+- Un interruttore **«L'LLM legge il prompt»** sotto la casella del prompt (Crea e Modifica) e in Opzioni. **Klein: acceso di serie** (ne ha bisogno). **Qwen: spento di serie** (capisce bene anche i prompt brevi), ma si può accendere: con Qwen l'LLM scrive col suo stile (i tag `<image1>`, `<image2>` che vuole il suo enhancer ufficiale) e aiuta le modifiche difficili.
+- Scrive il **Qwen3-VL 4B** (tutto nella VRAM, ~3-6 s); se non c'è, l'encoder di Qwen.
+
+### Qwen veloce
+
+- **Nuovo modello «Qwen veloce»** (la seconda pillola in alto): Qwen-Image 2.1 col **LoRA Lightning di LightX2V** (distillazione a 4 passi, CFG 1, per testo→immagine e modifiche; 67 MB, si scarica con un clic). Misurato: **1 MP in 15 s invece di 73** (a 25 passi), testi sull'immagine compresi (la tazza «MORNING» esce giusta). A 2,25 MP: 58 s a freddo; a 4 MP (2048×2048): 72 s. Il LoRA Fun-Acc di Alibaba PAI, provato, non si carica nel motore (chiavi non riconosciute: le immagini escono sfocate): non c'è.
+- **Qwen base fa 25 passi invece di 40**: sono quelli dei workflow ufficiali di ComfyUI per Qwen-Image 2.1. 1 MP: 73 s a freddo e a caldo (2,8 s a passo).
+- **Cache KV a Q4 di serie.** La cache del prompt e delle foto di Qwen costa un quarto della memoria. Misurato su una modifica a 25 passi: **3,5 → 3,1 s a passo (−11%)**, immagine uguale a occhio (40,7 dB di somiglianza con la cache piena; int8 50 dB); spenta la cache va il doppio più piano (8,3 s a passo). Con i 4 passi di Lightning la composizione può cambiare un po' (stesso seme, stessa qualità). Si cambia in Opzioni → Avanzate. Le impostazioni esistenti passano a Q4, a Lightning e a 25 passi una volta sola.
+
+### Misure sulla tua scheda (RTX 4060 8 GB, caldo, 1 MP se non diversamente detto)
+
+| | tempo |
+| --- | --- |
+| Qwen veloce (4 passi) | 15 s |
+| Qwen (25 passi) | 73 s (2,8 s a passo) |
+| Qwen, modifica con una foto, 25 passi | 3,1 s a passo con Q4 (3,5 con la cache piena) |
+| Klein 3 da zero (16 passi) | 9-12 s |
+| Klein 3 da zero a 4 MP (2048×2048) | 58 s |
+| Klein 3, modifica con 1 foto / 2 foto / 3 foto | 22 s / 38 s / 56 s |
+| Klein 3 Base (50 passi, CFG 3,5), da zero / modifica | 56 s / 116 s |
+| LLM che legge il prompt (4B) | 3-6 s |
+
+A 4 MP, nelle zone sfocate dello sfondo di Klein si vede un po' di banding (a gradini): non indagato, a 1 MP non c'è.
+
+### Dentro
+
+- `test/bench-motore.mjs`: misure di velocità e immagini sul motore vero (un ComfyUI a parte, la tua app non c'entra).
+- Prove nuove: `test/interfaccia-1.4.mjs` (quattro modelli, Qwen coi suoi modi, Klein con una pagina sola, foto → modifica), `test/grafi_v2.mjs` (Lightning in tutte le modalità, negativo di Klein, LLM che guarda più foto), `test/modelli.mjs`.
+
 ## 1.3.0 — 2026-10-28
 
 Un giro di pulizia: i LoRA di Klein funzionano davvero, Klein parte dai 16 passi indicati da Black Forest Labs, Crea si usa subito (scrivi, scegli il formato, premi CREA) e le Opzioni sono corte, con tutto il resto in «Avanzate».

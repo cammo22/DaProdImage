@@ -22,12 +22,13 @@ function uguale(nome, avuto, atteso) {
 }
 
 // la mappa
-uguale('tre modelli, in ordine (niente Klein 4B dalla 1.2.1)', M.ORDINE_MODELLI, ['qwen-base', 'klein', 'klein-base'])
-uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'qwen-base'])
-uguale('qwen-base', [M.MODELLI['qwen-base'].famiglia, M.MODELLI['qwen-base'].passi, M.MODELLI['qwen-base'].turbo, M.MODELLI['qwen-base'].lora], ['qwen', 40, false, true])
+uguale('quattro modelli, in ordine (niente Klein 4B dalla 1.2.1)', M.ORDINE_MODELLI, ['qwen-base', 'qwen-veloce', 'klein', 'klein-base'])
+uguale('le chiavi della mappa', Object.keys(M.MODELLI).sort(), ['klein', 'klein-base', 'qwen-base', 'qwen-veloce'])
+uguale('qwen-base', [M.MODELLI['qwen-base'].famiglia, M.MODELLI['qwen-base'].passi, M.MODELLI['qwen-base'].turbo, M.MODELLI['qwen-base'].lora], ['qwen', 25, false, true])
+uguale('qwen-veloce: Lightning, 4 passi', [M.MODELLI['qwen-veloce'].famiglia, M.MODELLI['qwen-veloce'].passi, M.MODELLI['qwen-veloce'].turbo, M.MODELLI['qwen-veloce'].lora], ['qwen', 4, true, true])
 uguale('klein', [M.MODELLI.klein.famiglia, M.MODELLI.klein.passi, M.MODELLI.klein.cfg, M.MODELLI.klein.veloce], ['klein', 16, 1, true])
 uguale('klein-base', [M.MODELLI['klein-base'].famiglia, M.MODELLI['klein-base'].passi, M.MODELLI['klein-base'].cfg], ['klein-base', 50, 3.5])
-uguale('nessun modello col Turbo', Object.values(M.MODELLI).some((m) => m.turbo), false)
+uguale('solo qwen-veloce ha il LoRA Lightning', Object.values(M.MODELLI).filter((m) => m.turbo).map((m) => m.id), ['qwen-veloce'])
 for (const id of M.ORDINE_MODELLI) uguale(`id dentro la voce ${id}`, M.MODELLI[id].id, id)
 uguale('predefinito', M.MODELLO_PREDEFINITO, 'qwen-base')
 
@@ -49,7 +50,8 @@ uguale('imp 1.0 klein-base', M.modelloDaImpostazioni({ famiglia: 'klein-base' })
 uguale('imp 0.x senza famiglia', M.modelloDaImpostazioni({}), 'qwen-base')
 uguale('imp nulle', M.modelloDaImpostazioni(null), 'qwen-base')
 uguale('imp 1.1: vince modelloScelto', M.modelloDaImpostazioni({ famiglia: 'qwen', modelloScelto: 'klein' }), 'klein')
-uguale('imp con modelloScelto rovinato', M.modelloDaImpostazioni({ famiglia: 'klein-base', modelloScelto: 'qwen-veloce' }), 'klein-base')
+uguale('imp con modelloScelto rovinato', M.modelloDaImpostazioni({ famiglia: 'klein-base', modelloScelto: 'sdxl' }), 'klein-base')
+uguale('imp con qwen-veloce', M.modelloDaImpostazioni({ famiglia: 'qwen', modelloScelto: 'qwen-veloce' }), 'qwen-veloce')
 
 // salvataggio: modelloScelto e famiglia restano d'accordo
 uguale('salva modelloScelto', M.allineaScelta({ modelloScelto: 'klein' }), { modelloScelto: 'klein', famiglia: 'klein' })
@@ -66,13 +68,23 @@ uguale('opera senza modello (PNG da fuori)', M.modelloDaOpera({ modello: '' }), 
 uguale('opera nulla', M.modelloDaOpera(undefined), 'qwen-base')
 
 // quello che va nella Richiesta
-uguale('parametri qwen-base', M.parametriModello('qwen-base'), { famiglia: 'qwen', passi: 40, turbo: false })
+uguale('parametri qwen-base', M.parametriModello('qwen-base'), { famiglia: 'qwen', passi: 25, turbo: false })
+uguale('parametri qwen-veloce', M.parametriModello('qwen-veloce'), { famiglia: 'qwen', passi: 4, turbo: true })
 uguale('parametri klein', M.parametriModello('klein'), { famiglia: 'klein', passi: 16, turbo: false })
 uguale('parametri klein-base', M.parametriModello('klein-base'), { famiglia: 'klein-base', passi: 50, turbo: false })
 
 // Rifai in qualità piena
 uguale('piena da klein', M.inQualitaPiena('klein'), ['klein-base', 'qwen-base'])
 uguale('piena da qwen-base', M.inQualitaPiena('qwen-base'), [])
+uguale('piena da qwen-veloce', M.inQualitaPiena('qwen-veloce'), ['qwen-base'])
+
+// il LoRA Lightning e l'interruttore «l'LLM legge il prompt»
+uguale('shift Lightning', M.shiftDi(M.LIGHTNING_FILE), 0.9)
+uguale('shift Turbo8 (PNG vecchi)', M.shiftDi('turbo8_lora_step2500.safetensors'), 0.6935)
+uguale('LLM: Klein di serie acceso', M.potenziaPer({}, 'klein'), true)
+uguale('LLM: Qwen di serie spento', M.potenziaPer({}, 'qwen'), false)
+uguale('LLM: Qwen acceso a mano', M.potenziaPer({ potenziaQwen: true }, 'qwen'), true)
+uguale('LLM: Klein spento a mano', M.potenziaPer({ potenziaKlein: false }, 'klein-base'), false)
 uguale('piena da klein-base', M.inQualitaPiena('klein-base'), [])
 
 // le qualità salvate (localStorage, ricette)

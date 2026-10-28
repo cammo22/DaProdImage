@@ -1,7 +1,7 @@
 // Lo stato dell'interfaccia (zustand). Le scelte di Crea/Modifica e i LoRA attivi restano fra un avvio e l'altro.
 import { create } from 'zustand'
 import { FAMIGLIE, type BoxRegione, type Download, type Famiglia, type GruppoLora, type Impostazioni, type InfoLora, type InfoMotore, type Lavoro, type LoraAttiva, type Opera, type Bordi, type Risorse, type StatoAggiornamento } from '@shared/tipi'
-import { senzaTurbo } from '@shared/modelli'
+import { MODELLI, modelloDaImpostazioni, senzaTurbo, type IdModello } from '@shared/modelli'
 import { gruppoDa, gruppoDiFamiglia } from '@shared/loraBase'
 import { api } from './api'
 import type { Misura } from './componenti/Misura'
@@ -19,8 +19,10 @@ export const PASSI_QUALITA: Record<Qualita, number> = { bozza: 20, alta: 40, mas
 
 /** il modello che disegna adesso (Qwen, Klein veloce, Klein Base) */
 export const famigliaCorrente = (): Famiglia => usaStato.getState().imp?.famiglia || 'qwen'
-/** i passi per una qualità col modello scelto (il Turbo di Qwen non c'è più) */
-export const passiDi = (q: Qualita, f: Famiglia = famigliaCorrente()): number => FAMIGLIE[f].passi[q]
+/** il modello scelto in alto (Qwen, Qwen veloce, Klein, Klein Base) */
+export const modelloCorrente = (): IdModello => modelloDaImpostazioni(usaStato.getState().imp)
+/** i passi per una qualità col modello scelto (Qwen veloce ha sempre i suoi 4: è il LoRA Lightning) */
+export const passiDi = (q: Qualita, f: Famiglia = famigliaCorrente()): number => (f === 'qwen' && modelloCorrente() === 'qwen-veloce' ? MODELLI['qwen-veloce'].passi : FAMIGLIE[f].passi[q])
 
 export interface FotoBase {
   percorso: string
@@ -57,6 +59,8 @@ export interface StatoCrea {
   sfondo: 'scena' | 'trasparente' | 'tinta'
   tinta: string
   anteSfondo: 'scacchi' | 'bianco' | 'nero' | 'colore'
+  /** Klein con foto: false = la misura è quella della prima foto (come nei flussi ufficiali), true = scelgo formato e misura io (si crea una foto nuova con quei riferimenti) */
+  misuraLibera?: boolean
 }
 
 /** L'Editor box: i riquadri disegnati sulla tela di Crea (stesso formato, stessa misura) e la scena generale */

@@ -5,6 +5,7 @@ import type { PosizioneCamera } from '../../componenti/Camera'
 import { usaStato, type FotoBase } from '../../stato'
 import { I } from '../../componenti/Icone'
 import { Casella } from '../../componenti/Casella'
+import { InterruttoreLLM } from '../../componenti/InterruttoreLLM'
 import { SchedaIdee } from './SchedaIdee'
 import { usaSpeciale } from '../../workflow'
 import type { Rapida, CategoriaRapide } from '../../rapide'
@@ -89,6 +90,8 @@ function SchedaTesto({ prompt, base, griglia, zona, scrivendo, migliora, setCame
           <button key={i} className="chip" onClick={() => inserisci(`<image${i + (fusion ? 1 : 2)}>`)} title="Inserisci il riferimento nel testo">&lt;image{i + (fusion ? 1 : 2)}&gt;</button>
         ))}
       </div>
+      {/* i modi speciali (Unisci foto, Come l'esempio) hanno già un LLM che pianifica: l'interruttore serve alle modifiche scritte a mano */}
+      {!fusion && !esempioMode && m.modo !== 'espandi' && <InterruttoreLLM />}
       {mancaRif && !griglia && (
         <div className="avviso-box" style={{ marginTop: 10, padding: '8px 10px', fontSize: 13.5 }}>
           Serve {rapida?.rifNome || 'una foto di riferimento'}: aggiungila qui sotto in <b>Riferimenti</b> (nel testo è <b>&lt;image2&gt;</b>).

@@ -2,6 +2,9 @@
 // perché è allenato sulle didascalie lunghe che l'upsampler scrive). L'upsampler vero è un Qwen3.5 da 9 miliardi; qui si usano gli stessi
 // prompt di sistema (dal repo ufficiale github.com/black-forest-labs/flux-3-image-klein, Apache 2.0) col Qwen3-VL che l'app ha già.
 // t2i = da zero, i2i = con foto da modificare o da usare come riferimenti.
+// IMPORTANTE (misurato sulla 4060, 1.4): chi scrive deve VEDERE TUTTE le foto, non solo la prima. Con una foto sola l'upsampler non sa chi c'è nella seconda,
+// scrive «sostituisci la donna con l'uomo» senza dire com'è l'uomo, e Klein restituisce la seconda foto com'è: il «cambio personaggio» non riesce.
+// Con tutte le foto in vista (BatchImagesNode → TextGenerate, come nel flusso ufficiale) anche il 4B scrive istruzioni che funzionano.
 //
 // Klein ha DUE encoder: il Qwen3-VL 4B (suo, entra tutto nella VRAM: ~49 tk/s) e il Qwen3-VL 8B (quello di Qwen-Image: 8,9 GB non entrano nella VRAM da 8 GB,
 // gira quasi tutto sul processore a 0,5-3 tk/s). L'upsampler di Klein usa il 4B, caricato come `krea2` (con `flux3` il tokenizer riempie il prompt di token
@@ -21,3 +24,8 @@ export const PUP_T2I_BREVE =
 
 export const PUP_I2I_BREVE =
   "You are the prompt upsampler of an image-editing model. Look at the reference image. Write ONE detailed, self-contained English instruction for an image-editing model that will edit this image as the user asks. Ground everything in what is really visible: identify each element by its real appearance and never mention content that is not there. State every end state concretely (which color, how large, which pose, which material) and cover the knock-on effects of the change (shadows, reflections, occlusion, perspective, scale, lighting). Output only the instruction, as one continuous prose block of 50 to 150 words, with no greetings, no explanations, no Markdown."
+
+// Qwen-Image 2.1 non vuole ordinali a parole ma i tag <image1>, <image2>… (lo dice il prompt ufficiale del suo «prompt enhancer»: «MUST use <image1>, <image2>… Do not use
+// natural language references like "the first image"»). Versione corta, come le altre, per il 4B.
+export const PUP_QWEN_I2I =
+  "You write instructions for an image-editing model. You see the input images, attached in order, and the user's short request (it may be in any language). Rewrite it as ONE clear, detailed English instruction for the editing model. When there are several images, refer to them ONLY with the tags <image1>, <image2>, ... in the order they are attached, never with words like \"the first image\"; with a single image just say \"the image\". Say what to take from each image and what is newly generated, and ground everything in what is really visible: identify each element by its real appearance. State every end state concretely (color, size, pose, material). Close with one short clause naming what stays unchanged; transferred people keep their identity, face and accessories unless asked otherwise. Transcribe on-image text verbatim inside double quotes. Output only the instruction, as one continuous prose block of 40 to 120 words, with no greetings, no explanations, no Markdown."
